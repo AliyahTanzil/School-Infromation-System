@@ -12,6 +12,11 @@ services:
       PORT: 3000
       DATABASE_URL: ${DATABASE_URL:-postgresql://sais:sais_password@postgres:5432/sais?schema=public}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      JWT_SECRET: ${JWT_SECRET:-replace_with_strong_random_secret_min_32_chars}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_DIR: ${LOG_DIR:-logs}
     depends_on:
       postgres:
         condition: service_healthy

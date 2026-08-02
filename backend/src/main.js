@@ -1,8 +1,10 @@
+import 'express-async-errors';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import requestLogger from './middleware/requestLogger/index.js';
+import notFoundHandler from './middleware/error/notFoundHandler.js';
 import errorHandler from './middleware/error/errorHandler.js';
 import router from './presentation/http/routes/index.js';
 import logger from './infrastructure/logger/index.js';
@@ -34,9 +36,7 @@ app.use(requestLogger);
 app.use('/api', router);
 
 // ─── 404 fallthrough ──────────────────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ success: false, message: 'Resource not found' });
-});
+app.use(notFoundHandler);
 
 // ─── Global error handler ─────────────────────────────────────────────────────
 app.use(errorHandler);

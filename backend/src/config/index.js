@@ -14,7 +14,12 @@ const config = {
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
   },
   log: {
-    level: process.env.LOG_LEVEL ?? 'info',
+    level: process.env.LOG_LEVEL ?? 'http',
+    dir: process.env.LOG_DIR ?? 'logs',
+    datePattern: process.env.LOG_DATE_PATTERN ?? 'YYYY-MM-DD',
+    maxSize: process.env.LOG_MAX_SIZE ?? '20m',
+    maxFiles: process.env.LOG_MAX_FILES ?? '30d',
+    zippedArchive: (process.env.LOG_ZIPPED_ARCHIVE ?? 'true').toLowerCase() === 'true',
   },
 };
 

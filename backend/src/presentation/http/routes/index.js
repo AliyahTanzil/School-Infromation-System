@@ -1,10 +1,9 @@
 import { Router } from 'express';
+import healthRoutes from './healthRoutes.js';
 
 const router = Router();
 
-// Health-check — confirms the server is alive and reachable.
-router.get('/health', (_req, res) => {
-  res.json({ success: true, status: 'ok', timestamp: new Date().toISOString() });
-});
+// ─── System health probes ──────────────────────────────────────────────────────
+router.use('/', healthRoutes);
 
 export default router;
