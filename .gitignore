@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+build/
+coverage/
+.vite/
+
+# Environment secrets — never commit these
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+
+# Logs
+*.log
+logs/
+backend/logs/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Editors
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Husky
+.husky/_
