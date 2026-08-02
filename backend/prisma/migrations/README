@@ -1,0 +1,15 @@
+/**
+ * Migrations are tracked by Prisma under this folder.
+ *
+ * Each time `prisma migrate dev --name <label>` is run, Prisma:
+ *  1. Compares schema.prisma against the current DB state.
+ *  2. Generates a timestamped SQL migration file here.
+ *  3. Applies the migration to the development database.
+ *  4. Records the migration in the _prisma_migrations table.
+ *
+ * Commit the full contents of this folder to version control so that
+ * all environments (CI, staging, production) apply migrations in the
+ * same order via `prisma migrate deploy`.
+ *
+ * Do NOT edit migration files manually after they have been applied.
+ */

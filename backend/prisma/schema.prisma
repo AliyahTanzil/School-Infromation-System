@@ -1,0 +1,21 @@
+// Prisma schema - infrastructure only.
+// Business-domain models will be added per approved module (Auth, Students, etc.).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Infrastructure sentinel model.
+// Gives Prisma a concrete table so that prisma generate and prisma migrate dev
+// work before any business-domain models are defined.
+// Business models will be appended here as each module is built.
+model SchemaVersion {
+  id        Int      @id @default(autoincrement())
+  version   String   @unique
+  appliedAt DateTime @default(now())
+}
