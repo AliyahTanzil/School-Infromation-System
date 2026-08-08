@@ -101,11 +101,13 @@ This project is configured as a Node.js monorepo with `backend` and `frontend` w
 ### [docker-compose.yml](docker-compose.yml)
 
 Global structure:
+
 - `services`: Container definitions.
 - `volumes`: Persistent named volumes.
 - `networks`: Internal network fabric.
 
 `app` service:
+
 - `build.context` and `build.dockerfile`: Builds app image from repository.
 - `container_name`: Stable container name.
 - `restart: unless-stopped`: Auto-restart unless explicitly stopped.
@@ -115,6 +117,7 @@ Global structure:
 - `networks`: Connects to `sais-net`.
 
 `postgres` service:
+
 - `image: postgres:16-alpine`: PostgreSQL image tag.
 - `environment`: DB bootstrap settings.
 - `ports`: Exposes PostgreSQL on `5432`.
@@ -123,6 +126,7 @@ Global structure:
 - `healthcheck.interval|timeout|retries|start_period`: Probe timing controls.
 
 `pgadmin` service:
+
 - `image: dpage/pgadmin4:8`: pgAdmin image.
 - `environment`: UI admin credentials.
 - `ports`: Exposes pgAdmin UI at host `5050`.
@@ -131,17 +135,20 @@ Global structure:
 - `healthcheck`: HTTP ping test against internal endpoint.
 
 `redis` service:
+
 - `image: redis:7-alpine`: Redis image.
 - `ports`: Exposes Redis on `6379`.
 - `volumes`: Persists Redis data directory.
 - `healthcheck.test`: `redis-cli ping` readiness check.
 
 `volumes`:
+
 - `postgres_data`: PostgreSQL persistence.
 - `pgadmin_data`: pgAdmin persistence.
 - `redis_data`: Redis persistence.
 
 `networks`:
+
 - `sais-net` with `driver: bridge`: Isolated bridge network for inter-service DNS routing.
 
 ### [README.md](README.md)

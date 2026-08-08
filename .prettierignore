@@ -1,0 +1,6 @@
+.vscode/
+.husky/
+node_modules/
+frontend/dist/
+backend/logs/
+coverage/

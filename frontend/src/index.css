@@ -1,7 +1,7 @@
 /* Tailwind directives — Vite's PostCSS pipeline expands these at build time */
-@tailwind base;       /* Tailwind's CSS reset (Preflight) */
+@tailwind base; /* Tailwind's CSS reset (Preflight) */
 @tailwind components; /* Component-level classes from plugins/config */
-@tailwind utilities;  /* All utility classes e.g. flex, p-4, text-blue-500 */
+@tailwind utilities; /* All utility classes e.g. flex, p-4, text-blue-500 */
 
 /* Global overrides */
 html {

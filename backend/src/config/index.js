@@ -9,6 +9,10 @@ const config = {
   redis: {
     url: process.env.REDIS_URL ?? '',
   },
+  cors: {
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    credentials: true,
+  },
   auth: {
     jwtSecret: process.env.JWT_SECRET ?? '',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',

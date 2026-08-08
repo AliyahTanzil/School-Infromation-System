@@ -34,3 +34,7 @@ Thumbs.db
 
 # Husky
 .husky/_
+.aider*
+
+# Aider Studio (auto-added)
+REPO_MAP.md

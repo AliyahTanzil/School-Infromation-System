@@ -15,7 +15,11 @@
     "dev:frontend": "npm run dev -w frontend",
     "build:frontend": "npm run build -w frontend",
     "lint": "eslint .",
+    "test": "npm run test -w backend && npm run test -w frontend",
+    "test:backend": "npm run test -w backend",
+    "test:frontend": "npm run test -w frontend",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepare": "husky"
   },
   "devDependencies": {
