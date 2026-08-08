@@ -1,8 +1,20 @@
 import 'dotenv/config';
 
+const toInt = (value, fallback) => {
+  const parsed = Number.parseInt(value ?? '', 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+const toBool = (value, fallback) =>
+  value === undefined ? fallback : String(value).toLowerCase() === 'true';
+
 const config = {
   env: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 3000),
+
+  // Public base URL of the frontend — used to build links in transactional emails.
+  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+
   db: {
     url: process.env.DATABASE_URL ?? '',
   },
@@ -13,10 +25,45 @@ const config = {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
     credentials: true,
   },
+
   auth: {
-    jwtSecret: process.env.JWT_SECRET ?? '',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+    // Access token — short-lived JWT sent on every request.
+    accessTokenSecret: process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET ?? '',
+    accessTokenTtl: process.env.JWT_ACCESS_TTL ?? '15m',
+
+    // Refresh token — long-lived opaque token, rotated on each use.
+    refreshTokenSecret: process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET ?? '',
+    refreshTokenTtlDays: toInt(process.env.REFRESH_TOKEN_TTL_DAYS, 30),
+
+    issuer: process.env.JWT_ISSUER ?? 'sais.auth',
+    audience: process.env.JWT_AUDIENCE ?? 'sais.api',
+
+    // Password hashing cost factor.
+    bcryptRounds: toInt(process.env.BCRYPT_ROUNDS, 12),
+
+    // Brute-force protection.
+    maxFailedLogins: toInt(process.env.MAX_FAILED_LOGINS, 5),
+    lockoutMinutes: toInt(process.env.ACCOUNT_LOCKOUT_MINUTES, 15),
+
+    // Single-use token lifetimes.
+    emailVerificationTtlHours: toInt(process.env.EMAIL_VERIFICATION_TTL_HOURS, 24),
+    passwordResetTtlMinutes: toInt(process.env.PASSWORD_RESET_TTL_MINUTES, 30),
+
+    // Refresh token cookie (httpOnly). Access token stays in memory on the client.
+    refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? 'sais_refresh_token',
   },
+
+  email: {
+    // When SMTP host is absent (local/dev), the mailer streams messages to logs
+    // instead of sending, so flows are fully testable without a mail server.
+    host: process.env.SMTP_HOST ?? '',
+    port: toInt(process.env.SMTP_PORT, 587),
+    secure: toBool(process.env.SMTP_SECURE, false),
+    user: process.env.SMTP_USER ?? '',
+    password: process.env.SMTP_PASSWORD ?? '',
+    from: process.env.EMAIL_FROM ?? 'SAIS <no-reply@sais.local>',
+  },
+
   log: {
     level: process.env.LOG_LEVEL ?? 'http',
     dir: process.env.LOG_DIR ?? 'logs',
