@@ -1,5 +1,4 @@
 import { randomUUID } from 'node:crypto';
-import { randomUUID } from 'node:crypto';
 import morgan from 'morgan';
 import logger from '../../infrastructure/logger/index.js';
 
