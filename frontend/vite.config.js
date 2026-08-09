@@ -4,6 +4,8 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
+    host: '0.0.0.0',
+    allowedHosts: true,
     port: 5173,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {

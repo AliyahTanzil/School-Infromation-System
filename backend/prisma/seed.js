@@ -14,11 +14,10 @@ import logger from '../src/infrastructure/logger/index.js';
 const prisma = new PrismaClient();
 
 // ─── Register module seeders here as they are built ───────────────────────────
-// Example (uncomment when Auth module is ready):
-// import { seedRoles } from './seeders/roles.seeder.js';
-const seeders = [
-  // seedRoles,
-];
+import { seedRbac } from './seeders/rbac.seeder.js';
+import { seedSchools } from './seeders/school.seeder.js';
+import { seedStudents } from './seeders/student.seeder.js';
+const seeders = [seedRbac, seedSchools, seedStudents];
 
 async function main() {
   logger.info('Seeding database...');
