@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 const sampleInvoices = [
@@ -30,6 +31,13 @@ const sampleInvoices = [
 
 export default function FinanceDashboard() {
   const [query, setQuery] = useState('');
+  const [summary, setSummary] = useState(null);
+  useEffect(() => {
+    fetch('/api/finance/core/summary?schoolId=00000000-0000-0000-0000-000000000000')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload) => setSummary(payload?.data ?? null))
+      .catch(() => setSummary(null));
+  }, []);
   const invoices = useMemo(
     () =>
       sampleInvoices.filter((item) =>
@@ -56,7 +64,7 @@ export default function FinanceDashboard() {
         </header>
         <section className="grid gap-4 md:grid-cols-4">
           {[
-            ['Collected this term', '$84,240'],
+            ['Collected this term', summary ? `$${(summary.collectedMinor / 100).toLocaleString()}` : '$84,240'],
             ['Outstanding', '$18,630'],
             ['Invoices issued', '248'],
             ['Collection rate', '81.9%'],
