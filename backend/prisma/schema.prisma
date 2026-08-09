@@ -81,6 +81,7 @@ model User {
   userAudits              UserAudit[]              @relation("UserAuditSubject")
   actorAudits             UserAudit[]              @relation("UserAuditActor")
   schoolAdministrators    SchoolAdministrator[]
+  studentHistoryActors    StudentHistory[]        @relation("StudentHistoryActor")
   userRoles               UserRole[]               @relation("UserRoleSubject")
   assignedUserRoles       UserRole[]               @relation("UserRoleGrantedBy")
   grantedRolePermissions  RolePermission[]         @relation("RolePermissionGrantedBy")
@@ -435,6 +436,7 @@ model School {
   departments    Department[]
   grades         GradeLevel[]
   administrators SchoolAdministrator[]
+  students       Student[]
 
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -525,6 +527,185 @@ model GradeLevel {
   @@unique([schoolId, code])
   @@unique([schoolId, displayOrder])
   @@index([tenantId, schoolId, deletedAt])
+}
+
+enum StudentStatus {
+  APPLICANT
+  ADMITTED
+  ACTIVE
+  TRANSFERRED
+  GRADUATED
+  WITHDRAWN
+  SUSPENDED
+}
+
+enum StudentDocumentStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+  DELETED
+}
+
+model Student {
+  id                String        @id @default(uuid()) @db.Uuid
+  tenantId          String        @db.Uuid
+  schoolId          String        @db.Uuid
+  admissionNumber   String        @db.VarChar(60)
+  status            StudentStatus @default(APPLICANT)
+  enrolledAt        DateTime?
+  deletedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  school            School        @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  profile           StudentProfile?
+  admission         StudentAdmission?
+  guardians         StudentGuardian[]
+  medicalRecord     MedicalRecord?
+  previousSchools   PreviousSchool[]
+  documents         StudentDocument[]
+  history           StudentHistory[]
+  enrollments       StudentEnrollment[]
+  classAssignments  StudentClassAssignment[]
+  @@unique([schoolId, admissionNumber])
+  @@index([tenantId, schoolId, status, deletedAt])
+}
+
+model StudentProfile {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @unique @db.Uuid
+  firstName      String   @db.VarChar(100)
+  lastName       String   @db.VarChar(100)
+  preferredName  String?  @db.VarChar(100)
+  dateOfBirth    DateTime
+  gender         String?  @db.VarChar(30)
+  nationality    String?  @db.VarChar(100)
+  email          String?  @db.VarChar(320)
+  phone          String?  @db.VarChar(40)
+  address        String?  @db.VarChar(500)
+  city           String?  @db.VarChar(100)
+  country        String?  @db.VarChar(100)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model StudentAdmission {
+  id              String   @id @default(uuid()) @db.Uuid
+  studentId       String   @unique @db.Uuid
+  applicationDate DateTime @default(now())
+  admissionDate   DateTime?
+  entryGrade      String?  @db.VarChar(80)
+  source          String?  @db.VarChar(120)
+  notes           String?
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Guardian {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  firstName String   @db.VarChar(100)
+  lastName  String   @db.VarChar(100)
+  email     String?  @db.VarChar(320)
+  phone     String?  @db.VarChar(40)
+  address   String?  @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  links     StudentGuardian[]
+  @@index([tenantId, schoolId, email])
+}
+
+model StudentGuardian {
+  id           String   @id @default(uuid()) @db.Uuid
+  studentId    String   @db.Uuid
+  guardianId   String   @db.Uuid
+  relationship String   @db.VarChar(60)
+  isPrimary    Boolean  @default(false)
+  canPickup    Boolean  @default(false)
+  canContact   Boolean  @default(true)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian     Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+  @@unique([studentId, guardianId])
+}
+
+model MedicalRecord {
+  id             String   @id @default(uuid()) @db.Uuid
+  studentId      String   @unique @db.Uuid
+  bloodType      String?  @db.VarChar(10)
+  allergies      String?
+  conditions     String?
+  medications    String?
+  emergencyNotes String?
+  updatedBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model PreviousSchool {
+  id          String   @id @default(uuid()) @db.Uuid
+  studentId   String   @db.Uuid
+  name        String   @db.VarChar(200)
+  city        String?  @db.VarChar(100)
+  country     String?  @db.VarChar(100)
+  startDate   DateTime?
+  endDate     DateTime?
+  certificate String?  @db.VarChar(500)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model StudentDocument {
+  id         String                @id @default(uuid()) @db.Uuid
+  studentId  String                @db.Uuid
+  objectKey  String                @db.VarChar(500)
+  name       String                @db.VarChar(200)
+  mimeType   String                @db.VarChar(100)
+  byteSize   Int
+  checksum   String                @db.VarChar(128)
+  status     StudentDocumentStatus @default(PENDING)
+  uploadedBy String?               @db.Uuid
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  student    Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  @@index([studentId, status])
+}
+
+model StudentHistory {
+  id         String        @id @default(uuid()) @db.Uuid
+  studentId  String        @db.Uuid
+  fromStatus StudentStatus?
+  toStatus   StudentStatus
+  reason     String?
+  actorId    String?       @db.Uuid
+  createdAt  DateTime      @default(now())
+  student     Student       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  actor       User?         @relation("StudentHistoryActor", fields: [actorId], references: [id], onDelete: SetNull)
+  @@index([studentId, createdAt])
+}
+
+model StudentEnrollment {
+  id           String   @id @default(uuid()) @db.Uuid
+  studentId    String   @db.Uuid
+  schoolId     String   @db.Uuid
+  academicYear String   @db.VarChar(40)
+  grade        String?  @db.VarChar(80)
+  startDate    DateTime
+  endDate      DateTime?
+  createdAt    DateTime @default(now())
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([studentId, academicYear])
+  @@index([schoolId, academicYear])
+}
+
+model StudentClassAssignment {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @db.Uuid
+  schoolId  String   @db.Uuid
+  className String   @db.VarChar(100)
+  startsAt  DateTime
+  endsAt    DateTime?
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@index([schoolId, className, startsAt])
 }
 
 model SchoolAdministrator {

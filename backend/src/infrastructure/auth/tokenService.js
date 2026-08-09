@@ -19,7 +19,7 @@ import { generateOpaqueToken, hashToken } from '../../shared/utils/tokenUtils.js
  * @returns {string} signed JWT
  */
 export function signAccessToken({ sub, email, sessionId, roles = [] }) {
-  return jwt.sign({ email, sessionId, roles }, config.auth.accessTokenSecret, {
+  return jwt.sign({ email, sessionId, sid: sessionId, roles }, config.auth.accessTokenSecret, {
     subject: sub,
     expiresIn: config.auth.accessTokenTtl,
     issuer: config.auth.issuer,
@@ -45,7 +45,8 @@ export function verifyAccessToken(token) {
   return {
     sub: payload.sub,
     email: payload.email,
-    sessionId: payload.sessionId,
+    sessionId: payload.sessionId ?? payload.sid,
+    sid: payload.sid ?? payload.sessionId,
     roles: payload.roles ?? [],
   };
 }

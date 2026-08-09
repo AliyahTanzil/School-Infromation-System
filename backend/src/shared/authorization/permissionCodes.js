@@ -17,11 +17,17 @@ export const PERMISSIONS = Object.freeze({
   SCHOOLS_CREATE: 'schools.create',
   SCHOOLS_UPDATE: 'schools.update',
   SCHOOLS_DELETE: 'schools.delete',
-  SCHOOLS_MANAGE_SETTINGS: 'schools.manage_settings',
-  SCHOOLS_MANAGE_BRANCHES: 'schools.manage_branches',
-  SCHOOLS_MANAGE_DEPARTMENTS: 'schools.manage_departments',
-  SCHOOLS_MANAGE_GRADES: 'schools.manage_grades',
-  SCHOOLS_ASSIGN_ADMINS: 'schools.assign_admins',
+  SCHOOLS_MANAGE_SETTINGS: 'schools.settings',
+  SCHOOLS_MANAGE_BRANCHES: 'schools.branches',
+  SCHOOLS_MANAGE_DEPARTMENTS: 'schools.departments',
+  SCHOOLS_MANAGE_GRADES: 'schools.grades',
+  SCHOOLS_ASSIGN_ADMINS: 'schools.assign',
+  STUDENTS_READ: 'students.read',
+  STUDENTS_CREATE: 'students.create',
+  STUDENTS_UPDATE: 'students.update',
+  STUDENTS_MANAGE_MEDICAL: 'students.medical',
+  STUDENTS_MANAGE_DOCUMENTS: 'students.documents',
+  STUDENTS_CHANGE_STATUS: 'students.status',
 });
 
 export const SYSTEM_ROLES = Object.freeze({
@@ -77,6 +83,18 @@ export const PERMISSION_CATALOG = Object.freeze([
       { code: PERMISSIONS.SCHOOLS_MANAGE_DEPARTMENTS, name: 'Manage departments' },
       { code: PERMISSIONS.SCHOOLS_MANAGE_GRADES, name: 'Manage grades' },
       { code: PERMISSIONS.SCHOOLS_ASSIGN_ADMINS, name: 'Assign administrators' },
+    ],
+  },
+  {
+    group: 'students',
+    name: 'Students',
+    permissions: [
+      { code: PERMISSIONS.STUDENTS_READ, name: 'Read students' },
+      { code: PERMISSIONS.STUDENTS_CREATE, name: 'Create students' },
+      { code: PERMISSIONS.STUDENTS_UPDATE, name: 'Update students' },
+      { code: PERMISSIONS.STUDENTS_MANAGE_MEDICAL, name: 'Manage medical records' },
+      { code: PERMISSIONS.STUDENTS_MANAGE_DOCUMENTS, name: 'Manage student documents' },
+      { code: PERMISSIONS.STUDENTS_CHANGE_STATUS, name: 'Change student status' },
     ],
   },
 ]);
