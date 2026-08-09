@@ -64,7 +64,10 @@ export default function FinanceDashboard() {
         </header>
         <section className="grid gap-4 md:grid-cols-4">
           {[
-            ['Collected this term', summary ? `$${(summary.collectedMinor / 100).toLocaleString()}` : '$84,240'],
+            [
+              'Collected this term',
+              summary ? `$${(summary.collectedMinor / 100).toLocaleString()}` : '$84,240',
+            ],
             ['Outstanding', '$18,630'],
             ['Invoices issued', '248'],
             ['Collection rate', '81.9%'],

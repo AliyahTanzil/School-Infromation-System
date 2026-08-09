@@ -92,7 +92,6 @@ function DashboardPreview() {
 
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const adminDemoEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true';
   return (
     <div className="min-h-screen overflow-hidden bg-slate-950 text-white">
       <header className="sticky top-0 z-20 border-b border-white/5 bg-slate-950/90 backdrop-blur-xl">
@@ -126,14 +125,6 @@ export default function LandingPage() {
             >
               Get started
             </Link>
-            {adminDemoEnabled && (
-              <Link
-                to="/admin-demo"
-                className="text-xs font-semibold text-amber-300 hover:text-amber-200"
-              >
-                Open admin demo
-              </Link>
-            )}
           </div>
           <button
             type="button"
@@ -167,14 +158,6 @@ export default function LandingPage() {
               >
                 Get started
               </Link>
-              {adminDemoEnabled && (
-                <Link
-                  to="/admin-demo"
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-amber-300"
-                >
-                  Open admin demo
-                </Link>
-              )}
             </div>
           </div>
         )}
