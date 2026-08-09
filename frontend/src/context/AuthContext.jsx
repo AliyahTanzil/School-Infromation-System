@@ -46,8 +46,17 @@ export function AuthProvider({ children }) {
         return result;
       },
       async logout() {
-        await authApi.logout();
-        setUser(null);
+        // Demo users have no server session; do not call the protected logout API.
+        if (user?.id === 'demo-admin') {
+          setUser(null);
+          return;
+        }
+        try {
+          await authApi.logout();
+        } finally {
+          // Clear local auth state even if the server session already expired.
+          setUser(null);
+        }
       },
       async forgotPassword(email) {
         return authApi.forgotPassword(email);
