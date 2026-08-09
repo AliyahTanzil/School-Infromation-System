@@ -20,7 +20,16 @@ import { seedStudents } from './seeders/student.seeder.js';
 import { seedParents } from './seeders/parent.seeder.js';
 import { seedTeachers } from './seeders/teacher.seeder.js';
 import { seedClasses } from './seeders/class.seeder.js';
-const seeders = [seedRbac, seedSchools, seedStudents, seedParents, seedTeachers, seedClasses];
+import { seedTestAccount } from './seeders/testAccount.seeder.js';
+const seeders = [
+  seedRbac,
+  seedSchools,
+  seedStudents,
+  seedParents,
+  seedTeachers,
+  seedClasses,
+  seedTestAccount,
+];
 
 async function main() {
   logger.info('Seeding database...');

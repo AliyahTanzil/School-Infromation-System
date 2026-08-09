@@ -443,7 +443,9 @@ model School {
   teachers       Teacher[]
   classrooms     Classroom[]
   classes        Class[]
-
+  feeStructures  FeeStructure[]
+  invoices       Invoice[]
+  
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
   @@index([tenantId, status, deletedAt])
@@ -574,6 +576,7 @@ model Student {
   enrollments       StudentEnrollment[]
   classAssignments  StudentClassAssignment[]
   classEnrollments  ClassEnrollment[]
+  invoices          Invoice[]
   parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
@@ -1047,7 +1050,8 @@ model Classroom {
   floor       String?  @db.VarChar(40)
   deletedAt   DateTime?
   school      School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  classes     Class[]
+  classes        Class[]
+
   @@unique([schoolId, code])
   @@index([tenantId, schoolId, deletedAt])
 }
@@ -1105,6 +1109,91 @@ model ClassHistory {
   createdAt DateTime    @default(now())
   class     Class       @relation(fields: [classId], references: [id], onDelete: Restrict)
   @@index([classId, createdAt])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  VOID
+  OVERDUE
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+model FeeStructure {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String   @db.VarChar(160)
+  description String?
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("USD") @db.VarChar(3)
+  academicYear String  @db.VarChar(40)
+  active      Boolean  @default(true)
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  invoices    Invoice[]
+  @@index([tenantId, schoolId, academicYear, active])
+}
+
+model Invoice {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @db.Uuid
+  schoolId    String        @db.Uuid
+  studentId   String        @db.Uuid
+  feeId       String?       @db.Uuid
+  invoiceNumber String      @db.VarChar(60)
+  subtotal    Decimal       @db.Decimal(12, 2)
+  discount    Decimal       @default(0) @db.Decimal(12, 2)
+  total       Decimal       @db.Decimal(12, 2)
+  balance     Decimal       @db.Decimal(12, 2)
+  currency    String        @default("USD") @db.VarChar(3)
+  status      InvoiceStatus @default(DRAFT)
+  dueAt       DateTime?
+  issuedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  school      School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  student     Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  fee         FeeStructure? @relation(fields: [feeId], references: [id], onDelete: SetNull)
+  payments    Payment[]
+  @@unique([schoolId, invoiceNumber])
+  @@index([tenantId, schoolId, studentId, status])
+}
+
+model Payment {
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @db.Uuid
+  schoolId    String        @db.Uuid
+  invoiceId   String        @db.Uuid
+  amount      Decimal       @db.Decimal(12, 2)
+  currency    String        @default("USD") @db.VarChar(3)
+  provider    String        @db.VarChar(40)
+  reference   String        @db.VarChar(120)
+  idempotencyKey String     @unique @db.VarChar(160)
+  status      PaymentStatus @default(PENDING)
+  paidAt      DateTime?
+  createdAt   DateTime      @default(now())
+  invoice     Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, invoiceId, status])
+}
+
+model FinanceAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String   @db.VarChar(80)
+  entityId  String   @db.Uuid
+  metadata  Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
 }
 
 model SchoolAdministrator {
