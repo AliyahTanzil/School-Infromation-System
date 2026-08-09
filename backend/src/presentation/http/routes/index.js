@@ -7,6 +7,7 @@ import userRoutes from './userRoutes.js';
 import schoolRoutes from './schoolRoutes.js';
 import studentRoutes from './studentRoutes.js';
 import parentRoutes from './parentRoutes.js';
+import teacherRoutes from './teacherRoutes.js';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/users', userRoutes);
 router.use('/schools', schoolRoutes);
 router.use('/students', studentRoutes);
 router.use('/parents', parentRoutes);
+router.use('/teachers', teacherRoutes);
 
 export default router;

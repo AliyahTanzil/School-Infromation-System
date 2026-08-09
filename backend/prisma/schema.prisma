@@ -83,6 +83,7 @@ model User {
   schoolAdministrators    SchoolAdministrator[]
   studentHistoryActors    StudentHistory[]        @relation("StudentHistoryActor")
   parent                Parent?
+  teacher               Teacher?
 
   userRoles               UserRole[]               @relation("UserRoleSubject")
   assignedUserRoles       UserRole[]               @relation("UserRoleGrantedBy")
@@ -439,6 +440,7 @@ model School {
   grades         GradeLevel[]
   administrators SchoolAdministrator[]
   students       Student[]
+  teachers       Teacher[]
 
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -850,6 +852,168 @@ model ParentNotificationEvent {
   createdAt DateTime @default(now())
   parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
   @@index([parentId, readAt, createdAt])
+}
+
+enum TeacherStatus {
+  APPLICANT
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+  RESIGNED
+  RETIRED
+}
+
+model Teacher {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @db.Uuid
+  schoolId       String       @db.Uuid
+  userId         String?      @unique @db.Uuid
+  employeeNumber String       @db.VarChar(60)
+  status         TeacherStatus @default(APPLICANT)
+  deletedAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  profile        TeacherProfile?
+  qualifications TeacherQualification[]
+  certifications TeacherCertification[]
+  employment     TeacherEmployment?
+  documents      TeacherDocument[]
+  departments    TeacherDepartment[]
+  subjects       TeacherSubjectAssignment[]
+  classes        TeacherClassAssignment[]
+  availability   TeacherAvailability[]
+  history        TeacherHistory[]
+  @@unique([schoolId, employeeNumber])
+  @@index([tenantId, schoolId, status, deletedAt])
+}
+
+model TeacherProfile {
+  id            String   @id @default(uuid()) @db.Uuid
+  teacherId     String   @unique @db.Uuid
+  firstName     String   @db.VarChar(100)
+  lastName      String   @db.VarChar(100)
+  email         String?  @db.VarChar(320)
+  phone         String?  @db.VarChar(40)
+  dateOfBirth   DateTime?
+  gender        String?  @db.VarChar(30)
+  nationality   String?  @db.VarChar(100)
+  address       String?  @db.VarChar(500)
+  emergencyName String?  @db.VarChar(160)
+  emergencyPhone String? @db.VarChar(40)
+  teacher       Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model TeacherQualification {
+  id          String   @id @default(uuid()) @db.Uuid
+  teacherId   String   @db.Uuid
+  institution String   @db.VarChar(200)
+  title       String   @db.VarChar(160)
+  field       String?  @db.VarChar(160)
+  awardedAt   DateTime?
+  documentKey String?  @db.VarChar(500)
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  @@index([teacherId, awardedAt])
+}
+
+model TeacherCertification {
+  id          String   @id @default(uuid()) @db.Uuid
+  teacherId   String   @db.Uuid
+  name        String   @db.VarChar(160)
+  issuer      String?  @db.VarChar(160)
+  issuedAt    DateTime?
+  expiresAt   DateTime?
+  certificateKey String? @db.VarChar(500)
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+}
+
+model TeacherEmployment {
+  id          String   @id @default(uuid()) @db.Uuid
+  teacherId   String   @unique @db.Uuid
+  jobTitle    String   @db.VarChar(160)
+  employmentType String @db.VarChar(40)
+  startDate   DateTime
+  endDate     DateTime?
+  salaryBand  String?  @db.VarChar(80)
+  teacher     Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TeacherDocument {
+  id         String   @id @default(uuid()) @db.Uuid
+  teacherId  String   @db.Uuid
+  name       String   @db.VarChar(200)
+  objectKey  String   @db.VarChar(500)
+  mimeType   String   @db.VarChar(100)
+  byteSize   Int
+  checksum   String   @db.VarChar(128)
+  createdAt  DateTime @default(now())
+  teacher    Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  @@index([teacherId, createdAt])
+}
+
+model TeacherDepartment {
+  id           String   @id @default(uuid()) @db.Uuid
+  teacherId    String   @db.Uuid
+  departmentId String   @db.Uuid
+  startsAt     DateTime
+  endsAt       DateTime?
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  @@unique([teacherId, departmentId, startsAt])
+}
+
+model TeacherSubjectAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  teacherId    String   @db.Uuid
+  subjectId    String   @db.Uuid
+  academicYear String   @db.VarChar(40)
+  term         String?  @db.VarChar(40)
+  startsAt     DateTime
+  endsAt       DateTime?
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  @@unique([teacherId, subjectId, academicYear, term])
+  @@index([subjectId, academicYear])
+}
+
+model TeacherClassAssignment {
+  id           String   @id @default(uuid()) @db.Uuid
+  teacherId    String   @db.Uuid
+  classId      String   @db.Uuid
+  role         String   @db.VarChar(60)
+  academicYear String   @db.VarChar(40)
+  term         String?  @db.VarChar(40)
+  startsAt     DateTime
+  endsAt       DateTime?
+  teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  @@unique([teacherId, classId, academicYear, term])
+  @@index([classId, academicYear])
+}
+
+model TeacherAvailability {
+  id        String   @id @default(uuid()) @db.Uuid
+  teacherId String   @db.Uuid
+  weekday  Int
+  startTime String   @db.VarChar(10)
+  endTime   String   @db.VarChar(10)
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  @@index([teacherId, weekday])
+}
+
+model TeacherHistory {
+  id         String       @id @default(uuid()) @db.Uuid
+  teacherId  String       @db.Uuid
+  fromStatus TeacherStatus?
+  toStatus   TeacherStatus
+  reason     String?
+  actorId    String?      @db.Uuid
+  createdAt  DateTime     @default(now())
+  teacher    Teacher      @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  @@index([teacherId, createdAt])
 }
 
 model SchoolAdministrator {
