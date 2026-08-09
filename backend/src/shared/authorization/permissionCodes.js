@@ -1,0 +1,102 @@
+export const PERMISSIONS = Object.freeze({
+  USERS_READ: 'users.read',
+  USERS_CREATE: 'users.create',
+  USERS_UPDATE: 'users.update',
+  USERS_DELETE: 'users.delete',
+  USERS_ACTIVATE: 'users.activate',
+  USERS_DEACTIVATE: 'users.deactivate',
+  USERS_RESTORE: 'users.restore',
+  ROLES_READ: 'roles.read',
+  ROLES_CREATE: 'roles.create',
+  ROLES_UPDATE: 'roles.update',
+  ROLES_DELETE: 'roles.delete',
+  ROLES_ASSIGN: 'roles.assign',
+  PERMISSIONS_READ: 'permissions.read',
+  PERMISSIONS_ASSIGN: 'permissions.assign',
+  SCHOOLS_READ: 'schools.read',
+  SCHOOLS_CREATE: 'schools.create',
+  SCHOOLS_UPDATE: 'schools.update',
+  SCHOOLS_DELETE: 'schools.delete',
+  SCHOOLS_MANAGE_SETTINGS: 'schools.settings',
+  SCHOOLS_MANAGE_BRANCHES: 'schools.branches',
+  SCHOOLS_MANAGE_DEPARTMENTS: 'schools.departments',
+  SCHOOLS_MANAGE_GRADES: 'schools.grades',
+  SCHOOLS_ASSIGN_ADMINS: 'schools.assign',
+  STUDENTS_READ: 'students.read',
+  STUDENTS_CREATE: 'students.create',
+  STUDENTS_UPDATE: 'students.update',
+  STUDENTS_MANAGE_MEDICAL: 'students.medical',
+  STUDENTS_MANAGE_DOCUMENTS: 'students.documents',
+  STUDENTS_CHANGE_STATUS: 'students.status',
+});
+
+export const SYSTEM_ROLES = Object.freeze({
+  PLATFORM_ADMIN: 'PLATFORM_ADMIN',
+  SCHOOL_ADMIN: 'SCHOOL_ADMIN',
+  TEACHER: 'TEACHER',
+  PARENT: 'PARENT',
+});
+
+export const PERMISSION_CATALOG = Object.freeze([
+  {
+    group: 'users',
+    name: 'Users',
+    permissions: [
+      { code: PERMISSIONS.USERS_READ, name: 'Read users' },
+      { code: PERMISSIONS.USERS_CREATE, name: 'Create users' },
+      { code: PERMISSIONS.USERS_UPDATE, name: 'Update users' },
+      { code: PERMISSIONS.USERS_DELETE, name: 'Delete users' },
+      { code: PERMISSIONS.USERS_ACTIVATE, name: 'Activate users' },
+      { code: PERMISSIONS.USERS_DEACTIVATE, name: 'Deactivate users' },
+      { code: PERMISSIONS.USERS_RESTORE, name: 'Restore users' },
+    ],
+  },
+  {
+    group: 'roles',
+    name: 'Roles',
+    permissions: [
+      { code: PERMISSIONS.ROLES_READ, name: 'Read roles' },
+      { code: PERMISSIONS.ROLES_CREATE, name: 'Create roles' },
+      { code: PERMISSIONS.ROLES_UPDATE, name: 'Update roles' },
+      { code: PERMISSIONS.ROLES_DELETE, name: 'Delete roles' },
+      { code: PERMISSIONS.ROLES_ASSIGN, name: 'Assign roles' },
+    ],
+  },
+  {
+    group: 'permissions',
+    name: 'Permissions',
+    permissions: [
+      { code: PERMISSIONS.PERMISSIONS_READ, name: 'Read permissions' },
+      { code: PERMISSIONS.PERMISSIONS_ASSIGN, name: 'Assign permissions' },
+    ],
+  },
+  {
+    group: 'schools',
+    name: 'Schools',
+    permissions: [
+      { code: PERMISSIONS.SCHOOLS_READ, name: 'Read schools' },
+      { code: PERMISSIONS.SCHOOLS_CREATE, name: 'Create schools' },
+      { code: PERMISSIONS.SCHOOLS_UPDATE, name: 'Update schools' },
+      { code: PERMISSIONS.SCHOOLS_DELETE, name: 'Delete schools' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_SETTINGS, name: 'Manage school settings' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_BRANCHES, name: 'Manage branches' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_DEPARTMENTS, name: 'Manage departments' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_GRADES, name: 'Manage grades' },
+      { code: PERMISSIONS.SCHOOLS_ASSIGN_ADMINS, name: 'Assign administrators' },
+    ],
+  },
+  {
+    group: 'students',
+    name: 'Students',
+    permissions: [
+      { code: PERMISSIONS.STUDENTS_READ, name: 'Read students' },
+      { code: PERMISSIONS.STUDENTS_CREATE, name: 'Create students' },
+      { code: PERMISSIONS.STUDENTS_UPDATE, name: 'Update students' },
+      { code: PERMISSIONS.STUDENTS_MANAGE_MEDICAL, name: 'Manage medical records' },
+      { code: PERMISSIONS.STUDENTS_MANAGE_DOCUMENTS, name: 'Manage student documents' },
+      { code: PERMISSIONS.STUDENTS_CHANGE_STATUS, name: 'Change student status' },
+    ],
+  },
+]);
+
+export default PERMISSIONS;

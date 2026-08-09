@@ -1,5 +1,6 @@
 import 'express-async-errors';
 import compression from 'compression';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
@@ -16,6 +17,7 @@ app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials 
 app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(requestLogger);
 app.use('/api', router);
 app.use(notFoundHandler);
