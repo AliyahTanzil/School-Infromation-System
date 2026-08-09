@@ -408,8 +408,22 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/admin-demo" element={<AdminDemoEntry />} />
-          <Route path="/communication" element={<CommunicationDashboard />} />
-          <Route path="/hr" element={<HRDashboard />} />
+          <Route
+            path="/communication"
+            element={
+              <Protected>
+                <CommunicationDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/hr"
+            element={
+              <Protected>
+                <HRDashboard />
+              </Protected>
+            }
+          />
           <Route
             path="/admin"
             element={
