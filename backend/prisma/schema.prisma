@@ -82,6 +82,8 @@ model User {
   actorAudits             UserAudit[]              @relation("UserAuditActor")
   schoolAdministrators    SchoolAdministrator[]
   studentHistoryActors    StudentHistory[]        @relation("StudentHistoryActor")
+  parent                Parent?
+
   userRoles               UserRole[]               @relation("UserRoleSubject")
   assignedUserRoles       UserRole[]               @relation("UserRoleGrantedBy")
   grantedRolePermissions  RolePermission[]         @relation("RolePermissionGrantedBy")
@@ -566,6 +568,7 @@ model Student {
   history           StudentHistory[]
   enrollments       StudentEnrollment[]
   classAssignments  StudentClassAssignment[]
+  parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
 }
@@ -706,6 +709,147 @@ model StudentClassAssignment {
   endsAt    DateTime?
   student   Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
   @@index([schoolId, className, startsAt])
+}
+
+enum ParentVerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum ParentRelationshipStatus {
+  PENDING
+  ACTIVE
+  REVOKED
+}
+
+model Parent {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  userId      String   @unique @db.Uuid
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  profile     ParentProfile?
+  contacts    ParentContact[]
+  addresses   ParentAddress[]
+  preferences ParentPreference?
+  notifications ParentNotificationSetting?
+  relationships ParentStudentRelationship[]
+  verifications ParentVerification[]
+  accessLogs  ParentAccessLog[]
+  events      ParentNotificationEvent[]
+  @@index([tenantId, schoolId, deletedAt])
+}
+
+model ParentProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  parentId    String   @unique @db.Uuid
+  firstName   String   @db.VarChar(100)
+  lastName    String   @db.VarChar(100)
+  occupation  String?  @db.VarChar(160)
+  preferredLanguage String? @db.VarChar(20)
+  parent      Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ParentContact {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @db.Uuid
+  type      String   @db.VarChar(20)
+  value     String   @db.VarChar(320)
+  isPrimary Boolean  @default(false)
+  verifiedAt DateTime?
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  @@index([parentId, type])
+}
+
+model ParentAddress {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @db.Uuid
+  label     String   @db.VarChar(40)
+  address   String   @db.VarChar(500)
+  city      String?  @db.VarChar(100)
+  country   String?  @db.VarChar(100)
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+}
+
+model ParentStudentRelationship {
+  id           String                  @id @default(uuid()) @db.Uuid
+  parentId     String                  @db.Uuid
+  studentId    String                  @db.Uuid
+  relationship String                  @db.VarChar(60)
+  status       ParentRelationshipStatus @default(PENDING)
+  canViewAcademic Boolean              @default(true)
+  canViewAttendance Boolean            @default(true)
+  canViewFees  Boolean                @default(false)
+  verifiedAt   DateTime?
+  revokedAt    DateTime?
+  parent       Parent                  @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student      Student                 @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([parentId, studentId])
+  @@index([studentId, status])
+}
+
+model ParentVerification {
+  id         String                   @id @default(uuid()) @db.Uuid
+  parentId   String                   @db.Uuid
+  channel    String                   @db.VarChar(20)
+  tokenHash  String                   @db.VarChar(128)
+  status     ParentVerificationStatus @default(PENDING)
+  expiresAt  DateTime
+  verifiedAt DateTime?
+  createdAt  DateTime                 @default(now())
+  parent     Parent                   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  @@index([parentId, status, expiresAt])
+}
+
+model ParentPreference {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @unique @db.Uuid
+  locale    String   @default("en") @db.VarChar(20)
+  timezone  String   @default("UTC") @db.VarChar(80)
+  theme     String   @default("system") @db.VarChar(20)
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  updatedAt DateTime @updatedAt
+}
+
+model ParentNotificationSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  parentId    String   @unique @db.Uuid
+  announcements Boolean @default(true)
+  attendance   Boolean @default(true)
+  results      Boolean @default(true)
+  fees        Boolean @default(false)
+  parent      Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  updatedAt   DateTime @updatedAt
+}
+
+model ParentAccessLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @db.Uuid
+  studentId String?  @db.Uuid
+  resource  String   @db.VarChar(80)
+  action    String   @db.VarChar(40)
+  ipAddress String?  @db.VarChar(64)
+  createdAt DateTime @default(now())
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  @@index([parentId, createdAt])
+}
+
+model ParentNotificationEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  parentId  String   @db.Uuid
+  type      String   @db.VarChar(60)
+  payload   Json
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  @@index([parentId, readAt, createdAt])
 }
 
 model SchoolAdministrator {
