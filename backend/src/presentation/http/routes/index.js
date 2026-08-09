@@ -18,6 +18,7 @@ import examinationRoutes from './examinationRoutes.js';
 import resultRoutes from './resultRoutes.js';
 import timetableRoutes from './timetableRoutes.js';
 import communicationRoutes from './communicationRoutes.js';
+import hrRoutes from './hrRoutes.js';
 
 const router = Router();
 
@@ -41,5 +42,6 @@ router.use('/examinations', examinationRoutes);
 router.use('/results', resultRoutes);
 router.use('/timetables', timetableRoutes);
 router.use('/communication', communicationRoutes);
+router.use('/hr', hrRoutes);
 
 export default router;

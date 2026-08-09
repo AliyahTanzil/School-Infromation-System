@@ -3,7 +3,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../api/auth.js';
 
 const AuthContext = createContext(null);
-const adminDemoEnabled = import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true';
+// Temporary development access: restore production CTA/auth behavior when development is finished.
+const adminDemoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);

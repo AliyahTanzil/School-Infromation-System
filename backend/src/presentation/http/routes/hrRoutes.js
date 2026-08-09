@@ -1,0 +1,13 @@
+import { Router } from 'express';
+import authenticate from '../../../middleware/auth/authenticate.js';
+import schoolContext from '../../../middleware/auth/schoolContext.js';
+import authorize from '../../../middleware/auth/authorize.js';
+import * as controller from '../controllers/hrController.js';
+const router = Router();
+router.use(authenticate, schoolContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.get('/dashboard', controller.dashboard);
+router.get('/employees', controller.employees);
+router.post('/employees', controller.createEmployee);
+router.post('/leave-requests', controller.requestLeave);
+router.patch('/leave-requests/:id', controller.approveLeave);
+export default router;

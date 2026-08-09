@@ -2140,6 +2140,229 @@ model CommunicationAudit {
   @@index([tenantId, schoolId, createdAt])
 }
 
+enum EmployeeStatus {
+  APPLICANT
+  ACTIVE
+  ON_LEAVE
+  SUSPENDED
+  TERMINATED
+  RESIGNED
+  RETIRED
+}
+enum EmploymentTypeCode {
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+  TEMPORARY
+  INTERN
+  VOLUNTEER
+}
+enum LeaveRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+enum PayrollRunStatus {
+  DRAFT
+  CALCULATING
+  PENDING_APPROVAL
+  APPROVED
+  PAID
+  VOID
+}
+enum PayrollItemType {
+  EARNING
+  DEDUCTION
+  BENEFIT
+  TAX
+  PENSION
+}
+
+model HRDepartment {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(30)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employees Employee[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, active])
+}
+model HRPosition {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  departmentId String? @db.Uuid
+  title String @db.VarChar(160)
+  code String @db.VarChar(40)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employees Employee[]
+  @@unique([schoolId, code])
+  @@index([schoolId, departmentId])
+}
+model Employee {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  userId String? @db.Uuid
+  employeeNumber String @db.VarChar(60)
+  firstName String @db.VarChar(100)
+  lastName String @db.VarChar(100)
+  email String? @db.VarChar(320)
+  phone String? @db.VarChar(40)
+  dateOfBirth DateTime?
+  gender String? @db.VarChar(30)
+  address String? @db.VarChar(500)
+  emergencyContact Json
+  status EmployeeStatus @default(APPLICANT)
+  hireDate DateTime?
+  terminationDate DateTime?
+  departmentId String? @db.Uuid
+  positionId String? @db.Uuid
+  photoUrl String? @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  department HRDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  position HRPosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  contracts EmploymentContract[]
+  leaveRequests LeaveRequest[]
+  attendance StaffAttendance[]
+  salary EmployeeSalary?
+  @@unique([schoolId, employeeNumber])
+  @@index([tenantId, schoolId, status])
+}
+model EmploymentContract {
+  id String @id @default(uuid()) @db.Uuid
+  employeeId String @db.Uuid
+  employmentType EmploymentTypeCode
+  title String @db.VarChar(160)
+  startDate DateTime
+  endDate DateTime?
+  baseSalary Decimal @db.Decimal(14, 2)
+  currency String @default("USD") @db.VarChar(3)
+  status String @default("ACTIVE") @db.VarChar(30)
+  documentUrl String? @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  @@index([employeeId, startDate])
+}
+model LeaveType {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(100)
+  annualDays Decimal @db.Decimal(6, 2)
+  paid Boolean @default(true)
+  active Boolean @default(true)
+  requests LeaveRequest[]
+  @@unique([schoolId, name])
+}
+model LeaveRequest {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  employeeId String @db.Uuid
+  leaveTypeId String @db.Uuid
+  startDate DateTime
+  endDate DateTime
+  reason String? @db.Text
+  status LeaveRequestStatus @default(PENDING)
+  approvedById String? @db.Uuid
+  approvedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
+  @@index([schoolId, status, startDate])
+}
+model StaffAttendance {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  employeeId String @db.Uuid
+  workDate DateTime @db.Date
+  checkIn DateTime?
+  checkOut DateTime?
+  status String @default("PRESENT") @db.VarChar(30)
+  notes String? @db.VarChar(300)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  @@unique([employeeId, workDate])
+}
+model EmployeeSalary {
+  id String @id @default(uuid()) @db.Uuid
+  employeeId String @unique @db.Uuid
+  effectiveFrom DateTime
+  baseSalary Decimal @db.Decimal(14, 2)
+  allowances Json
+  deductions Json
+  currency String @default("USD") @db.VarChar(3)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+model PayrollPeriod {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(100)
+  startDate DateTime
+  endDate DateTime
+  status String @default("OPEN") @db.VarChar(30)
+  @@unique([schoolId, startDate, endDate])
+}
+model PayrollRun {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  periodId String @db.Uuid
+  status PayrollRunStatus @default(DRAFT)
+  grossTotal Decimal @default(0) @db.Decimal(16, 2)
+  deductionTotal Decimal @default(0) @db.Decimal(16, 2)
+  netTotal Decimal @default(0) @db.Decimal(16, 2)
+  finalizedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  employees PayrollEmployee[]
+  @@index([schoolId, status, createdAt])
+}
+model PayrollEmployee {
+  id String @id @default(uuid()) @db.Uuid
+  payrollRunId String @db.Uuid
+  employeeId String @db.Uuid
+  grossSalary Decimal @db.Decimal(14, 2)
+  deductions Decimal @default(0) @db.Decimal(14, 2)
+  netSalary Decimal @db.Decimal(14, 2)
+  payslipNumber String? @db.VarChar(80)
+  items PayrollItem[]
+  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  @@unique([payrollRunId, employeeId])
+}
+model PayrollItem {
+  id String @id @default(uuid()) @db.Uuid
+  payrollEmployeeId String @db.Uuid
+  type PayrollItemType
+  label String @db.VarChar(160)
+  amount Decimal @db.Decimal(14, 2)
+  payrollEmployee PayrollEmployee @relation(fields: [payrollEmployeeId], references: [id], onDelete: Cascade)
+}
+model HRAction {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  employeeId String? @db.Uuid
+  action String @db.VarChar(80)
+  details Json
+  actorId String? @db.Uuid
+  createdAt DateTime @default(now())
+  @@index([schoolId, createdAt])
+}
+
+// Payroll totals are snapshots: finalized runs are never mutated in place.
 enum TimetableStatus {
   DRAFT
   REVIEW
