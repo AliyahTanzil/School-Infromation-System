@@ -20,7 +20,7 @@
     "test:frontend": "npm run test -w frontend",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "node .husky/prepare.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
