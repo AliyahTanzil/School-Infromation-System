@@ -17,4 +17,34 @@ export function toPublicUser(user, { roles = [] } = {}) {
   };
 }
 
-export default { toPublicUser };
+export function toUserDto(user) {
+  if (!user) return null;
+  return {
+    ...toPublicUser(user, { roles: user.userRoles?.map(({ role }) => role.code) ?? [] }),
+    profile: user.profile ?? null,
+    preference: user.preference ?? null,
+    roleAssignments:
+      user.userRoles?.map(({ role, scopeKey, expiresAt }) => ({
+        code: role.code,
+        name: role.name,
+        scopeKey,
+        expiresAt,
+      })) ?? [],
+  };
+}
+
+export function toUserListDto(user) {
+  const dto = toUserDto(user);
+  return (
+    dto && {
+      id: dto.id,
+      email: dto.email,
+      status: dto.status,
+      profile: dto.profile,
+      roles: dto.roles,
+      createdAt: dto.createdAt,
+    }
+  );
+}
+
+export default { toPublicUser, toUserDto, toUserListDto };
