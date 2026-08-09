@@ -11,7 +11,7 @@
     "frontend"
   ],
   "scripts": {
-    "dev:backend": "npm run dev -w backend",
+    "dev:backend": "node --env-file-if-exists=/vercel/share/.env.project ./node_modules/npm/bin/npm-cli.js run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "build:frontend": "npm run build -w frontend",
     "lint": "eslint .",
