@@ -18,23 +18,19 @@ const scope = (req) => ({
 });
 router.get('/', async (req, res) => res.json({ data: await service.listTimetables(scope(req)) }));
 router.post('/', validate(createTimetableSchema), async (req, res) =>
-  res
-    .status(201)
-    .json({
-      data: await service.createTimetable({ ...scope(req), actorId: req.user.id, ...req.body }),
-    })
+  res.status(201).json({
+    data: await service.createTimetable({ ...scope(req), actorId: req.user.id, ...req.body }),
+  })
 );
 router.post('/:id/entries', validate(entrySchema), async (req, res) =>
-  res
-    .status(201)
-    .json({
-      data: await service.addEntry({
-        ...scope(req),
-        timetableId: req.params.id,
-        actorId: req.user.id,
-        data: req.body,
-      }),
-    })
+  res.status(201).json({
+    data: await service.addEntry({
+      ...scope(req),
+      timetableId: req.params.id,
+      actorId: req.user.id,
+      data: req.body,
+    }),
+  })
 );
 router.patch('/:id/status', validate(statusSchema), async (req, res) =>
   res.json({
@@ -47,15 +43,13 @@ router.patch('/:id/status', validate(statusSchema), async (req, res) =>
   })
 );
 router.post('/:id/substitutions', validate(substitutionSchema), async (req, res) =>
-  res
-    .status(201)
-    .json({
-      data: await service.createSubstitution({
-        ...scope(req),
-        timetableId: req.params.id,
-        createdBy: req.user.id,
-        ...req.body,
-      }),
-    })
+  res.status(201).json({
+    data: await service.createSubstitution({
+      ...scope(req),
+      timetableId: req.params.id,
+      createdBy: req.user.id,
+      ...req.body,
+    }),
+  })
 );
 export default router;
