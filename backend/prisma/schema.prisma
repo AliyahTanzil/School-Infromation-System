@@ -446,6 +446,7 @@ model School {
   feeStructures  FeeStructure[]
   invoices       Invoice[]
   academicPeriods AcademicPeriod[]
+  attendanceSessions AttendanceSession[]
   
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -578,6 +579,7 @@ model Student {
   classAssignments  StudentClassAssignment[]
   classEnrollments  ClassEnrollment[]
   invoices          Invoice[]
+  attendanceRecords AttendanceRecord[]
   parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
@@ -1080,6 +1082,7 @@ model Class {
   enrollments   ClassEnrollment[]
   teachers      TeacherClassAssignment[]
   history       ClassHistory[]
+  attendanceSessions AttendanceSession[]
   @@unique([schoolId, code, academicYear])
   @@index([tenantId, schoolId, academicYear, status, deletedAt])
 }
@@ -1233,6 +1236,7 @@ model AcademicPeriod {
   parent    AcademicPeriod?      @relation("AcademicPeriodHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
   children  AcademicPeriod[]     @relation("AcademicPeriodHierarchy")
   history   AcademicPeriodHistory[]
+  attendanceSessions AttendanceSession[]
   @@unique([schoolId, code])
   @@index([tenantId, schoolId, type, status])
   @@index([schoolId, startsAt, endsAt])
@@ -1248,6 +1252,98 @@ model AcademicPeriodHistory {
   createdAt  DateTime             @default(now())
   period     AcademicPeriod       @relation(fields: [periodId], references: [id], onDelete: Restrict)
   @@index([periodId, createdAt])
+}
+
+enum AttendanceSessionStatus {
+  DRAFT
+  OPEN
+  LOCKED
+  ARCHIVED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+  HALF_DAY
+}
+
+enum AttendanceCaptureMethod {
+  MANUAL
+  QR
+  RFID
+  BIOMETRIC
+  FACIAL
+  IMPORT
+}
+
+model AttendanceSession {
+  id          String                   @id @default(uuid()) @db.Uuid
+  tenantId    String                   @db.Uuid
+  schoolId    String                   @db.Uuid
+  classId     String                   @db.Uuid
+  periodId    String?                  @db.Uuid
+  sessionDate DateTime                 @db.Date
+  title       String                   @db.VarChar(160)
+  status      AttendanceSessionStatus  @default(DRAFT)
+  openedAt    DateTime?
+  lockedAt    DateTime?
+  createdById String?                  @db.Uuid
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  school      School                   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  class       Class                    @relation(fields: [classId], references: [id], onDelete: Restrict)
+  period      AcademicPeriod?          @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  records     AttendanceRecord[]
+  audits      AttendanceAudit[]
+  qrTokens    AttendanceQrToken[]
+  @@unique([schoolId, classId, sessionDate])
+  @@index([tenantId, schoolId, sessionDate, status])
+}
+
+model AttendanceRecord {
+  id            String                 @id @default(uuid()) @db.Uuid
+  tenantId      String                 @db.Uuid
+  schoolId      String                 @db.Uuid
+  sessionId     String                 @db.Uuid
+  studentId     String                 @db.Uuid
+  status        AttendanceStatus       @default(ABSENT)
+  method        AttendanceCaptureMethod @default(MANUAL)
+  note          String?                @db.VarChar(500)
+  markedAt      DateTime?
+  markedById    String?                @db.Uuid
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  session       AttendanceSession      @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  student       Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([sessionId, studentId])
+  @@index([tenantId, schoolId, studentId, status])
+}
+
+model AttendanceAudit {
+  id        String             @id @default(uuid()) @db.Uuid
+  tenantId  String             @db.Uuid
+  schoolId  String             @db.Uuid
+  sessionId String             @db.Uuid
+  recordId  String?            @db.Uuid
+  actorId   String?            @db.Uuid
+  action    String             @db.VarChar(80)
+  metadata  Json
+  createdAt DateTime           @default(now())
+  session   AttendanceSession  @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, sessionId, createdAt])
+}
+
+model AttendanceQrToken {
+  id        String            @id @default(uuid()) @db.Uuid
+  sessionId String            @db.Uuid
+  tokenHash String            @unique @db.VarChar(128)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  @@index([sessionId, expiresAt])
 }
 
 model SchoolAdministrator {

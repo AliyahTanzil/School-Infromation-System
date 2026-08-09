@@ -38,6 +38,10 @@ export const PERMISSIONS = Object.freeze({
   CLASSES_UPDATE: 'classes.update',
   CLASSES_ENROLL: 'classes.enroll',
   CLASSES_CHANGE_STATUS: 'classes.status',
+  ATTENDANCE_READ: 'attendance.read',
+  ATTENDANCE_CREATE: 'attendance.create',
+  ATTENDANCE_MARK: 'attendance.mark',
+  ATTENDANCE_LOCK: 'attendance.lock',
 });
 
 export const SYSTEM_ROLES = Object.freeze({
@@ -127,6 +131,16 @@ export const PERMISSION_CATALOG = Object.freeze([
       { code: PERMISSIONS.CLASSES_UPDATE, name: 'Update classes' },
       { code: PERMISSIONS.CLASSES_ENROLL, name: 'Manage enrollment' },
       { code: PERMISSIONS.CLASSES_CHANGE_STATUS, name: 'Change class status' },
+    ],
+  },
+  {
+    group: 'attendance',
+    name: 'Attendance',
+    permissions: [
+      { code: PERMISSIONS.ATTENDANCE_READ, name: 'Read attendance' },
+      { code: PERMISSIONS.ATTENDANCE_CREATE, name: 'Create attendance sessions' },
+      { code: PERMISSIONS.ATTENDANCE_MARK, name: 'Mark attendance' },
+      { code: PERMISSIONS.ATTENDANCE_LOCK, name: 'Lock attendance' },
     ],
   },
 ]);
