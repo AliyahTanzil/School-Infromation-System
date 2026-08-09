@@ -447,6 +447,7 @@ model School {
   invoices       Invoice[]
   academicPeriods AcademicPeriod[]
   attendanceSessions AttendanceSession[]
+  examinations Examination[]
   
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -580,6 +581,8 @@ model Student {
   classEnrollments  ClassEnrollment[]
   invoices          Invoice[]
   attendanceRecords AttendanceRecord[]
+  examinationCandidates ExaminationCandidate[]
+  examinationMarks ExaminationMark[]
   parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
@@ -1083,6 +1086,7 @@ model Class {
   teachers      TeacherClassAssignment[]
   history       ClassHistory[]
   attendanceSessions AttendanceSession[]
+  examinationSchedules ExaminationSchedule[]
   @@unique([schoolId, code, academicYear])
   @@index([tenantId, schoolId, academicYear, status, deletedAt])
 }
@@ -1237,6 +1241,7 @@ model AcademicPeriod {
   children  AcademicPeriod[]     @relation("AcademicPeriodHierarchy")
   history   AcademicPeriodHistory[]
   attendanceSessions AttendanceSession[]
+  examinations Examination[]
   @@unique([schoolId, code])
   @@index([tenantId, schoolId, type, status])
   @@index([schoolId, startsAt, endsAt])
@@ -1344,6 +1349,116 @@ model AttendanceQrToken {
   createdAt DateTime          @default(now())
   session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   @@index([sessionId, expiresAt])
+}
+
+enum ExaminationStatus {
+  DRAFT
+  SCHEDULED
+  IN_PROGRESS
+  MARKING
+  MODERATION
+  APPROVAL
+  LOCKED
+  ARCHIVED
+}
+
+enum ExaminationCandidateStatus {
+  REGISTERED
+  ABSENT
+  WITHDRAWN
+  COMPLETED
+}
+
+enum MarkStatus {
+  DRAFT
+  SUBMITTED
+  MODERATED
+  APPROVED
+  LOCKED
+}
+
+model Examination {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @db.Uuid
+  schoolId    String            @db.Uuid
+  periodId    String?           @db.Uuid
+  name        String            @db.VarChar(160)
+  code        String            @db.VarChar(60)
+  status      ExaminationStatus @default(DRAFT)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  lockedAt    DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  school      School            @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  period      AcademicPeriod?   @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  candidates  ExaminationCandidate[]
+  schedules   ExaminationSchedule[]
+  marks       ExaminationMark[]
+  audits      ExaminationAudit[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, status])
+}
+
+model ExaminationCandidate {
+  id            String                     @id @default(uuid()) @db.Uuid
+  tenantId      String                     @db.Uuid
+  schoolId      String                     @db.Uuid
+  examinationId String                     @db.Uuid
+  studentId     String                     @db.Uuid
+  status        ExaminationCandidateStatus @default(REGISTERED)
+  createdAt     DateTime                   @default(now())
+  examination   Examination                @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  student       Student                   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([examinationId, studentId])
+  @@index([tenantId, schoolId, studentId])
+}
+
+model ExaminationSchedule {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @db.Uuid
+  schoolId      String       @db.Uuid
+  examinationId String       @db.Uuid
+  classId       String       @db.Uuid
+  subjectCode   String       @db.VarChar(60)
+  startsAt      DateTime
+  endsAt        DateTime
+  room          String?      @db.VarChar(80)
+  examination   Examination  @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  class         Class        @relation(fields: [classId], references: [id], onDelete: Restrict)
+  @@unique([examinationId, classId, subjectCode])
+  @@index([tenantId, schoolId, startsAt])
+}
+
+model ExaminationMark {
+  id            String     @id @default(uuid()) @db.Uuid
+  tenantId      String     @db.Uuid
+  schoolId      String     @db.Uuid
+  examinationId String     @db.Uuid
+  studentId     String     @db.Uuid
+  subjectCode   String     @db.VarChar(60)
+  score         Decimal    @db.Decimal(7, 2)
+  maxScore      Decimal    @db.Decimal(7, 2)
+  status        MarkStatus @default(DRAFT)
+  submittedAt   DateTime?
+  approvedAt    DateTime?
+  examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([examinationId, studentId, subjectCode])
+  @@index([tenantId, schoolId, status])
+}
+
+model ExaminationAudit {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @db.Uuid
+  schoolId      String      @db.Uuid
+  examinationId String      @db.Uuid
+  actorId       String?     @db.Uuid
+  action        String      @db.VarChar(80)
+  metadata      Json
+  createdAt     DateTime    @default(now())
+  examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, examinationId, createdAt])
 }
 
 model SchoolAdministrator {

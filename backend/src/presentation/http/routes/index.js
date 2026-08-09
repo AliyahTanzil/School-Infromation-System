@@ -12,6 +12,7 @@ import classRoutes from './classRoutes.js';
 import financeRoutes from './financeRoutes.js';
 import academicPeriodRoutes from './academicPeriodRoutes.js';
 import attendanceRoutes from './attendanceRoutes.js';
+import examinationRoutes from './examinationRoutes.js';
 
 const router = Router();
 
@@ -29,5 +30,6 @@ router.use('/classes', classRoutes);
 router.use('/finance', financeRoutes);
 router.use('/academic-periods', academicPeriodRoutes);
 router.use('/attendance', attendanceRoutes);
+router.use('/examinations', examinationRoutes);
 
 export default router;
