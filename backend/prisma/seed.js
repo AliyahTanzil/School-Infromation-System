@@ -21,6 +21,7 @@ import { seedParents } from './seeders/parent.seeder.js';
 import { seedTeachers } from './seeders/teacher.seeder.js';
 import { seedClasses } from './seeders/class.seeder.js';
 import { seedTestAccount } from './seeders/testAccount.seeder.js';
+import { seedAcademicPeriods } from './seeders/academicPeriod.seeder.js';
 const seeders = [
   seedRbac,
   seedSchools,
@@ -29,6 +30,7 @@ const seeders = [
   seedTeachers,
   seedClasses,
   seedTestAccount,
+  seedAcademicPeriods,
 ];
 
 async function main() {

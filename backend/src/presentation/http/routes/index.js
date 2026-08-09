@@ -10,6 +10,7 @@ import parentRoutes from './parentRoutes.js';
 import teacherRoutes from './teacherRoutes.js';
 import classRoutes from './classRoutes.js';
 import financeRoutes from './financeRoutes.js';
+import academicPeriodRoutes from './academicPeriodRoutes.js';
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use('/parents', parentRoutes);
 router.use('/teachers', teacherRoutes);
 router.use('/classes', classRoutes);
 router.use('/finance', financeRoutes);
+router.use('/academic-periods', academicPeriodRoutes);
 
 export default router;

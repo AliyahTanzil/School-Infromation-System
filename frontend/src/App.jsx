@@ -11,6 +11,7 @@ import LandingPage from './LandingPage.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
 import ClassDashboard from './ClassDashboard.jsx';
 import FinanceDashboard from './FinanceDashboard.jsx';
+import AcademicCalendarDashboard from './AcademicCalendarDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -302,6 +303,14 @@ export default function App() {
             element={
               <Protected>
                 <StudentDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/academic-calendar"
+            element={
+              <Protected>
+                <AcademicCalendarDashboard />
               </Protected>
             }
           />

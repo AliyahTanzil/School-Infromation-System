@@ -445,6 +445,7 @@ model School {
   classes        Class[]
   feeStructures  FeeStructure[]
   invoices       Invoice[]
+  academicPeriods AcademicPeriod[]
   
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -1194,6 +1195,59 @@ model FinanceAudit {
   metadata  Json
   createdAt DateTime @default(now())
   @@index([tenantId, schoolId, createdAt])
+}
+
+enum AcademicPeriodStatus {
+  PLANNED
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
+
+enum AcademicPeriodType {
+  YEAR
+  TERM
+  SEMESTER
+  QUARTER
+  BREAK
+  HOLIDAY
+  EXAM
+  SPECIAL
+}
+
+model AcademicPeriod {
+  id        String               @id @default(uuid()) @db.Uuid
+  tenantId  String               @db.Uuid
+  schoolId  String               @db.Uuid
+  parentId  String?              @db.Uuid
+  name      String               @db.VarChar(160)
+  code      String               @db.VarChar(60)
+  type      AcademicPeriodType
+  status    AcademicPeriodStatus @default(PLANNED)
+  startsAt  DateTime
+  endsAt    DateTime
+  lockedAt  DateTime?
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  school    School               @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  parent    AcademicPeriod?      @relation("AcademicPeriodHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children  AcademicPeriod[]     @relation("AcademicPeriodHierarchy")
+  history   AcademicPeriodHistory[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, type, status])
+  @@index([schoolId, startsAt, endsAt])
+}
+
+model AcademicPeriodHistory {
+  id         String               @id @default(uuid()) @db.Uuid
+  periodId   String               @db.Uuid
+  fromStatus AcademicPeriodStatus?
+  toStatus   AcademicPeriodStatus
+  reason     String?              @db.VarChar(500)
+  actorId    String?              @db.Uuid
+  createdAt  DateTime             @default(now())
+  period     AcademicPeriod       @relation(fields: [periodId], references: [id], onDelete: Restrict)
+  @@index([periodId, createdAt])
 }
 
 model SchoolAdministrator {
