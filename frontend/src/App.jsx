@@ -15,6 +15,7 @@ import AcademicCalendarDashboard from './AcademicCalendarDashboard.jsx';
 import AttendanceDashboard from './AttendanceDashboard.jsx';
 import ExaminationsDashboard from './ExaminationsDashboard.jsx';
 import ResultsDashboard from './ResultsDashboard.jsx';
+import UserManagement from './UserManagement.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -306,6 +307,14 @@ export default function App() {
             element={
               <Protected>
                 <StudentDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <Protected>
+                <UserManagement />
               </Protected>
             }
           />

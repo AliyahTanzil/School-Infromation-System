@@ -20,7 +20,7 @@ const preference = z.object({
   smsAlerts: z.boolean().optional(),
   profileVisible: z.boolean().optional(),
 });
-export const listUsersSchema = z.object({
+const listUsersFields = z.object({
   search: z.string().max(100).optional(),
   status: z.enum(['PENDING_VERIFICATION', 'ACTIVE', 'LOCKED', 'SUSPENDED']).optional(),
   roleCode: z.string().max(100).optional(),
@@ -29,25 +29,36 @@ export const listUsersSchema = z.object({
   sort: z.enum(['createdAt', 'updatedAt', 'email', 'status']).optional(),
   direction: z.enum(['asc', 'desc']).optional(),
 });
+export const listUsersSchema = z.object({ query: listUsersFields });
 export const createUserSchema = z.object({
-  email: z.string().email().max(320),
-  passwordHash: z.string().min(20),
-  status: z.enum(['PENDING_VERIFICATION', 'ACTIVE']).optional(),
-  profile: profile.optional(),
-  preference: preference.optional(),
-});
-export const updateUserSchema = z
-  .object({
-    email: z.string().email().max(320).optional(),
+  body: z.object({
+    email: z.string().email().max(320),
+    password: z.string().min(12).max(128),
+    status: z.enum(['PENDING_VERIFICATION', 'ACTIVE']).optional(),
     profile: profile.optional(),
     preference: preference.optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, 'At least one field is required');
-export const statusSchema = z.object({
-  status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']),
-  reason: z.string().max(500).optional(),
+  }),
 });
-export const profileSchema = z
-  .object({ profile: profile.optional(), preference: preference.optional() })
-  .refine((v) => v.profile || v.preference, 'Profile or preference is required');
-export const reasonSchema = z.object({ reason: z.string().max(500).optional() });
+export const updateUserSchema = z.object({
+  body: z
+    .object({
+      email: z.string().email().max(320).optional(),
+      profile: profile.optional(),
+      preference: preference.optional(),
+    })
+    .refine((v) => Object.keys(v).length > 0, 'At least one field is required'),
+});
+export const statusSchema = z.object({
+  body: z.object({
+    status: z.enum(['ACTIVE', 'SUSPENDED', 'LOCKED']),
+    reason: z.string().max(500).optional(),
+  }),
+});
+export const profileSchema = z.object({
+  body: z
+    .object({ profile: profile.optional(), preference: preference.optional() })
+    .refine((v) => v.profile || v.preference, 'Profile or preference is required'),
+});
+export const reasonSchema = z.object({
+  body: z.object({ reason: z.string().max(500).optional() }),
+});

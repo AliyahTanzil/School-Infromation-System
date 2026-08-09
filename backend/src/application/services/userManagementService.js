@@ -6,6 +6,7 @@ import sessionRepo from '../../infrastructure/repositories/sessionRepository.js'
 import refreshRepo from '../../infrastructure/repositories/refreshTokenRepository.js';
 import { toUserDto, toUserListDto } from '../dtos/userDto.js';
 import { ConflictError, NotFoundError, AuthorizationError } from '../../shared/errors/index.js';
+import passwordService from '../../infrastructure/hash/passwordService.js';
 
 const validTransitions = {
   PENDING_VERIFICATION: new Set(['ACTIVE', 'SUSPENDED']),
@@ -37,11 +38,12 @@ export async function getUser(id, includeDeleted = false) {
 export async function createUser(input, actorId, requestContext = {}) {
   const email = input.email.toLowerCase();
   const existing = await prisma.user.findFirst({ where: { email } });
+  const passwordHash = await passwordService.hashPassword(input.password);
   if (existing && !existing.deletedAt)
     throw new ConflictError('A user with this email already exists');
   const user = await prisma.$transaction(async (tx) => {
     const created = await userRepo.create(
-      { email, passwordHash: input.passwordHash, status: input.status ?? 'PENDING_VERIFICATION' },
+      { email, passwordHash, status: input.status ?? 'PENDING_VERIFICATION' },
       tx
     );
     if (input.profile) await profileRepo.upsert(created.id, input.profile, tx);

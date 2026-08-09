@@ -35,6 +35,16 @@ export async function seedRbac(prisma) {
       isAssignable: false,
     },
   });
+  const platformAdmin = await prisma.role.findUnique({
+    where: { code: SYSTEM_ROLES.PLATFORM_ADMIN },
+  });
+  for (const permissionId of permissionIds) {
+    await prisma.rolePermission.upsert({
+      where: { roleId_permissionId: { roleId: platformAdmin.id, permissionId } },
+      update: {},
+      create: { roleId: platformAdmin.id, permissionId },
+    });
+  }
   await prisma.role.upsert({
     where: { code: SYSTEM_ROLES.SCHOOL_ADMIN },
     update: { name: 'School Administrator', isSystem: true },
