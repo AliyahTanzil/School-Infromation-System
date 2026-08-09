@@ -464,6 +464,9 @@ model SchoolProfile {
   city        String?  @db.VarChar(100)
   country     String?  @db.VarChar(100)
   logoUrl     String?  @db.VarChar(500)
+  motto      String?  @db.VarChar(300)
+  primaryColor String? @db.VarChar(7)
+  secondaryColor String? @db.VarChar(7)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)

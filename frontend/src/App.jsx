@@ -140,8 +140,32 @@ function Login() {
 function Register() {
   const { register } = useAuth();
   const nav = useNavigate();
-  const [form, setForm] = useState({ firstName: '', lastName: '', email: '', password: '' });
+  const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    schoolName: '',
+    schoolMotto: '',
+    schoolCity: '',
+    schoolCountry: '',
+    primaryColor: '#4f46e5',
+    secondaryColor: '#f59e0b',
+    badgeUrl: '',
+  });
   const [busy, setBusy] = useState(false);
+  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+  const handleBadge = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) {
+      toast.error('Choose an image badge smaller than 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => update('badgeUrl', reader.result);
+    reader.readAsDataURL(file);
+  };
   const submit = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -161,17 +185,103 @@ function Register() {
       subtitle="Set up your identity to begin managing your school securely."
     >
       <form onSubmit={submit} className="space-y-4">
+        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
+          <p className="text-sm font-semibold text-indigo-950">Set up your school identity</p>
+          <p className="mt-1 text-xs leading-5 text-indigo-800">
+            Add the details families will see across your school portal.
+          </p>
+        </div>
+        <Field
+          label="School name"
+          value={form.schoolName}
+          onChange={(e) => update('schoolName', e.target.value)}
+          placeholder="Horizon Academy"
+        />
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Motto"
+            value={form.schoolMotto}
+            onChange={(e) => update('schoolMotto', e.target.value)}
+            placeholder="Learn. Lead. Serve."
+          />
+          <Field
+            label="City"
+            value={form.schoolCity}
+            onChange={(e) => update('schoolCity', e.target.value)}
+            placeholder="Freetown"
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field
+            label="Country"
+            value={form.schoolCountry}
+            onChange={(e) => update('schoolCountry', e.target.value)}
+            placeholder="Sierra Leone"
+          />
+          <label className="block text-sm font-medium text-slate-700">
+            School badge
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleBadge}
+              className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
+            />
+            <span className="mt-1 block text-xs text-slate-500">PNG, JPG or WEBP up to 2MB</span>
+          </label>
+        </div>
+        <div className="grid gap-3 rounded-2xl border border-slate-200 p-4 sm:grid-cols-2">
+          <label className="text-sm font-medium text-slate-700">
+            Primary color
+            <input
+              type="color"
+              value={form.primaryColor}
+              onChange={(e) => update('primaryColor', e.target.value)}
+              className="mt-2 h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
+            />
+          </label>
+          <label className="text-sm font-medium text-slate-700">
+            Secondary color
+            <input
+              type="color"
+              value={form.secondaryColor}
+              onChange={(e) => update('secondaryColor', e.target.value)}
+              className="mt-2 h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
+            />
+          </label>
+        </div>
+        {(form.badgeUrl || form.schoolName || form.schoolMotto) && (
+          <div
+            className="flex items-center gap-3 rounded-2xl p-4 text-white"
+            style={{ backgroundColor: form.primaryColor }}
+          >
+            <div className="flex size-12 items-center justify-center overflow-hidden rounded-xl bg-white/20">
+              {form.badgeUrl ? (
+                <img
+                  src={form.badgeUrl}
+                  alt="School badge preview"
+                  className="size-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-bold">{form.schoolName?.[0] || 'S'}</span>
+              )}
+            </div>
+            <div>
+              <p className="font-semibold">{form.schoolName || 'Your school name'}</p>
+              <p className="text-sm text-white/80">{form.schoolMotto || 'Your school motto'}</p>
+            </div>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <Field
             label="First name"
             value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            onChange={(e) => update('firstName', e.target.value)}
             placeholder="Amina"
           />
           <Field
             label="Last name"
             value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            onChange={(e) => update('lastName', e.target.value)}
             placeholder="Yusuf"
           />
         </div>
@@ -179,14 +289,14 @@ function Register() {
           label="Work email"
           type="email"
           value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
+          onChange={(e) => update('email', e.target.value)}
           placeholder="you@school.edu"
         />
         <Field
           label="Password"
           type="password"
           value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
+          onChange={(e) => update('password', e.target.value)}
           placeholder="8+ characters, mixed case and symbols"
         />
         <button

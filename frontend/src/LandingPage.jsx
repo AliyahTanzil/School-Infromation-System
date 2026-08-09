@@ -119,20 +119,22 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Link
-              to="/register"
-              className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold transition hover:bg-indigo-400"
-            >
-              Get started
-            </Link>
-            {import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' && (
+            <div className="flex flex-col items-stretch gap-2">
               <Link
-                to="/admin-demo"
-                className="rounded-xl border border-amber-400/40 px-4 py-2.5 text-sm font-semibold text-amber-200"
+                to="/register"
+                className="rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-indigo-400"
               >
-                Demo
+                Get started
               </Link>
-            )}
+              {import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' && (
+                <Link
+                  to="/admin-demo"
+                  className="rounded-xl border border-amber-400/40 px-4 py-2.5 text-center text-sm font-semibold text-amber-200"
+                >
+                  Demo
+                </Link>
+              )}
+            </div>
           </div>
           <button
             type="button"
