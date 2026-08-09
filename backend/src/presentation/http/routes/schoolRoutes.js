@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import requirePermission from '../../../middleware/auth/permissionMiddleware.js';
+import requireSchoolContext from '../../../middleware/auth/schoolContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import controller from '../controllers/schoolController.js';
 import {
@@ -13,7 +14,7 @@ const router = Router();
 router.use(authenticate);
 router.get('/', requirePermission('schools.read'), controller.list);
 router.post('/', requirePermission('schools.create'), validate(schoolSchema), controller.create);
-router.get('/:id', requirePermission('schools.read'), controller.get);
+router.get('/:id', requireSchoolContext, requirePermission('schools.read'), controller.get);
 router.put(
   '/:id',
   requirePermission('schools.update'),
@@ -26,12 +27,18 @@ for (const [model, permission] of [
   ['department', 'schools.manage_departments'],
   ['gradeLevel', 'schools.manage_grades'],
 ]) {
-  router.get('/:id/' + model, requirePermission(permission), (req, res, next) => {
-    req.params.model = model;
-    controller.children(req, res, next);
-  });
+  router.get(
+    '/:id/' + model,
+    requireSchoolContext,
+    requirePermission(permission),
+    (req, res, next) => {
+      req.params.model = model;
+      controller.children(req, res, next);
+    }
+  );
   router.post(
     '/:id/' + model,
+    requireSchoolContext,
     requirePermission(permission),
     validate(childSchema),
     (req, res, next) => {

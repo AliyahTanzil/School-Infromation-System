@@ -15,7 +15,8 @@ const prisma = new PrismaClient();
 
 // ─── Register module seeders here as they are built ───────────────────────────
 import { seedRbac } from './seeders/rbac.seeder.js';
-const seeders = [seedRbac];
+import { seedSchools } from './seeders/school.seeder.js';
+const seeders = [seedRbac, seedSchools];
 
 async function main() {
   logger.info('Seeding database...');
