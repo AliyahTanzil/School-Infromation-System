@@ -84,6 +84,10 @@ model User {
   studentHistoryActors    StudentHistory[]         @relation("StudentHistoryActor")
   parent                  Parent?
   teacher                 Teacher?
+  notificationsReceived  NotificationRecipient[]
+  announcementsAuthored   Announcement[]
+  messageParticipations   MessageParticipant[]
+  messagesSent            Message[]
 
   userRoles              UserRole[]       @relation("UserRoleSubject")
   assignedUserRoles      UserRole[]       @relation("UserRoleGrantedBy")
@@ -1963,6 +1967,177 @@ model SchoolAdministrator {
   @@unique([schoolId, userId])
   @@index([tenantId, schoolId, revokedAt])
   @@index([userId, revokedAt])
+}
+
+enum NotificationStatus {
+  CREATED
+  QUEUED
+  PROCESSING
+  SENT
+  DELIVERED
+  FAILED
+  READ
+  CANCELLED
+}
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+enum NotificationChannelType {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+  WHATSAPP
+}
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+model NotificationTemplate {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  code String @db.VarChar(100)
+  name String @db.VarChar(160)
+  subject String? @db.VarChar(300)
+  body String @db.Text
+  channels Json
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notifications Notification[]
+  @@unique([schoolId, code])
+}
+model Notification {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  title String @db.VarChar(240)
+  body String @db.Text
+  type String @db.VarChar(80)
+  priority NotificationPriority @default(NORMAL)
+  status NotificationStatus @default(CREATED)
+  sourceModule String? @db.VarChar(80)
+  sourceEntity String? @db.VarChar(80)
+  sourceEntityId String? @db.Uuid
+  templateId String? @db.Uuid
+  data Json
+  scheduledAt DateTime?
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  recipients NotificationRecipient[]
+  deliveries NotificationDelivery[]
+  template NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  @@index([tenantId, schoolId, status, createdAt])
+}
+model NotificationRecipient {
+  id String @id @default(uuid()) @db.Uuid
+  notificationId String @db.Uuid
+  userId String @db.Uuid
+  readAt DateTime?
+  createdAt DateTime @default(now())
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([notificationId, userId])
+  @@index([userId, readAt, createdAt])
+}
+model NotificationDelivery {
+  id String @id @default(uuid()) @db.Uuid
+  notificationId String @db.Uuid
+  recipientId String @db.Uuid
+  channel NotificationChannelType
+  status DeliveryStatus @default(PENDING)
+  provider String? @db.VarChar(80)
+  externalReference String? @db.VarChar(160)
+  attempts Int @default(0)
+  lastError String? @db.Text
+  sentAt DateTime?
+  deliveredAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  @@index([notificationId, channel, status])
+  @@index([recipientId, createdAt])
+}
+model NotificationPreference {
+  id String @id @default(uuid()) @db.Uuid
+  userId String @db.Uuid
+  schoolId String @db.Uuid
+  email Boolean @default(true)
+  sms Boolean @default(false)
+  push Boolean @default(true)
+  whatsapp Boolean @default(false)
+  inApp Boolean @default(true)
+  quietHours Json
+  updatedAt DateTime @updatedAt
+  @@unique([userId, schoolId])
+}
+model Announcement {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  authorId String @db.Uuid
+  title String @db.VarChar(240)
+  body String @db.Text
+  audience String @db.VarChar(80)
+  priority NotificationPriority @default(NORMAL)
+  publishAt DateTime @default(now())
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  author User @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  @@index([schoolId, publishAt])
+}
+model MessageThread {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  subject String? @db.VarChar(240)
+  createdById String @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  participants MessageParticipant[]
+  messages Message[]
+  @@index([schoolId, updatedAt])
+}
+model MessageParticipant {
+  id String @id @default(uuid()) @db.Uuid
+  threadId String @db.Uuid
+  userId String @db.Uuid
+  joinedAt DateTime @default(now())
+  lastReadAt DateTime?
+  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  @@unique([threadId, userId])
+}
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+  threadId String @db.Uuid
+  senderId String @db.Uuid
+  body String @db.Text
+  createdAt DateTime @default(now())
+  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Restrict)
+  @@index([threadId, createdAt])
+}
+model CommunicationAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
 }
 
 enum TimetableStatus {
