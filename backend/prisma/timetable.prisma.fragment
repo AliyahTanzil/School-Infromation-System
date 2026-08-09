@@ -1,0 +1,157 @@
+enum TimetableStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+  LOCKED
+  ARCHIVED
+}
+
+enum TimetableConflictSeverity {
+  HARD
+  SOFT
+}
+
+enum TimetableEntryKind {
+  LESSON
+  BREAK
+  FREE
+  DOUBLE
+  PRACTICAL
+  LABORATORY
+}
+
+model Timetable {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String          @db.Uuid
+  schoolId     String          @db.Uuid
+  academicPeriodId String      @db.Uuid
+  name         String          @db.VarChar(160)
+  academicYear String         @db.VarChar(40)
+  status       TimetableStatus @default(DRAFT)
+  version      Int             @default(1)
+  publishedAt  DateTime?
+  lockedAt     DateTime?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  academicPeriod AcademicPeriod @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
+  versions     TimetableVersion[]
+  entries      ScheduleEntry[]
+  slots        TimeSlot[]
+  constraints  SchedulingConstraint[]
+  conflicts    SchedulingConflict[]
+  substitutions ScheduleSubstitution[]
+  audits       TimetableAudit[]
+  @@unique([schoolId, academicPeriodId, name])
+  @@index([tenantId, schoolId, status])
+}
+
+model TimetableVersion {
+  id          String   @id @default(uuid()) @db.Uuid
+  timetableId String   @db.Uuid
+  number      Int
+  snapshot    Json
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  @@unique([timetableId, number])
+}
+
+model TimeSlot {
+  id          String   @id @default(uuid()) @db.Uuid
+  timetableId String   @db.Uuid
+  weekday     Int
+  startTime   String   @db.VarChar(5)
+  endTime     String   @db.VarChar(5)
+  label       String   @db.VarChar(80)
+  isBreak     Boolean  @default(false)
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  entries     ScheduleEntry[]
+  @@unique([timetableId, weekday, startTime, endTime])
+  @@index([timetableId, weekday, startTime])
+}
+
+model ScheduleEntry {
+  id          String            @id @default(uuid()) @db.Uuid
+  tenantId    String            @db.Uuid
+  schoolId    String            @db.Uuid
+  timetableId String            @db.Uuid
+  timeSlotId  String            @db.Uuid
+  classId     String?           @db.Uuid
+  teacherId   String?           @db.Uuid
+  classroomId String?           @db.Uuid
+  subjectCode String            @db.VarChar(60)
+  kind        TimetableEntryKind @default(LESSON)
+  duration    Int               @default(1)
+  notes       String?           @db.VarChar(500)
+  timetable   Timetable         @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  timeSlot    TimeSlot          @relation(fields: [timeSlotId], references: [id], onDelete: Restrict)
+  class       Class?            @relation(fields: [classId], references: [id], onDelete: Restrict)
+  teacher     Teacher?          @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  classroom   Classroom?        @relation(fields: [classroomId], references: [id], onDelete: Restrict)
+  conflicts   SchedulingConflict[]
+  @@index([tenantId, schoolId, timetableId, timeSlotId])
+  @@index([teacherId, timeSlotId])
+  @@index([classId, timeSlotId])
+  @@index([classroomId, timeSlotId])
+}
+
+model SchedulingConstraint {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  code        String   @db.VarChar(80)
+  severity    TimetableConflictSeverity
+  enabled     Boolean  @default(true)
+  configuration Json
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  @@unique([timetableId, code])
+}
+
+model SchedulingConflict {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  entryId     String?  @db.Uuid
+  code        String   @db.VarChar(80)
+  severity    TimetableConflictSeverity
+  message     String   @db.VarChar(500)
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  entry       ScheduleEntry? @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, timetableId, severity, resolvedAt])
+}
+
+model ScheduleSubstitution {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  timetableId    String   @db.Uuid
+  entryId        String   @db.Uuid
+  originalTeacherId String? @db.Uuid
+  substituteTeacherId String? @db.Uuid
+  reason         String   @db.VarChar(500)
+  startsAt       DateTime
+  endsAt         DateTime
+  createdBy      String?  @db.Uuid
+  createdAt      DateTime @default(now())
+  timetable      Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  entry          ScheduleEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  originalTeacher Teacher? @relation("SubstitutionTeacher", fields: [originalTeacherId], references: [id], onDelete: SetNull)
+  @@index([tenantId, schoolId, timetableId, startsAt, endsAt])
+}
+
+model TimetableAudit {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  actorId     String?  @db.Uuid
+  action      String   @db.VarChar(80)
+  metadata    Json
+  createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, timetableId, createdAt])
+}

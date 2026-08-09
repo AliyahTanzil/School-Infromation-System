@@ -1,0 +1,36 @@
+SAIS Module 16 — Timetable & Scheduling Management System
+
+Purpose
+- Provide a deterministic, auditable timetable workflow for schools.
+- Keep npm package.json files authoritative for JavaScript dependencies.
+- Do not add AI scheduling yet. Any future AI candidate must pass the deterministic validator.
+
+Required capabilities
+- Timetable drafts, versions, review, publication, locking, history, and print/export views.
+- Academic periods and weekly time slots, including breaks, free periods, double periods, practicals, and laboratories.
+- Schedule entries linked to existing classes, teachers, academic periods, and classrooms.
+- Teacher, class, and room availability.
+- Hard constraints: teacher overlap, class overlap, room overlap, invalid time ranges, and room capacity.
+- Soft constraints: preferred availability, workload balance, and preferred rooms.
+- Conflict detection with deterministic conflict codes and actionable resolution messages.
+- Temporary substitutions and schedule change history.
+- Tenant and school isolation on every read and write.
+
+Security and data rules
+- UUID identifiers and Prisma relations where existing entities are available.
+- Never log passwords or secrets.
+- Store only password hashes; test credentials are supplied through environment variables.
+- Enforce authenticated role checks and audit lifecycle changes.
+- Never bypass conflict validation during publish or lock.
+
+Quality gates
+- Prisma validate and generate.
+- Deterministic unit tests for hard conflicts, soft constraints, availability, workload, lifecycle, and tenant isolation.
+- API contract tests for CRUD, validation, publish, lock, substitution, and export.
+- Frontend build and authenticated browser workflow.
+- git diff --check before commit.
+
+Test account
+- TEST_ACCOUNT_EMAIL=medisha@gmail.com
+- TEST_ACCOUNT_PASSWORD=Medisha@3.com
+- Use these only as local/test environment variables; never commit them to source files or logs.

@@ -14,6 +14,7 @@ import academicPeriodRoutes from './academicPeriodRoutes.js';
 import attendanceRoutes from './attendanceRoutes.js';
 import examinationRoutes from './examinationRoutes.js';
 import resultRoutes from './resultRoutes.js';
+import timetableRoutes from './timetableRoutes.js';
 
 const router = Router();
 
@@ -33,5 +34,6 @@ router.use('/academic-periods', academicPeriodRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/examinations', examinationRoutes);
 router.use('/results', resultRoutes);
+router.use('/timetables', timetableRoutes);
 
 export default router;
