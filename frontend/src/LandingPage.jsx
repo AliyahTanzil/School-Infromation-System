@@ -125,6 +125,14 @@ export default function LandingPage() {
             >
               Get started
             </Link>
+            {import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' && (
+              <Link
+                to="/admin-demo"
+                className="rounded-xl border border-amber-400/40 px-4 py-2.5 text-sm font-semibold text-amber-200"
+              >
+                Demo
+              </Link>
+            )}
           </div>
           <button
             type="button"
@@ -158,6 +166,14 @@ export default function LandingPage() {
               >
                 Get started
               </Link>
+              {import.meta.env.DEV && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' && (
+                <Link
+                  to="/admin-demo"
+                  className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-amber-200"
+                >
+                  Demo
+                </Link>
+              )}
             </div>
           </div>
         )}

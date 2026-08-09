@@ -1408,6 +1408,159 @@ model FinancialTransaction {
   @@index([tenantId, schoolId, type, createdAt])
 }
 
+enum GatewayIntentStatus {
+  CREATED
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum GatewayAttemptStatus {
+  CREATED
+  PENDING
+  SUCCEEDED
+  FAILED
+  EXPIRED
+  CANCELLED
+}
+
+enum GatewayChannel {
+  USSD
+  MOBILE_MONEY
+  BANK_TRANSFER
+  CARD
+  OTHER
+}
+
+model PaymentProvider {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  code String @db.VarChar(60)
+  name String @db.VarChar(160)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, active])
+}
+model PaymentProviderConfiguration {
+  id String @id @default(uuid()) @db.Uuid
+  providerId String @db.Uuid
+  environment String @db.VarChar(30)
+  credentials Json
+  enabled Boolean @default(false)
+  updatedAt DateTime @updatedAt
+  @@unique([providerId, environment])
+}
+model PaymentIntent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  invoiceId String @db.Uuid
+  studentId String @db.Uuid
+  providerId String? @db.Uuid
+  internalReference String @db.VarChar(120)
+  idempotencyKey String @db.VarChar(160)
+  amountMinor Int
+  currency String @default("USD") @db.VarChar(3)
+  channel GatewayChannel
+  status GatewayIntentStatus @default(CREATED)
+  description String?
+  metadata Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  attempts PaymentAttempt[]
+  @@unique([schoolId, internalReference])
+  @@unique([schoolId, idempotencyKey])
+  @@index([tenantId, schoolId, invoiceId, status])
+}
+model PaymentAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  intentId String @db.Uuid
+  attemptNumber Int
+  providerId String? @db.Uuid
+  externalReference String?
+  providerStatus String?
+  status GatewayAttemptStatus @default(CREATED)
+  errorCode String?
+  errorMessage String?
+  retryCount Int @default(0)
+  requestedAt DateTime @default(now())
+  respondedAt DateTime?
+  durationMs Int?
+  intent PaymentIntent @relation(fields: [intentId], references: [id], onDelete: Cascade)
+  @@unique([intentId, attemptNumber])
+  @@index([providerId, externalReference])
+}
+model ExternalTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  intentId String? @db.Uuid
+  attemptId String? @db.Uuid
+  providerId String @db.Uuid
+  externalReference String @db.VarChar(160)
+  amountMinor Int
+  currency String @db.VarChar(3)
+  status String @db.VarChar(50)
+  rawMetadata Json
+  createdAt DateTime @default(now())
+  @@unique([providerId, externalReference])
+  @@index([tenantId, schoolId, intentId])
+}
+model GatewayWebhookEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  providerId String @db.Uuid
+  eventId String @db.VarChar(180)
+  eventType String @db.VarChar(100)
+  signatureValid Boolean @default(false)
+  processedAt DateTime?
+  payload Json
+  createdAt DateTime @default(now())
+  @@unique([providerId, eventId])
+  @@index([tenantId, schoolId, processedAt])
+}
+model GatewayRefund {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  intentId String @db.Uuid
+  providerId String @db.Uuid
+  amountMinor Int
+  externalReference String?
+  status String @db.VarChar(50)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, intentId])
+}
+model ProviderHealthStatus {
+  id String @id @default(uuid()) @db.Uuid
+  providerId String @unique @db.Uuid
+  healthy Boolean
+  latencyMs Int?
+  lastCheckedAt DateTime @default(now())
+  errorMessage String?
+}
+model GatewayError {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  providerId String? @db.Uuid
+  intentId String? @db.Uuid
+  code String @db.VarChar(80)
+  message String @db.VarChar(500)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 model FinanceAudit {
   id        String   @id @default(uuid()) @db.Uuid
   tenantId  String   @db.Uuid
