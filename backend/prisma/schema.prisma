@@ -441,6 +441,8 @@ model School {
   administrators SchoolAdministrator[]
   students       Student[]
   teachers       Teacher[]
+  classrooms     Classroom[]
+  classes        Class[]
 
   @@unique([tenantId, slug])
   @@unique([tenantId, normalizedName])
@@ -527,6 +529,7 @@ model GradeLevel {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   school         School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  classes        Class[]
 
   @@unique([schoolId, code])
   @@unique([schoolId, displayOrder])
@@ -570,6 +573,7 @@ model Student {
   history           StudentHistory[]
   enrollments       StudentEnrollment[]
   classAssignments  StudentClassAssignment[]
+  classEnrollments  ClassEnrollment[]
   parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
@@ -990,6 +994,7 @@ model TeacherClassAssignment {
   startsAt     DateTime
   endsAt       DateTime?
   teacher      Teacher  @relation(fields: [teacherId], references: [id], onDelete: Restrict)
+  class        Class    @relation(fields: [classId], references: [id], onDelete: Restrict)
   @@unique([teacherId, classId, academicYear, term])
   @@index([classId, academicYear])
 }
@@ -1014,6 +1019,92 @@ model TeacherHistory {
   createdAt  DateTime     @default(now())
   teacher    Teacher      @relation(fields: [teacherId], references: [id], onDelete: Restrict)
   @@index([teacherId, createdAt])
+}
+
+enum ClassStatus {
+  PLANNED
+  ACTIVE
+  ARCHIVED
+  CANCELLED
+}
+
+enum EnrollmentStatus {
+  PENDING
+  ACTIVE
+  TRANSFERRED
+  WITHDRAWN
+  COMPLETED
+}
+
+model Classroom {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String   @db.VarChar(120)
+  code        String   @db.VarChar(40)
+  capacity    Int
+  building    String?  @db.VarChar(120)
+  floor       String?  @db.VarChar(40)
+  deletedAt   DateTime?
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  classes     Class[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, deletedAt])
+}
+
+model Class {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @db.Uuid
+  schoolId      String       @db.Uuid
+  gradeLevelId  String       @db.Uuid
+  classroomId   String?      @db.Uuid
+  name          String       @db.VarChar(120)
+  code          String       @db.VarChar(40)
+  academicYear  String       @db.VarChar(40)
+  section       String?      @db.VarChar(40)
+  capacity      Int
+  status        ClassStatus  @default(PLANNED)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  deletedAt     DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  school        School       @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  gradeLevel    GradeLevel   @relation(fields: [gradeLevelId], references: [id], onDelete: Restrict)
+  classroom     Classroom?   @relation(fields: [classroomId], references: [id], onDelete: SetNull)
+  enrollments   ClassEnrollment[]
+  teachers      TeacherClassAssignment[]
+  history       ClassHistory[]
+  @@unique([schoolId, code, academicYear])
+  @@index([tenantId, schoolId, academicYear, status, deletedAt])
+}
+
+model ClassEnrollment {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  schoolId    String           @db.Uuid
+  classId     String           @db.Uuid
+  studentId   String           @db.Uuid
+  status      EnrollmentStatus @default(PENDING)
+  enrolledAt  DateTime         @default(now())
+  endedAt     DateTime?
+  reason      String?          @db.VarChar(500)
+  class       Class            @relation(fields: [classId], references: [id], onDelete: Restrict)
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  @@unique([classId, studentId])
+  @@index([tenantId, schoolId, studentId, status])
+}
+
+model ClassHistory {
+  id        String      @id @default(uuid()) @db.Uuid
+  classId   String      @db.Uuid
+  fromStatus ClassStatus?
+  toStatus ClassStatus
+  reason    String?     @db.VarChar(500)
+  actorId   String?     @db.Uuid
+  createdAt DateTime    @default(now())
+  class     Class       @relation(fields: [classId], references: [id], onDelete: Restrict)
+  @@index([classId, createdAt])
 }
 
 model SchoolAdministrator {

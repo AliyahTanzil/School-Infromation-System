@@ -19,7 +19,8 @@ import { seedSchools } from './seeders/school.seeder.js';
 import { seedStudents } from './seeders/student.seeder.js';
 import { seedParents } from './seeders/parent.seeder.js';
 import { seedTeachers } from './seeders/teacher.seeder.js';
-const seeders = [seedRbac, seedSchools, seedStudents, seedParents, seedTeachers];
+import { seedClasses } from './seeders/class.seeder.js';
+const seeders = [seedRbac, seedSchools, seedStudents, seedParents, seedTeachers, seedClasses];
 
 async function main() {
   logger.info('Seeding database...');
