@@ -8,7 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "nodemon --watch src --ext js src/main.js",
+    "dev": "node --env-file-if-exists=/vercel/share/.env.project ../node_modules/nodemon/bin/nodemon.js --watch src --ext js src/main.js",
     "start": "node src/main.js",
     "lint": "eslint .",
     "format": "prettier --write .",
