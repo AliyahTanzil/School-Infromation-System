@@ -9,6 +9,13 @@ import StudentDashboard from './StudentDashboard.jsx';
 import ParentPortal from './ParentPortal.jsx';
 import LandingPage from './LandingPage.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
+import ClassDashboard from './ClassDashboard.jsx';
+import FinanceDashboard from './FinanceDashboard.jsx';
+import AcademicCalendarDashboard from './AcademicCalendarDashboard.jsx';
+import AttendanceDashboard from './AttendanceDashboard.jsx';
+import ExaminationsDashboard from './ExaminationsDashboard.jsx';
+import ResultsDashboard from './ResultsDashboard.jsx';
+import UserManagement from './UserManagement.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -300,6 +307,62 @@ export default function App() {
             element={
               <Protected>
                 <StudentDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <Protected>
+                <UserManagement />
+              </Protected>
+            }
+          />
+          <Route
+            path="/results"
+            element={
+              <Protected>
+                <ResultsDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/examinations"
+            element={
+              <Protected>
+                <ExaminationsDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/attendance"
+            element={
+              <Protected>
+                <AttendanceDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/academic-calendar"
+            element={
+              <Protected>
+                <AcademicCalendarDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/finance"
+            element={
+              <Protected>
+                <FinanceDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/classes"
+            element={
+              <Protected>
+                <ClassDashboard />
               </Protected>
             }
           />

@@ -1,4 +1,4 @@
-import prisma from '../../src/infrastructure/orm/prisma.js';
+import prisma from '../../src/infrastructure/orm/prismaClient.js';
 
 export async function seedParents() {
   const user = await prisma.user.findFirst({ where: { email: 'parent@example.com' } });

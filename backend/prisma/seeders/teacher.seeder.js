@@ -1,7 +1,7 @@
 export async function seedTeachers(prisma) {
   const school = await prisma.school.findFirst();
   if (!school) return;
-  const user = await prisma.user.findFirst({ where: { tenantId: school.tenantId } });
+  const user = await prisma.user.findFirst({ where: { email: 'platform-admin@example.test' } });
   if (!user) return;
   await prisma.teacher.upsert({
     where: { schoolId_employeeNumber: { schoolId: school.id, employeeNumber: 'DEMO-TCH-001' } },
