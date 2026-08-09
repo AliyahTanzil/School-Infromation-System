@@ -17,7 +17,9 @@ const prisma = new PrismaClient();
 import { seedRbac } from './seeders/rbac.seeder.js';
 import { seedSchools } from './seeders/school.seeder.js';
 import { seedStudents } from './seeders/student.seeder.js';
-const seeders = [seedRbac, seedSchools, seedStudents];
+import { seedParents } from './seeders/parent.seeder.js';
+import { seedTeachers } from './seeders/teacher.seeder.js';
+const seeders = [seedRbac, seedSchools, seedStudents, seedParents, seedTeachers];
 
 async function main() {
   logger.info('Seeding database...');

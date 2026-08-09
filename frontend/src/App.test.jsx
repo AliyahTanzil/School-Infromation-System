@@ -7,7 +7,7 @@ describe('App', () => {
     render(<App />);
 
     expect(
-      screen.getByRole('heading', { name: /One clear view of your school/i })
+      screen.getByRole('heading', { name: /Run your entire school from one intelligent platform/i })
     ).toBeInTheDocument();
     expect(screen.getByText('Secure school operations')).toBeInTheDocument();
   });

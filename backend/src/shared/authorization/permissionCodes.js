@@ -28,6 +28,11 @@ export const PERMISSIONS = Object.freeze({
   STUDENTS_MANAGE_MEDICAL: 'students.medical',
   STUDENTS_MANAGE_DOCUMENTS: 'students.documents',
   STUDENTS_CHANGE_STATUS: 'students.status',
+  TEACHERS_READ: 'teachers.read',
+  TEACHERS_CREATE: 'teachers.create',
+  TEACHERS_UPDATE: 'teachers.update',
+  TEACHERS_CHANGE_STATUS: 'teachers.status',
+  TEACHERS_MANAGE_DOCUMENTS: 'teachers.documents',
 });
 
 export const SYSTEM_ROLES = Object.freeze({
@@ -95,6 +100,17 @@ export const PERMISSION_CATALOG = Object.freeze([
       { code: PERMISSIONS.STUDENTS_MANAGE_MEDICAL, name: 'Manage medical records' },
       { code: PERMISSIONS.STUDENTS_MANAGE_DOCUMENTS, name: 'Manage student documents' },
       { code: PERMISSIONS.STUDENTS_CHANGE_STATUS, name: 'Change student status' },
+    ],
+  },
+  {
+    group: 'teachers',
+    name: 'Teachers',
+    permissions: [
+      { code: PERMISSIONS.TEACHERS_READ, name: 'Read teachers' },
+      { code: PERMISSIONS.TEACHERS_CREATE, name: 'Create teachers' },
+      { code: PERMISSIONS.TEACHERS_UPDATE, name: 'Update teachers' },
+      { code: PERMISSIONS.TEACHERS_CHANGE_STATUS, name: 'Change teacher status' },
+      { code: PERMISSIONS.TEACHERS_MANAGE_DOCUMENTS, name: 'Manage teacher documents' },
     ],
   },
 ]);

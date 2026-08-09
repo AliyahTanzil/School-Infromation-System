@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 /* eslint-disable react/prop-types */
-import { ArrowRight, CheckCircle2, Eye, EyeOff, LockKeyhole, ShieldCheck } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 import SchoolAdmin from './SchoolAdmin.jsx';
 import StudentDashboard from './StudentDashboard.jsx';
+import ParentPortal from './ParentPortal.jsx';
+import LandingPage from './LandingPage.jsx';
+import TeacherDashboard from './TeacherDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -232,76 +235,6 @@ function Forgot() {
     </AuthShell>
   );
 }
-function Landing() {
-  return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
-        <div className="flex items-center gap-3 font-semibold">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-500">S</div>
-          SAIS
-        </div>
-        <Link
-          to="/login"
-          className="rounded-lg border border-slate-700 px-4 py-2 text-sm hover:border-indigo-400"
-        >
-          Sign in
-        </Link>
-      </header>
-      <main className="mx-auto grid max-w-6xl gap-16 px-6 pb-20 pt-20 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-        <div>
-          <p className="mb-5 flex items-center gap-2 text-sm font-semibold text-indigo-300">
-            <ShieldCheck size={17} /> Secure school operations
-          </p>
-          <h1 className="max-w-3xl text-5xl font-bold tracking-tight sm:text-7xl">
-            One clear view of your <span className="text-indigo-400">school.</span>
-          </h1>
-          <p className="mt-7 max-w-xl text-lg leading-8 text-slate-400">
-            SAIS brings identity, people, learning, and finance into one dependable administration
-            system.
-          </p>
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link
-              to="/register"
-              className="flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3.5 text-sm font-semibold hover:bg-indigo-400"
-            >
-              Get started <ArrowRight size={17} />
-            </Link>
-            <Link
-              to="/login"
-              className="rounded-xl border border-slate-700 px-5 py-3.5 text-sm font-semibold text-slate-300 hover:border-slate-500"
-            >
-              I have an account
-            </Link>
-          </div>
-        </div>
-        <div className="rounded-3xl border border-slate-800 bg-slate-900 p-7">
-          <div className="mb-7 flex items-center gap-3">
-            <div className="rounded-xl bg-indigo-500/15 p-3 text-indigo-300">
-              <LockKeyhole />
-            </div>
-            <div>
-              <p className="font-semibold">Built for trust</p>
-              <p className="text-sm text-slate-500">Identity & access foundation</p>
-            </div>
-          </div>
-          {[
-            'Role-based access control',
-            'Auditable sign-in sessions',
-            'Secure password recovery',
-          ].map((item) => (
-            <div
-              key={item}
-              className="flex items-center gap-3 border-t border-slate-800 py-4 text-sm text-slate-300"
-            >
-              <CheckCircle2 size={17} className="text-emerald-400" />
-              {item}
-            </div>
-          ))}
-        </div>
-      </main>
-    </div>
-  );
-}
 function Dashboard() {
   const { user, logout } = useAuth();
   return (
@@ -350,7 +283,7 @@ export default function App() {
       <AuthProvider>
         <Toaster position="top-right" />
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<Forgot />} />
@@ -367,6 +300,22 @@ export default function App() {
             element={
               <Protected>
                 <StudentDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/teachers"
+            element={
+              <Protected>
+                <TeacherDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/parent-portal"
+            element={
+              <Protected>
+                <ParentPortal />
               </Protected>
             }
           />
