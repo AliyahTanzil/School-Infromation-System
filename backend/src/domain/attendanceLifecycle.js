@@ -1,4 +1,16 @@
-import { AttendanceSessionStatus, AttendanceStatus } from '@prisma/client';
+const AttendanceSessionStatus = Object.freeze({
+  DRAFT: 'DRAFT',
+  OPEN: 'OPEN',
+  LOCKED: 'LOCKED',
+  ARCHIVED: 'ARCHIVED',
+});
+const AttendanceStatus = Object.freeze({
+  PRESENT: 'PRESENT',
+  ABSENT: 'ABSENT',
+  LATE: 'LATE',
+  EXCUSED: 'EXCUSED',
+  HALF_DAY: 'HALF_DAY',
+});
 
 const transitions = {
   [AttendanceSessionStatus.DRAFT]: [AttendanceSessionStatus.OPEN, AttendanceSessionStatus.ARCHIVED],

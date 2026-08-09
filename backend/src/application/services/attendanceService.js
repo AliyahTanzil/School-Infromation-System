@@ -1,4 +1,5 @@
-import { AttendanceCaptureMethod, AttendanceSessionStatus } from '@prisma/client';
+const AttendanceCaptureMethod = Object.freeze({ MANUAL: 'MANUAL' });
+const AttendanceSessionStatus = Object.freeze({ OPEN: 'OPEN', LOCKED: 'LOCKED' });
 import {
   assertAttendanceStatus,
   assertSessionTransition,

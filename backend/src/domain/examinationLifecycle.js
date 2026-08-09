@@ -1,4 +1,14 @@
-import { ExaminationStatus, MarkStatus } from '@prisma/client';
+const ExaminationStatus = Object.freeze({
+  DRAFT: 'DRAFT',
+  SCHEDULED: 'SCHEDULED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  MARKING: 'MARKING',
+  MODERATION: 'MODERATION',
+  APPROVAL: 'APPROVAL',
+  LOCKED: 'LOCKED',
+  ARCHIVED: 'ARCHIVED',
+});
+const MarkStatus = Object.freeze({ APPROVED: 'APPROVED', LOCKED: 'LOCKED' });
 
 const transitions = {
   [ExaminationStatus.DRAFT]: [ExaminationStatus.SCHEDULED, ExaminationStatus.ARCHIVED],

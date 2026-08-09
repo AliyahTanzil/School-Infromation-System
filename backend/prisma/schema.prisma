@@ -583,6 +583,7 @@ model Student {
   attendanceRecords AttendanceRecord[]
   examinationCandidates ExaminationCandidate[]
   examinationMarks ExaminationMark[]
+  results Result[]
   parentRelationships ParentStudentRelationship[]
   @@unique([schoolId, admissionNumber])
   @@index([tenantId, schoolId, status, deletedAt])
@@ -1396,6 +1397,7 @@ model Examination {
   schedules   ExaminationSchedule[]
   marks       ExaminationMark[]
   audits      ExaminationAudit[]
+  results     Result[]
   @@unique([schoolId, code])
   @@index([tenantId, schoolId, status])
 }
@@ -1459,6 +1461,99 @@ model ExaminationAudit {
   createdAt     DateTime    @default(now())
   examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
   @@index([tenantId, schoolId, examinationId, createdAt])
+}
+
+enum ResultStatus {
+  DRAFT
+  PROCESSING
+  REVIEW
+  APPROVED
+  PUBLISHED
+  LOCKED
+}
+
+enum ResultStudentStatus {
+  PASS
+  FAIL
+  INCOMPLETE
+}
+
+model GradeScheme {
+  id        String      @id @default(uuid()) @db.Uuid
+  tenantId  String      @db.Uuid
+  schoolId  String      @db.Uuid
+  name      String      @db.VarChar(120)
+  passMark  Decimal     @db.Decimal(5, 2)
+  createdAt DateTime    @default(now())
+  bands     GradeBand[]
+  results   Result[]
+  @@unique([schoolId, name])
+  @@index([tenantId, schoolId])
+}
+
+model GradeBand {
+  id        String      @id @default(uuid()) @db.Uuid
+  schemeId  String      @db.Uuid
+  label     String      @db.VarChar(20)
+  minMark   Decimal     @db.Decimal(5, 2)
+  maxMark   Decimal     @db.Decimal(5, 2)
+  point     Decimal     @db.Decimal(5, 2)
+  scheme    GradeScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
+  @@unique([schemeId, label])
+}
+
+model Result {
+  id            String       @id @default(uuid()) @db.Uuid
+  tenantId      String       @db.Uuid
+  schoolId      String       @db.Uuid
+  examinationId String       @db.Uuid
+  studentId     String       @db.Uuid
+  schemeId      String       @db.Uuid
+  status        ResultStatus  @default(DRAFT)
+  studentStatus ResultStudentStatus @default(INCOMPLETE)
+  total         Decimal      @default(0) @db.Decimal(9, 2)
+  average       Decimal      @default(0) @db.Decimal(7, 2)
+  grade         String?      @db.VarChar(20)
+  gradePoint    Decimal?     @db.Decimal(5, 2)
+  position      Int?
+  processedAt   DateTime?
+  publishedAt   DateTime?
+  lockedAt      DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  examination   Examination  @relation(fields: [examinationId], references: [id], onDelete: Restrict)
+  student       Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  scheme        GradeScheme  @relation(fields: [schemeId], references: [id], onDelete: Restrict)
+  subjects      SubjectResult[]
+  audits        ResultAudit[]
+  @@unique([examinationId, studentId])
+  @@index([tenantId, schoolId, status])
+}
+
+model SubjectResult {
+  id          String  @id @default(uuid()) @db.Uuid
+  resultId    String  @db.Uuid
+  subjectCode String  @db.VarChar(60)
+  total       Decimal @db.Decimal(7, 2)
+  average     Decimal @db.Decimal(7, 2)
+  grade       String? @db.VarChar(20)
+  gradePoint  Decimal? @db.Decimal(5, 2)
+  passed      Boolean @default(false)
+  result      Result  @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  @@unique([resultId, subjectCode])
+}
+
+model ResultAudit {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  resultId      String   @db.Uuid
+  actorId       String?  @db.Uuid
+  action        String   @db.VarChar(80)
+  metadata      Json
+  createdAt     DateTime @default(now())
+  result        Result   @relation(fields: [resultId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, resultId, createdAt])
 }
 
 model SchoolAdministrator {

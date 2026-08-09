@@ -1,4 +1,5 @@
-import { EnrollmentStatus, ClassStatus } from '@prisma/client';
+const EnrollmentStatus = Object.freeze({ ACTIVE: 'ACTIVE' });
+const ClassStatus = Object.freeze({ ACTIVE: 'ACTIVE' });
 import { assertCapacity, assertClassTransition } from '../../domain/classLifecycle.js';
 import * as repository from '../../infrastructure/repositories/classRepository.js';
 

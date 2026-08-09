@@ -1,4 +1,5 @@
-import { ExaminationStatus, MarkStatus } from '@prisma/client';
+const ExaminationStatus = Object.freeze({ LOCKED: 'LOCKED' });
+const MarkStatus = Object.freeze({ DRAFT: 'DRAFT' });
 import {
   assertExaminationTransition,
   assertMarkWritable,

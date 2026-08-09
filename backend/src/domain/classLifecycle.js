@@ -1,4 +1,9 @@
-import { ClassStatus } from '@prisma/client';
+const ClassStatus = Object.freeze({
+  PLANNED: 'PLANNED',
+  ACTIVE: 'ACTIVE',
+  CANCELLED: 'CANCELLED',
+  ARCHIVED: 'ARCHIVED',
+});
 
 const transitions = {
   [ClassStatus.PLANNED]: [ClassStatus.ACTIVE, ClassStatus.CANCELLED],
