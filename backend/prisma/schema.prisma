@@ -80,6 +80,7 @@ model User {
   profileImages           ProfileImage[]
   userAudits              UserAudit[]              @relation("UserAuditSubject")
   actorAudits             UserAudit[]              @relation("UserAuditActor")
+  schoolAdministrators    SchoolAdministrator[]
   userRoles               UserRole[]               @relation("UserRoleSubject")
   assignedUserRoles       UserRole[]               @relation("UserRoleGrantedBy")
   grantedRolePermissions  RolePermission[]         @relation("RolePermissionGrantedBy")
@@ -396,4 +397,152 @@ model UserAudit {
   @@index([subjectId, createdAt])
   @@index([actorId, createdAt])
   @@index([eventType, createdAt])
+}
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(200)
+  slug      String   @unique @db.VarChar(120)
+  status    String   @default("ACTIVE") @db.VarChar(30)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  schools School[]
+
+  @@index([status, deletedAt])
+}
+
+model School {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  name           String   @db.VarChar(200)
+  slug           String   @db.VarChar(120)
+  normalizedName String   @db.VarChar(200)
+  email          String?  @db.VarChar(320)
+  phone          String?  @db.VarChar(40)
+  website        String?  @db.VarChar(300)
+  status         String   @default("ACTIVE") @db.VarChar(30)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant                @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  profile        SchoolProfile?
+  setting        SchoolSetting?
+  configuration  SchoolConfiguration?
+  branches       SchoolBranch[]
+  departments    Department[]
+  grades         GradeLevel[]
+  administrators SchoolAdministrator[]
+
+  @@unique([tenantId, slug])
+  @@unique([tenantId, normalizedName])
+  @@index([tenantId, status, deletedAt])
+}
+
+model SchoolProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  schoolId    String   @unique @db.Uuid
+  description String?
+  address     String?  @db.VarChar(500)
+  city        String?  @db.VarChar(100)
+  country     String?  @db.VarChar(100)
+  logoUrl     String?  @db.VarChar(500)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+}
+
+model SchoolSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  schoolId  String   @unique @db.Uuid
+  settings  Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+}
+
+model SchoolConfiguration {
+  id               String   @id @default(uuid()) @db.Uuid
+  schoolId         String   @unique @db.Uuid
+  timezone         String   @default("UTC") @db.VarChar(80)
+  locale           String   @default("en") @db.VarChar(20)
+  academicStructure String  @default("YEAR") @db.VarChar(30)
+  featureFlags     Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  school           School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+}
+
+model SchoolBranch {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  name           String   @db.VarChar(160)
+  code           String   @db.VarChar(40)
+  normalizedName String   @db.VarChar(160)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, code])
+  @@unique([schoolId, normalizedName])
+  @@index([tenantId, schoolId, deletedAt])
+}
+
+model Department {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  branchId       String?  @db.Uuid
+  name           String   @db.VarChar(160)
+  code           String   @db.VarChar(40)
+  normalizedName String   @db.VarChar(160)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, code])
+  @@unique([schoolId, normalizedName])
+  @@index([tenantId, schoolId, branchId, deletedAt])
+}
+
+model GradeLevel {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  schoolId       String   @db.Uuid
+  name           String   @db.VarChar(120)
+  code           String   @db.VarChar(40)
+  displayOrder   Int
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  school         School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, code])
+  @@unique([schoolId, displayOrder])
+  @@index([tenantId, schoolId, deletedAt])
+}
+
+model SchoolAdministrator {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  schoolId   String   @db.Uuid
+  userId     String   @db.Uuid
+  assignedBy String?  @db.Uuid
+  isPrimary  Boolean  @default(false)
+  startsAt   DateTime @default(now())
+  endsAt     DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  school     School   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@unique([schoolId, userId])
+  @@index([tenantId, schoolId, revokedAt])
+  @@index([userId, revokedAt])
 }

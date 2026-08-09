@@ -13,6 +13,15 @@ export const PERMISSIONS = Object.freeze({
   ROLES_ASSIGN: 'roles.assign',
   PERMISSIONS_READ: 'permissions.read',
   PERMISSIONS_ASSIGN: 'permissions.assign',
+  SCHOOLS_READ: 'schools.read',
+  SCHOOLS_CREATE: 'schools.create',
+  SCHOOLS_UPDATE: 'schools.update',
+  SCHOOLS_DELETE: 'schools.delete',
+  SCHOOLS_MANAGE_SETTINGS: 'schools.manage_settings',
+  SCHOOLS_MANAGE_BRANCHES: 'schools.manage_branches',
+  SCHOOLS_MANAGE_DEPARTMENTS: 'schools.manage_departments',
+  SCHOOLS_MANAGE_GRADES: 'schools.manage_grades',
+  SCHOOLS_ASSIGN_ADMINS: 'schools.assign_admins',
 });
 
 export const SYSTEM_ROLES = Object.freeze({
@@ -53,6 +62,21 @@ export const PERMISSION_CATALOG = Object.freeze([
     permissions: [
       { code: PERMISSIONS.PERMISSIONS_READ, name: 'Read permissions' },
       { code: PERMISSIONS.PERMISSIONS_ASSIGN, name: 'Assign permissions' },
+    ],
+  },
+  {
+    group: 'schools',
+    name: 'Schools',
+    permissions: [
+      { code: PERMISSIONS.SCHOOLS_READ, name: 'Read schools' },
+      { code: PERMISSIONS.SCHOOLS_CREATE, name: 'Create schools' },
+      { code: PERMISSIONS.SCHOOLS_UPDATE, name: 'Update schools' },
+      { code: PERMISSIONS.SCHOOLS_DELETE, name: 'Delete schools' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_SETTINGS, name: 'Manage school settings' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_BRANCHES, name: 'Manage branches' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_DEPARTMENTS, name: 'Manage departments' },
+      { code: PERMISSIONS.SCHOOLS_MANAGE_GRADES, name: 'Manage grades' },
+      { code: PERMISSIONS.SCHOOLS_ASSIGN_ADMINS, name: 'Assign administrators' },
     ],
   },
 ]);
