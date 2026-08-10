@@ -3244,6 +3244,180 @@ model InventoryEventAudit {
   @@index([tenantId, schoolId, createdAt])
 }
 
+enum TransportStatus {
+  ACTIVE
+  INACTIVE
+  RETIRED
+}
+enum VehicleCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+enum TransportTripStatus {
+  SCHEDULED
+  BOARDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model VehicleType {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  passengerCapacity Int
+  status TransportStatus @default(ACTIVE)
+  vehicles Vehicle[]
+  @@unique([schoolId, code])
+}
+model Vehicle {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  typeId String @db.Uuid
+  vehicleNumber String @db.VarChar(60)
+  registrationNumber String @db.VarChar(80)
+  make String? @db.VarChar(80)
+  model String? @db.VarChar(80)
+  passengerCapacity Int
+  condition VehicleCondition @default(GOOD)
+  status TransportStatus @default(ACTIVE)
+  type VehicleType @relation(fields: [typeId], references: [id], onDelete: Restrict)
+  trips TransportTrip[]
+  fuelRecords FuelRecord[]
+  maintenanceRecords VehicleMaintenance[]
+  inspectionRecords VehicleInspection[]
+  @@unique([schoolId, registrationNumber])
+}
+model TransportRoute {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  status TransportStatus @default(ACTIVE)
+  stops RouteStop[]
+  trips TransportTrip[]
+  studentAssignments StudentTransportAssignment[]
+  @@unique([schoolId, code])
+}
+model RouteStop {
+  id String @id @default(uuid()) @db.Uuid
+  routeId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  sequence Int
+  assignments StudentTransportAssignment[]
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  @@unique([routeId, code])
+}
+model TransportDriver {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  licenseNumber String @db.VarChar(100)
+  licenseExpiry DateTime?
+  phone String? @db.VarChar(40)
+  status TransportStatus @default(ACTIVE)
+  trips TransportTrip[]
+  @@unique([schoolId, licenseNumber])
+}
+model TransportTrip {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  routeId String @db.Uuid
+  vehicleId String @db.Uuid
+  driverId String? @db.Uuid
+  scheduledAt DateTime
+  direction String @db.VarChar(20)
+  status TransportTripStatus @default(SCHEDULED)
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  driver TransportDriver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
+  @@index([schoolId, scheduledAt, status])
+}
+model StudentTransportAssignment {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  studentId String @db.Uuid
+  routeId String @db.Uuid
+  stopId String @db.Uuid
+  active Boolean @default(true)
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
+  stop RouteStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
+  @@index([schoolId, studentId, active])
+}
+model FuelRecord {
+  id String @id @default(uuid()) @db.Uuid
+  vehicleId String @db.Uuid
+  quantity Decimal @db.Decimal(12,3)
+  unitCost Decimal? @db.Decimal(12,2)
+  fuelledAt DateTime @default(now())
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+}
+model VehicleMaintenance {
+  id String @id @default(uuid()) @db.Uuid
+  vehicleId String @db.Uuid
+  type String @db.VarChar(100)
+  status String @db.VarChar(40)
+  scheduledAt DateTime?
+  completedAt DateTime?
+  cost Decimal? @db.Decimal(12,2)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+model VehicleInspection {
+  id String @id @default(uuid()) @db.Uuid
+  vehicleId String @db.Uuid
+  inspectedAt DateTime @default(now())
+  expiresAt DateTime?
+  passed Boolean
+  notes String? @db.VarChar(500)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+model GpsProvider {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(120)
+  providerKey String @db.VarChar(80)
+  active Boolean @default(false)
+}
+model GpsDevice {
+  id String @id @default(uuid()) @db.Uuid
+  providerId String @db.Uuid
+  vehicleId String @unique @db.Uuid
+  deviceKey String @db.VarChar(120)
+  active Boolean @default(true)
+}
+model TransportNotification {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  recipientId String @db.Uuid
+  type String @db.VarChar(80)
+  message String @db.VarChar(500)
+  createdAt DateTime @default(now())
+}
+model TransportAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW
