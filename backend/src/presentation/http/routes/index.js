@@ -20,6 +20,7 @@ import timetableRoutes from './timetableRoutes.js';
 import communicationRoutes from './communicationRoutes.js';
 import hrRoutes from './hrRoutes.js';
 import libraryRoutes from './libraryRoutes.js';
+import assetInventoryRoutes from './assetInventoryRoutes.js';
 
 const router = Router();
 
@@ -45,5 +46,6 @@ router.use('/timetables', timetableRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/hr', hrRoutes);
 router.use('/libraries', libraryRoutes);
+router.use('/assets-inventory', assetInventoryRoutes);
 
 export default router;

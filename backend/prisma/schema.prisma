@@ -2763,6 +2763,487 @@ model LibraryAudit {
   @@index([tenantId, schoolId, createdAt])
 }
 
+enum AssetStatus {
+  ACTIVE
+  ASSIGNED
+  MAINTENANCE
+  TRANSFERRED
+  DISPOSED
+  LOST
+}
+enum AssetCondition {
+  NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+}
+enum AssetIdentifierType {
+  TAG
+  BARCODE
+  QR
+  SERIAL
+}
+enum MaintenanceStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+enum DisposalStatus {
+  PENDING
+  APPROVED
+  DISPOSED
+  REJECTED
+}
+enum StockMovementType {
+  RECEIPT
+  ISSUE
+  RETURN
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+}
+enum PurchaseOrderStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+enum ReconciliationStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+}
+
+model AssetCategory {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  parentId String? @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  description String? @db.VarChar(500)
+  active Boolean @default(true)
+  parent AssetCategory? @relation("AssetCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children AssetCategory[] @relation("AssetCategoryTree")
+  types AssetType[]
+  assets Asset[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, active])
+}
+model AssetType {
+  id String @id @default(uuid()) @db.Uuid
+  categoryId String @db.Uuid
+  name String @db.VarChar(140)
+  code String @db.VarChar(40)
+  usefulLifeMonths Int?
+  depreciationMethod String? @db.VarChar(40)
+  category AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  assets Asset[]
+  @@unique([categoryId, code])
+}
+model AssetLocation {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  building String? @db.VarChar(120)
+  room String? @db.VarChar(80)
+  active Boolean @default(true)
+  assets Asset[]
+  assignments AssetAssignment[]
+  transfersFrom AssetTransfer[] @relation("TransferFrom")
+  transfersTo AssetTransfer[] @relation("TransferTo")
+  @@unique([schoolId, code])
+}
+model Asset {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  categoryId String @db.Uuid
+  typeId String? @db.Uuid
+  locationId String? @db.Uuid
+  assetNumber String @db.VarChar(80)
+  name String @db.VarChar(180)
+  description String? @db.Text
+  serialNumber String? @db.VarChar(120)
+  acquiredAt DateTime?
+  acquisitionCost Decimal? @db.Decimal(14,2)
+  currentValue Decimal? @db.Decimal(14,2)
+  status AssetStatus @default(ACTIVE)
+  condition AssetCondition @default(GOOD)
+  category AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  type AssetType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
+  location AssetLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  identifiers AssetIdentifier[]
+  assignments AssetAssignment[]
+  transfers AssetTransfer[]
+  maintenance AssetMaintenance[]
+  valuations AssetValuation[]
+  depreciation AssetDepreciation[]
+  disposal AssetDisposal?
+  audits AssetAudit[]
+  @@unique([schoolId, assetNumber])
+  @@unique([schoolId, serialNumber])
+  @@index([tenantId, schoolId, status])
+}
+model AssetIdentifier {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  type AssetIdentifierType
+  value String @db.VarChar(160)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  @@unique([type, value])
+}
+model AssetAssignment {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  assignedToId String? @db.Uuid
+  locationId String? @db.Uuid
+  assignedAt DateTime @default(now())
+  returnedAt DateTime?
+  notes String? @db.VarChar(500)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  location AssetLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  @@index([assetId, returnedAt])
+}
+model AssetTransfer {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  fromLocationId String? @db.Uuid
+  toLocationId String? @db.Uuid
+  requestedById String? @db.Uuid
+  approvedById String? @db.Uuid
+  transferredAt DateTime?
+  reason String? @db.VarChar(500)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fromLocation AssetLocation? @relation("TransferFrom", fields: [fromLocationId], references: [id], onDelete: SetNull)
+  toLocation AssetLocation? @relation("TransferTo", fields: [toLocationId], references: [id], onDelete: SetNull)
+}
+model AssetMaintenance {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  vendor String? @db.VarChar(180)
+  status MaintenanceStatus @default(OPEN)
+  scheduledAt DateTime?
+  completedAt DateTime?
+  estimatedCost Decimal? @db.Decimal(14,2)
+  actualCost Decimal? @db.Decimal(14,2)
+  notes String? @db.Text
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  records AssetMaintenanceRecord[]
+  @@index([assetId, status])
+}
+model AssetMaintenanceRecord {
+  id String @id @default(uuid()) @db.Uuid
+  maintenanceId String @db.Uuid
+  action String @db.VarChar(180)
+  cost Decimal? @db.Decimal(14,2)
+  performedAt DateTime @default(now())
+  notes String? @db.VarChar(500)
+  maintenance AssetMaintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
+}
+model AssetValuation {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  value Decimal @db.Decimal(14,2)
+  valuedAt DateTime @default(now())
+  reason String? @db.VarChar(180)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+model AssetDepreciation {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  amount Decimal @db.Decimal(14,2)
+  bookValue Decimal @db.Decimal(14,2)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  @@unique([assetId, periodStart, periodEnd])
+}
+model AssetDisposal {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @unique @db.Uuid
+  status DisposalStatus @default(PENDING)
+  reason String @db.VarChar(500)
+  approvedById String? @db.Uuid
+  disposedAt DateTime?
+  proceeds Decimal? @db.Decimal(14,2)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+}
+model AssetAudit {
+  id String @id @default(uuid()) @db.Uuid
+  assetId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  metadata Json
+  createdAt DateTime @default(now())
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  @@index([assetId, createdAt])
+}
+model InventoryCategory {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  items InventoryItem[]
+  @@unique([schoolId, code])
+}
+model UnitOfMeasure {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(80)
+  code String @db.VarChar(20)
+  items InventoryItem[]
+  @@unique([schoolId, code])
+}
+model InventoryItem {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  categoryId String @db.Uuid
+  unitId String @db.Uuid
+  sku String @db.VarChar(80)
+  name String @db.VarChar(180)
+  description String? @db.VarChar(500)
+  reorderLevel Decimal @default(0) @db.Decimal(14,3)
+  reorderQuantity Decimal @default(0) @db.Decimal(14,3)
+  active Boolean @default(true)
+  category InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  unit UnitOfMeasure @relation(fields: [unitId], references: [id], onDelete: Restrict)
+  batches InventoryBatch[]
+  movements StockMovement[]
+  issueItems StockIssueItem[]
+  returnItems StockReturnItem[]
+  transferItems StockTransferItem[]
+  adjustments StockAdjustmentItem[]
+  auditItems AssetInventoryAuditItem[]
+  @@unique([schoolId, sku])
+  @@index([tenantId, schoolId, active])
+}
+model Warehouse {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  active Boolean @default(true)
+  locations WarehouseLocation[]
+  purchaseOrders PurchaseOrder[]
+  receipts GoodsReceipt[]
+  @@unique([schoolId, code])
+}
+model WarehouseLocation {
+  id String @id @default(uuid()) @db.Uuid
+  warehouseId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  batches InventoryBatch[]
+  @@unique([warehouseId, code])
+}
+model Supplier {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(180)
+  code String @db.VarChar(40)
+  email String? @db.VarChar(320)
+  phone String? @db.VarChar(40)
+  active Boolean @default(true)
+  purchaseOrders PurchaseOrder[]
+  @@unique([schoolId, code])
+}
+model PurchaseOrder {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  supplierId String @db.Uuid
+  warehouseId String @db.Uuid
+  orderNumber String @db.VarChar(80)
+  status PurchaseOrderStatus @default(DRAFT)
+  orderedAt DateTime @default(now())
+  total Decimal @default(0) @db.Decimal(14,2)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  items PurchaseOrderItem[]
+  receipts GoodsReceipt[]
+  @@unique([schoolId, orderNumber])
+}
+model PurchaseOrderItem {
+  id String @id @default(uuid()) @db.Uuid
+  purchaseOrderId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  unitPrice Decimal @db.Decimal(14,2)
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+}
+model GoodsReceipt {
+  id String @id @default(uuid()) @db.Uuid
+  purchaseOrderId String @db.Uuid
+  warehouseId String @db.Uuid
+  receiptNumber String @db.VarChar(80)
+  receivedAt DateTime @default(now())
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  items GoodsReceiptItem[]
+  @@unique([warehouseId, receiptNumber])
+}
+model GoodsReceiptItem {
+  id String @id @default(uuid()) @db.Uuid
+  receiptId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  batchId String? @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  receipt GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  batch InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+}
+model InventoryBatch {
+  id String @id @default(uuid()) @db.Uuid
+  inventoryItemId String @db.Uuid
+  locationId String @db.Uuid
+  batchNumber String @db.VarChar(80)
+  quantity Decimal @default(0) @db.Decimal(14,3)
+  unitCost Decimal? @db.Decimal(14,2)
+  expiryDate DateTime?
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  location WarehouseLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  movements StockMovement[]
+  receipts GoodsReceiptItem[]
+  @@unique([locationId, batchNumber])
+}
+model StockMovement {
+  id String @id @default(uuid()) @db.Uuid
+  inventoryItemId String @db.Uuid
+  batchId String? @db.Uuid
+  type StockMovementType
+  quantity Decimal @db.Decimal(14,3)
+  referenceType String? @db.VarChar(60)
+  referenceId String? @db.Uuid
+  createdById String? @db.Uuid
+  createdAt DateTime @default(now())
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  batch InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  @@index([inventoryItemId, createdAt])
+}
+model StockIssue {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  issueNumber String @db.VarChar(80)
+  issuedToId String? @db.Uuid
+  issuedAt DateTime @default(now())
+  items StockIssueItem[]
+  @@unique([schoolId, issueNumber])
+}
+model StockIssueItem {
+  id String @id @default(uuid()) @db.Uuid
+  issueId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  issue StockIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+}
+model StockReturn {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  returnNumber String @db.VarChar(80)
+  returnedAt DateTime @default(now())
+  items StockReturnItem[]
+  @@unique([schoolId, returnNumber])
+}
+model StockReturnItem {
+  id String @id @default(uuid()) @db.Uuid
+  returnId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  return StockReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+}
+model StockTransfer {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  transferNumber String @db.VarChar(80)
+  fromWarehouseId String @db.Uuid
+  toWarehouseId String @db.Uuid
+  transferredAt DateTime @default(now())
+  items StockTransferItem[]
+  @@unique([schoolId, transferNumber])
+}
+model StockTransferItem {
+  id String @id @default(uuid()) @db.Uuid
+  transferId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+}
+model StockAdjustment {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  adjustmentNumber String @db.VarChar(80)
+  reason String @db.VarChar(300)
+  createdAt DateTime @default(now())
+  items StockAdjustmentItem[]
+  @@unique([schoolId, adjustmentNumber])
+}
+model StockAdjustmentItem {
+  id String @id @default(uuid()) @db.Uuid
+  adjustmentId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  quantity Decimal @db.Decimal(14,3)
+  adjustment StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+}
+model AssetInventoryAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  warehouseId String @db.Uuid
+  status ReconciliationStatus @default(OPEN)
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+  items AssetInventoryAuditItem[]
+}
+model AssetInventoryAuditItem {
+  id String @id @default(uuid()) @db.Uuid
+  auditId String @db.Uuid
+  inventoryItemId String @db.Uuid
+  expectedQuantity Decimal @db.Decimal(14,3)
+  actualQuantity Decimal? @db.Decimal(14,3)
+  notes String? @db.VarChar(300)
+  audit AssetInventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  @@unique([auditId, inventoryItemId])
+}
+model InventoryPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @unique @db.Uuid
+  allowNegativeStock Boolean @default(false)
+  autoReorder Boolean @default(true)
+  updatedAt DateTime @updatedAt
+}
+model InventoryEventAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

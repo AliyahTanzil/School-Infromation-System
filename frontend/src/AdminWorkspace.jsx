@@ -16,6 +16,7 @@ import {
   Users,
   WalletCards,
   LibraryBig,
+  Boxes,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -81,6 +82,12 @@ const moduleGroups = [
         'Catalog, copies, circulation, fines, and digital resources.',
         LibraryBig,
       ],
+      [
+        '/assets-inventory',
+        'Assets & inventory',
+        'Serialized property, stock, warehouses, purchasing, and audits.',
+        Boxes,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -133,7 +140,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['17', 'Modules available'],
+            ['18', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (
