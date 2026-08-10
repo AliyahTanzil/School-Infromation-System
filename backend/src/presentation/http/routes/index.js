@@ -25,6 +25,7 @@ import transportRoutes from './transportRoutes.js';
 import boardingRoutes from './boardingRoutes.js';
 import securityRoutes from './securityRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
+import aiIntelligenceRoutes from './aiIntelligenceRoutes.js';
 
 const router = Router();
 
@@ -55,5 +56,6 @@ router.use('/transport', transportRoutes);
 router.use('/boarding', boardingRoutes);
 router.use('/security', securityRoutes);
 router.use('/analytics', analyticsRoutes);
+router.use('/ai-intelligence', aiIntelligenceRoutes);
 
 export default router;
