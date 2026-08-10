@@ -3776,6 +3776,127 @@ model SecurityReport {
   storageKey String? @db.VarChar(300)
 }
 
+enum AnalyticsFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  TERMLY
+  SEMESTER
+  ACADEMIC_YEAR
+  CUSTOM
+}
+enum AnalyticsStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+enum AnalyticsExecutionStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+model AnalyticsMetric {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  key String @db.VarChar(100)
+  name String @db.VarChar(160)
+  category String @db.VarChar(80)
+  unit String @db.VarChar(40)
+  source String @db.VarChar(120)
+  status AnalyticsStatus @default(ACTIVE)
+  @@unique([tenantId, schoolId, key])
+  @@index([tenantId, category])
+}
+model KPIDefinition {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  metricId String @db.Uuid
+  name String @db.VarChar(160)
+  description String? @db.VarChar(500)
+  formulaKey String @db.VarChar(120)
+  target Decimal? @db.Decimal(14,4)
+  frequency AnalyticsFrequency @default(MONTHLY)
+  effectiveFrom DateTime @default(now())
+  status AnalyticsStatus @default(ACTIVE)
+  @@unique([tenantId, schoolId, name])
+  @@index([metricId])
+}
+model KPIValue {
+  id String @id @default(uuid()) @db.Uuid
+  kpiId String @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  value Decimal @db.Decimal(18,6)
+  comparisonValue Decimal? @db.Decimal(18,6)
+  calculatedAt DateTime @default(now())
+  @@unique([kpiId, periodStart, periodEnd])
+  @@index([tenantId, schoolId, periodEnd])
+}
+model AnalyticsDashboard {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  name String @db.VarChar(160)
+  description String? @db.VarChar(500)
+  status AnalyticsStatus @default(ACTIVE)
+  @@unique([tenantId, schoolId, name])
+}
+model DashboardWidget {
+  id String @id @default(uuid()) @db.Uuid
+  dashboardId String @db.Uuid
+  title String @db.VarChar(160)
+  widgetType String @db.VarChar(50)
+  metricKey String? @db.VarChar(100)
+  position Json
+  config Json
+}
+model AnalyticsSnapshot {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  snapshotDate DateTime
+  dimension String @db.VarChar(80)
+  payload Json
+  createdAt DateTime @default(now())
+  @@unique([tenantId, schoolId, snapshotDate, dimension])
+}
+model AnalyticsCache {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  cacheKey String @db.VarChar(180)
+  payload Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  @@unique([tenantId, schoolId, cacheKey])
+}
+model AnalyticsExport {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  format String @db.VarChar(20)
+  queryDefinition Json
+  status AnalyticsExecutionStatus @default(QUEUED)
+  storageKey String? @db.VarChar(300)
+  requestedById String? @db.Uuid
+  createdAt DateTime @default(now())
+}
+model AnalyticsPermission {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  roleId String @db.Uuid
+  scope String @db.VarChar(80)
+  metricKey String? @db.VarChar(100)
+  canView Boolean @default(true)
+  canExport Boolean @default(false)
+  @@unique([tenantId, roleId, scope, metricKey])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

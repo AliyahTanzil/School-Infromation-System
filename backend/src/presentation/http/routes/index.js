@@ -24,6 +24,7 @@ import assetInventoryRoutes from './assetInventoryRoutes.js';
 import transportRoutes from './transportRoutes.js';
 import boardingRoutes from './boardingRoutes.js';
 import securityRoutes from './securityRoutes.js';
+import analyticsRoutes from './analyticsRoutes.js';
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use('/assets-inventory', assetInventoryRoutes);
 router.use('/transport', transportRoutes);
 router.use('/boarding', boardingRoutes);
 router.use('/security', securityRoutes);
+router.use('/analytics', analyticsRoutes);
 
 export default router;

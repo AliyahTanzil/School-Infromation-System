@@ -27,6 +27,7 @@ import AssetInventoryDashboard from './AssetInventoryDashboard.jsx';
 import TransportDashboard from './TransportDashboard.jsx';
 import BoardingDashboard from './BoardingDashboard.jsx';
 import SecurityDashboard from './SecurityDashboard.jsx';
+import AnalyticsDashboard from './AnalyticsDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -450,6 +451,14 @@ export default function App() {
             element={
               <Protected>
                 <SecurityDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <Protected>
+                <AnalyticsDashboard />
               </Protected>
             }
           />

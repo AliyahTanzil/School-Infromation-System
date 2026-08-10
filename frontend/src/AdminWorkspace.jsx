@@ -20,6 +20,7 @@ import {
   BusFront,
   BedDouble,
   ShieldAlert,
+  ChartNoAxesCombined,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -109,6 +110,12 @@ const moduleGroups = [
         'Audit trails, access monitoring, alerts, backups, retention, and privacy controls.',
         ShieldAlert,
       ],
+      [
+        '/analytics',
+        'Analytics & BI',
+        'Executive KPIs, trends, comparisons, reports, exports, and decision signals.',
+        ChartNoAxesCombined,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -161,7 +168,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['21', 'Modules available'],
+            ['22', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (
