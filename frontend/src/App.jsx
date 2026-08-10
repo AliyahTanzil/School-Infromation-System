@@ -22,6 +22,7 @@ import AdminWorkspace from './AdminWorkspace.jsx';
 import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
 import CommunicationDashboard from './CommunicationDashboard.jsx';
 import HRDashboard from './HRDashboard.jsx';
+import LibraryDashboard from './LibraryDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -408,6 +409,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/admin-demo" element={<AdminDemoEntry />} />
+          <Route
+            path="/library"
+            element={
+              <Protected>
+                <LibraryDashboard />
+              </Protected>
+            }
+          />
           <Route
             path="/communication"
             element={

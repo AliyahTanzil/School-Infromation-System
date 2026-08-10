@@ -2363,6 +2363,406 @@ model HRAction {
 }
 
 // Payroll totals are snapshots: finalized runs are never mutated in place.
+enum LibraryStatus {
+  ACTIVE
+  INACTIVE
+}
+enum BookCopyStatus {
+  AVAILABLE
+  BORROWED
+  RESERVED
+  LOST
+  DAMAGED
+  REPAIR
+  RETIRED
+}
+enum BorrowStatus {
+  BORROWED
+  RETURNED
+  OVERDUE
+  LOST
+}
+enum ReservationStatus {
+  ACTIVE
+  FULFILLED
+  CANCELLED
+  EXPIRED
+}
+enum FineStatus {
+  OPEN
+  PAID
+  WAIVED
+}
+enum LibraryMemberType {
+  STUDENT
+  TEACHER
+  STAFF
+}
+enum DigitalResourceType {
+  EBOOK
+  AUDIO
+  VIDEO
+  DOCUMENT
+  LINK
+}
+
+model Library {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  status LibraryStatus @default(ACTIVE)
+  address String? @db.VarChar(400)
+  email String? @db.VarChar(320)
+  phone String? @db.VarChar(40)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  locations LibraryLocation[]
+  books Book[]
+  members LibraryMember[]
+  policies LibraryPolicy[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, status])
+}
+model LibraryLocation {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  description String? @db.VarChar(300)
+  active Boolean @default(true)
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  shelves LibraryShelf[]
+  copies BookCopy[]
+  @@unique([libraryId, code])
+}
+model LibraryShelf {
+  id String @id @default(uuid()) @db.Uuid
+  locationId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  active Boolean @default(true)
+  location LibraryLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  copies BookCopy[]
+  @@unique([locationId, code])
+}
+model Author {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(180)
+  biography String? @db.Text
+  nationality String? @db.VarChar(80)
+  website String? @db.VarChar(400)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  books BookAuthor[]
+  @@unique([schoolId, name])
+  @@index([schoolId, active])
+}
+model Publisher {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(180)
+  address String? @db.VarChar(400)
+  contact String? @db.VarChar(180)
+  website String? @db.VarChar(400)
+  country String? @db.VarChar(80)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  editions BookEdition[]
+  @@unique([schoolId, name])
+}
+model Category {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  parentId String? @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  description String? @db.VarChar(300)
+  active Boolean @default(true)
+  parent Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+  books BookCategory[]
+  @@unique([schoolId, code])
+}
+model Subject {
+  id String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  description String? @db.VarChar(300)
+  active Boolean @default(true)
+  books BookSubject[]
+  @@unique([schoolId, code])
+}
+model Book {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  title String @db.VarChar(300)
+  subtitle String? @db.VarChar(300)
+  isbn10 String? @db.VarChar(20)
+  isbn13 String? @db.VarChar(20)
+  description String? @db.Text
+  language String? @db.VarChar(60)
+  pages Int?
+  publicationYear Int?
+  coverImageUrl String? @db.VarChar(500)
+  keywords Json
+  status LibraryStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  editions BookEdition[]
+  authors BookAuthor[]
+  categories BookCategory[]
+  subjects BookSubject[]
+  copies BookCopy[]
+  digitalResources DigitalResource[]
+  @@unique([libraryId, isbn13])
+  @@unique([libraryId, isbn10])
+  @@index([libraryId, title])
+}
+model BookEdition {
+  id String @id @default(uuid()) @db.Uuid
+  bookId String @db.Uuid
+  publisherId String? @db.Uuid
+  edition String? @db.VarChar(80)
+  isbn10 String? @db.VarChar(20)
+  isbn13 String? @db.VarChar(20)
+  publicationYear Int?
+  pages Int?
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  publisher Publisher? @relation(fields: [publisherId], references: [id], onDelete: SetNull)
+  copies BookCopy[]
+  @@index([bookId, publicationYear])
+}
+model BookAuthor {
+  bookId String @db.Uuid
+  authorId String @db.Uuid
+  sortOrder Int @default(0)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  @@id([bookId, authorId])
+}
+model BookCategory {
+  bookId String @db.Uuid
+  categoryId String @db.Uuid
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  @@id([bookId, categoryId])
+}
+model BookSubject {
+  bookId String @db.Uuid
+  subjectId String @db.Uuid
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  @@id([bookId, subjectId])
+}
+model BookCopy {
+  id String @id @default(uuid()) @db.Uuid
+  bookId String @db.Uuid
+  editionId String? @db.Uuid
+  locationId String? @db.Uuid
+  shelfId String? @db.Uuid
+  barcode String @db.VarChar(80)
+  acquiredAt DateTime?
+  price Decimal? @db.Decimal(12, 2)
+  condition String? @db.VarChar(40)
+  status BookCopyStatus @default(AVAILABLE)
+  notes String? @db.VarChar(500)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  edition BookEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
+  location LibraryLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  shelf LibraryShelf? @relation(fields: [shelfId], references: [id], onDelete: SetNull)
+  borrows BorrowTransaction[]
+  reservations Reservation[]
+  damages BookDamage[]
+  lostRecords LostBook[]
+  auditItems InventoryAuditItem[]
+  @@unique([barcode])
+  @@index([bookId, status])
+}
+model LibraryMember {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  userId String @db.Uuid
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  memberNumber String @db.VarChar(80)
+  type LibraryMemberType
+  active Boolean @default(true)
+  joinedAt DateTime @default(now())
+  maxBooks Int @default(3)
+  borrows BorrowTransaction[]
+  reservations Reservation[]
+  fines Fine[]
+  @@unique([libraryId, memberNumber])
+  @@unique([libraryId, userId])
+}
+model BorrowTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  memberId String @db.Uuid
+  copyId String @db.Uuid
+  issuedById String? @db.Uuid
+  borrowedAt DateTime @default(now())
+  dueAt DateTime
+  returnedAt DateTime?
+  status BorrowStatus @default(BORROWED)
+  notes String? @db.VarChar(500)
+  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  returns ReturnTransaction[]
+  renewals RenewalTransaction[]
+  fines Fine[]
+  @@index([libraryId, status, dueAt])
+  @@index([memberId, status])
+}
+model ReturnTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  borrowId String @db.Uuid
+  processedById String? @db.Uuid
+  returnedAt DateTime @default(now())
+  condition String? @db.VarChar(40)
+  notes String? @db.VarChar(500)
+  borrow BorrowTransaction @relation(fields: [borrowId], references: [id], onDelete: Cascade)
+}
+model RenewalTransaction {
+  id String @id @default(uuid()) @db.Uuid
+  borrowId String @db.Uuid
+  processedById String? @db.Uuid
+  previousDueAt DateTime
+  newDueAt DateTime
+  createdAt DateTime @default(now())
+  borrow BorrowTransaction @relation(fields: [borrowId], references: [id], onDelete: Cascade)
+}
+model Reservation {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  memberId String @db.Uuid
+  bookId String @db.Uuid
+  copyId String? @db.Uuid
+  status ReservationStatus @default(ACTIVE)
+  reservedAt DateTime @default(now())
+  expiresAt DateTime?
+  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  copy BookCopy? @relation(fields: [copyId], references: [id], onDelete: SetNull)
+  @@index([libraryId, status, reservedAt])
+}
+model Fine {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  memberId String @db.Uuid
+  borrowId String? @db.Uuid
+  amount Decimal @db.Decimal(12, 2)
+  reason String @db.VarChar(180)
+  status FineStatus @default(OPEN)
+  assessedAt DateTime @default(now())
+  paidAt DateTime?
+  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Restrict)
+  borrow BorrowTransaction? @relation(fields: [borrowId], references: [id], onDelete: SetNull)
+  payments FinePayment[]
+  @@index([libraryId, status, assessedAt])
+}
+model FinePayment {
+  id String @id @default(uuid()) @db.Uuid
+  fineId String @db.Uuid
+  amount Decimal @db.Decimal(12, 2)
+  paidById String? @db.Uuid
+  paidAt DateTime @default(now())
+  reference String? @db.VarChar(120)
+  fine Fine @relation(fields: [fineId], references: [id], onDelete: Cascade)
+}
+model BookDamage {
+  id String @id @default(uuid()) @db.Uuid
+  copyId String @db.Uuid
+  reportedById String? @db.Uuid
+  description String @db.Text
+  repairCost Decimal? @db.Decimal(12, 2)
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
+}
+model LostBook {
+  id String @id @default(uuid()) @db.Uuid
+  copyId String @db.Uuid
+  reportedById String? @db.Uuid
+  replacementCost Decimal? @db.Decimal(12, 2)
+  recoveredAt DateTime?
+  notes String? @db.VarChar(500)
+  createdAt DateTime @default(now())
+  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
+}
+model InventoryAudit {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  performedById String? @db.Uuid
+  startedAt DateTime @default(now())
+  completedAt DateTime?
+  notes String? @db.VarChar(500)
+  items InventoryAuditItem[]
+}
+model InventoryAuditItem {
+  id String @id @default(uuid()) @db.Uuid
+  auditId String @db.Uuid
+  copyId String @db.Uuid
+  expectedStatus BookCopyStatus
+  observedStatus BookCopyStatus?
+  found Boolean @default(false)
+  notes String? @db.VarChar(300)
+  audit InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  @@unique([auditId, copyId])
+}
+model DigitalResource {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  bookId String? @db.Uuid
+  title String @db.VarChar(300)
+  type DigitalResourceType
+  url String @db.VarChar(800)
+  accessRule String? @db.VarChar(120)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  book Book? @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  accesses DigitalResourceAccess[]
+  @@index([libraryId, type, active])
+}
+model DigitalResourceAccess {
+  id String @id @default(uuid()) @db.Uuid
+  resourceId String @db.Uuid
+  userId String @db.Uuid
+  accessedAt DateTime @default(now())
+  resource DigitalResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  @@index([userId, accessedAt])
+}
+model LibraryPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  libraryId String @db.Uuid
+  loanDays Int @default(14)
+  maxBooks Int @default(3)
+  dailyFine Decimal @default(0) @db.Decimal(8, 2)
+  renewalLimit Int @default(2)
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  @@unique([libraryId])
+}
+model LibraryAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW
