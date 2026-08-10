@@ -3418,6 +3418,145 @@ model TransportAudit {
   createdAt DateTime @default(now())
 }
 
+enum BoardingStatus {
+  ACTIVE
+  INACTIVE
+  CLOSED
+}
+enum BedStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  OUT_OF_SERVICE
+}
+enum BoardingAllocationStatus {
+  ACTIVE
+  TRANSFERRED
+  CHECKED_OUT
+  CANCELLED
+}
+enum BoardingApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+enum BoardingAttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+model Dormitory {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String @db.VarChar(160)
+  code String @db.VarChar(40)
+  gender String @db.VarChar(30)
+  status BoardingStatus @default(ACTIVE)
+  buildings DormitoryBuilding[]
+  applications BoardingApplication[]
+  allocations BoardingAllocation[]
+  inspections HostelInspection[]
+  @@unique([schoolId, code])
+  @@index([tenantId, schoolId, status])
+}
+model DormitoryBuilding {
+  id String @id @default(uuid()) @db.Uuid
+  dormitoryId String @db.Uuid
+  name String @db.VarChar(120)
+  code String @db.VarChar(40)
+  floors DormitoryFloor[]
+  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+  @@unique([dormitoryId, code])
+}
+model DormitoryFloor {
+  id String @id @default(uuid()) @db.Uuid
+  buildingId String @db.Uuid
+  name String @db.VarChar(80)
+  code String @db.VarChar(40)
+  floorNumber Int
+  rooms DormitoryRoom[]
+  building DormitoryBuilding @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  @@unique([buildingId, code])
+}
+model DormitoryRoom {
+  id String @id @default(uuid()) @db.Uuid
+  floorId String @db.Uuid
+  name String @db.VarChar(100)
+  code String @db.VarChar(40)
+  capacity Int
+  status BoardingStatus @default(ACTIVE)
+  beds DormitoryBed[]
+  floor DormitoryFloor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  @@unique([floorId, code])
+}
+model DormitoryBed {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @db.Uuid
+  name String @db.VarChar(80)
+  code String @db.VarChar(40)
+  status BedStatus @default(AVAILABLE)
+  room DormitoryRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  allocations BoardingAllocation[]
+  @@unique([roomId, code])
+}
+model BoardingApplication {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  dormitoryId String @db.Uuid
+  studentId String @db.Uuid
+  status BoardingApplicationStatus @default(PENDING)
+  appliedAt DateTime @default(now())
+  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Restrict)
+  @@index([schoolId, status, appliedAt])
+}
+model BoardingAllocation {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  dormitoryId String @db.Uuid
+  bedId String @db.Uuid
+  studentId String @db.Uuid
+  status BoardingAllocationStatus @default(ACTIVE)
+  startsAt DateTime @default(now())
+  endsAt DateTime?
+  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Restrict)
+  bed DormitoryBed @relation(fields: [bedId], references: [id], onDelete: Restrict)
+  attendance BoardingAttendance[]
+  @@index([schoolId, studentId, status])
+  @@index([bedId, status])
+}
+model BoardingAttendance {
+  id String @id @default(uuid()) @db.Uuid
+  allocationId String @db.Uuid
+  attendanceDate DateTime
+  status BoardingAttendanceStatus
+  allocation BoardingAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
+  @@unique([allocationId, attendanceDate])
+}
+model HostelInspection {
+  id String @id @default(uuid()) @db.Uuid
+  dormitoryId String @db.Uuid
+  inspectedAt DateTime @default(now())
+  score Int?
+  notes String? @db.VarChar(500)
+  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+}
+model BoardingAudit {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW
