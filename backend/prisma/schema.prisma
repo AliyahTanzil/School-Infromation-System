@@ -3897,6 +3897,131 @@ model AnalyticsPermission {
   @@unique([tenantId, roleId, scope, metricKey])
 }
 
+enum IdentityStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  EXPIRED
+}
+enum IdentityProviderKind {
+  QR
+  BARCODE
+  RFID
+  BIOMETRIC
+  DEVICE
+}
+enum IdentityVerificationStatus {
+  SUCCESS
+  FAILURE
+  LOCKED
+  EXPIRED
+}
+enum IdentityConsentStatus {
+  REQUESTED
+  GRANTED
+  DENIED
+  WITHDRAWN
+}
+model SmartIdentity {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  subjectType String @db.VarChar(40)
+  subjectId String @db.Uuid
+  displayName String @db.VarChar(180)
+  status IdentityStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  identifiers SmartIdentityIdentifier[]
+  devices SmartIdentityDevice[]
+  consents SmartIdentityConsent[]
+  verifications SmartIdentityVerification[]
+  @@index([tenantId, schoolId, subjectType, subjectId])
+}
+model SmartIdentityIdentifier {
+  id String @id @default(uuid()) @db.Uuid
+  identityId String @db.Uuid
+  provider IdentityProviderKind
+  valueHash String @db.VarChar(128)
+  label String? @db.VarChar(100)
+  status IdentityStatus @default(ACTIVE)
+  issuedAt DateTime @default(now())
+  expiresAt DateTime?
+  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  @@unique([identityId, provider, valueHash])
+  @@index([provider, valueHash])
+}
+model SmartIdentityDevice {
+  id String @id @default(uuid()) @db.Uuid
+  identityId String @db.Uuid
+  deviceHash String @db.VarChar(128)
+  label String? @db.VarChar(120)
+  trusted Boolean @default(false)
+  lastSeenAt DateTime @default(now())
+  revokedAt DateTime?
+  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  @@unique([identityId, deviceHash])
+}
+model SmartIdentityVerification {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  identityId String? @db.Uuid
+  provider IdentityProviderKind
+  status IdentityVerificationStatus
+  reasonCode String? @db.VarChar(80)
+  challengeHash String? @db.VarChar(128)
+  deviceHash String? @db.VarChar(128)
+  occurredAt DateTime @default(now())
+  identity SmartIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
+  @@index([tenantId, schoolId, occurredAt])
+}
+model SmartIdentityConsent {
+  id String @id @default(uuid()) @db.Uuid
+  identityId String @db.Uuid
+  policyKey String @db.VarChar(100)
+  status IdentityConsentStatus @default(REQUESTED)
+  grantedAt DateTime?
+  withdrawnAt DateTime?
+  version String @db.VarChar(40)
+  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
+  @@unique([identityId, policyKey, version])
+}
+model SmartIdentityPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  key String @db.VarChar(100)
+  version String @db.VarChar(40)
+  rules Json
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  @@unique([tenantId, schoolId, key, version])
+}
+model SmartIdentityOfflineEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  deviceHash String @db.VarChar(128)
+  eventKey String @db.VarChar(120)
+  payload Json
+  occurredAt DateTime
+  receivedAt DateTime @default(now())
+  processedAt DateTime?
+  @@unique([tenantId, deviceHash, eventKey])
+}
+model SmartIdentityAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

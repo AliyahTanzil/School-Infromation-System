@@ -22,6 +22,7 @@ import {
   ShieldAlert,
   ChartNoAxesCombined,
   Sparkles,
+  Fingerprint,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -123,6 +124,12 @@ const moduleGroups = [
         'Advisory insights, recommendations, risk signals, and evidence-backed assistance.',
         Sparkles,
       ],
+      [
+        '/smart-identity',
+        'Smart identity',
+        'QR, RFID, device verification, consent, policy, and offline identity controls.',
+        Fingerprint,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -175,7 +182,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['23', 'Modules available'],
+            ['24', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

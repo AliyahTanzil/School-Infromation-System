@@ -26,6 +26,7 @@ import boardingRoutes from './boardingRoutes.js';
 import securityRoutes from './securityRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import aiIntelligenceRoutes from './aiIntelligenceRoutes.js';
+import smartIdentityRoutes from './smartIdentityRoutes.js';
 
 const router = Router();
 
@@ -57,5 +58,6 @@ router.use('/boarding', boardingRoutes);
 router.use('/security', securityRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/ai-intelligence', aiIntelligenceRoutes);
+router.use('/smart-identity', smartIdentityRoutes);
 
 export default router;
