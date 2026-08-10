@@ -3557,6 +3557,225 @@ model BoardingAudit {
   @@index([tenantId, schoolId, createdAt])
 }
 
+enum SecuritySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+enum SecurityEventStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+enum SecurityJobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+model SecurityAuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  actorUserId String? @db.Uuid
+  action String @db.VarChar(100)
+  resourceType String @db.VarChar(100)
+  resourceId String? @db.Uuid
+  correlationId String? @db.VarChar(120)
+  requestId String? @db.VarChar(120)
+  ipHash String? @db.VarChar(128)
+  userAgentHash String? @db.VarChar(128)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+model SecurityLoginAttempt {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  schoolId String? @db.Uuid
+  userId String? @db.Uuid
+  success Boolean
+  method String @db.VarChar(60)
+  failureCategory String? @db.VarChar(80)
+  ipHash String? @db.VarChar(128)
+  userAgentHash String? @db.VarChar(128)
+  deviceId String? @db.Uuid
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+  @@index([tenantId, createdAt])
+}
+model LoginSession {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  userId String @db.Uuid
+  deviceId String? @db.Uuid
+  startedAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  endedAt DateTime?
+  revokedAt DateTime?
+  @@index([userId, revokedAt])
+}
+model UserDevice {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  fingerprintHash String @db.VarChar(128)
+  label String? @db.VarChar(120)
+  lastSeenAt DateTime @default(now())
+  trusted Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@unique([userId, fingerprintHash])
+}
+model SecurityEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  type String @db.VarChar(100)
+  severity SecuritySeverity
+  status SecurityEventStatus @default(OPEN)
+  source String @db.VarChar(80)
+  correlationId String? @db.VarChar(120)
+  metadata Json
+  createdAt DateTime @default(now())
+  resolvedAt DateTime?
+  @@index([tenantId, severity, status])
+}
+model SecurityAlert {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  eventId String? @db.Uuid
+  severity SecuritySeverity
+  title String @db.VarChar(180)
+  message String @db.VarChar(500)
+  acknowledgedAt DateTime?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([tenantId, severity, createdAt])
+}
+model AccessEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  userId String? @db.Uuid
+  resourceType String @db.VarChar(100)
+  action String @db.VarChar(80)
+  allowed Boolean
+  reason String? @db.VarChar(180)
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
+model DataChangeRecord {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  actorUserId String? @db.Uuid
+  entityType String @db.VarChar(100)
+  entityId String @db.Uuid
+  operation String @db.VarChar(30)
+  changedFields Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, entityType, entityId])
+}
+model BackupJob {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  status SecurityJobStatus @default(QUEUED)
+  startedAt DateTime?
+  completedAt DateTime?
+  errorCategory String? @db.VarChar(120)
+  createdAt DateTime @default(now())
+  artifacts BackupArtifact[]
+}
+model BackupArtifact {
+  id String @id @default(uuid()) @db.Uuid
+  backupJobId String @db.Uuid
+  storageKey String @db.VarChar(300)
+  checksum String? @db.VarChar(128)
+  sizeBytes BigInt?
+  createdAt DateTime @default(now())
+  backupJob BackupJob @relation(fields: [backupJobId], references: [id], onDelete: Cascade)
+  verifications BackupVerification[]
+}
+model BackupVerification {
+  id String @id @default(uuid()) @db.Uuid
+  artifactId String @db.Uuid
+  status SecurityJobStatus
+  verifiedAt DateTime @default(now())
+  notes String? @db.VarChar(300)
+  artifact BackupArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+}
+model RestoreJob {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  artifactId String @db.Uuid
+  status SecurityJobStatus @default(QUEUED)
+  requestedById String? @db.Uuid
+  startedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+}
+model RetentionPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  entityType String @db.VarChar(100)
+  retentionDays Int
+  active Boolean @default(true)
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, entityType])
+}
+model PrivacyPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  name String @db.VarChar(160)
+  version String @db.VarChar(40)
+  active Boolean @default(true)
+  publishedAt DateTime?
+  @@unique([tenantId, version])
+}
+model SecurityIncident {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  title String @db.VarChar(180)
+  severity SecuritySeverity
+  status SecurityEventStatus @default(OPEN)
+  ownerId String? @db.Uuid
+  createdAt DateTime @default(now())
+  events SecurityIncidentEvent[]
+}
+model SecurityIncidentEvent {
+  id String @id @default(uuid()) @db.Uuid
+  incidentId String @db.Uuid
+  eventId String @db.Uuid
+  createdAt DateTime @default(now())
+  incident SecurityIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  @@unique([incidentId, eventId])
+}
+model SecurityConfiguration {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @unique @db.Uuid
+  mfaRequired Boolean @default(false)
+  sessionTimeoutMinutes Int @default(480)
+  maxFailedLogins Int @default(5)
+  updatedAt DateTime @updatedAt
+}
+model SecurityReport {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  requestedById String? @db.Uuid
+  reportType String @db.VarChar(100)
+  periodStart DateTime
+  periodEnd DateTime
+  generatedAt DateTime @default(now())
+  storageKey String? @db.VarChar(300)
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

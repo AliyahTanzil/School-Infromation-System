@@ -23,6 +23,7 @@ import libraryRoutes from './libraryRoutes.js';
 import assetInventoryRoutes from './assetInventoryRoutes.js';
 import transportRoutes from './transportRoutes.js';
 import boardingRoutes from './boardingRoutes.js';
+import securityRoutes from './securityRoutes.js';
 
 const router = Router();
 
@@ -51,5 +52,6 @@ router.use('/libraries', libraryRoutes);
 router.use('/assets-inventory', assetInventoryRoutes);
 router.use('/transport', transportRoutes);
 router.use('/boarding', boardingRoutes);
+router.use('/security', securityRoutes);
 
 export default router;
