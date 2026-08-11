@@ -28,6 +28,7 @@ import {
   ServerCog,
   LockKeyhole,
   BrainCircuit,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -171,6 +172,12 @@ const moduleGroups = [
         'Role-aware academic guidance with verified evidence and safe refusal states.',
         BrainCircuit,
       ],
+      [
+        '/ai-reports',
+        'AI Report Generation',
+        'Evidence-backed narratives, validation, review, approvals, and exports.',
+        FileText,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -223,7 +230,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['31', 'Modules available'],
+            ['32', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

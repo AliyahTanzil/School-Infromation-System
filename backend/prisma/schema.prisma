@@ -4732,6 +4732,108 @@ model AiAcademicSafetyEvent {
   @@index([tenantId, createdAt])
 }
 
+enum AiReportStatus {
+  DRAFT
+  GENERATING
+  READY
+  NEEDS_REVIEW
+  APPROVED
+  PUBLISHED
+  FAILED
+}
+model AiReportTemplate {
+  id String @id @default(uuid()) @db.Uuid
+  key String @unique @db.VarChar(100)
+  name String @db.VarChar(180)
+  version String @db.VarChar(40)
+  sections Json
+  active Boolean @default(false)
+  createdAt DateTime @default(now())
+  reports AiReport[]
+}
+model AiReport {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  templateId String @db.Uuid
+  title String @db.VarChar(220)
+  periodStart DateTime
+  periodEnd DateTime
+  status AiReportStatus @default(DRAFT)
+  createdById String? @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  template AiReportTemplate @relation(fields: [templateId], references: [id])
+  sections AiReportSection[]
+  evidence AiReportEvidence[]
+  versions AiReportVersion[]
+  reviews AiReportReview[]
+  exports AiReportExport[]
+  @@index([tenantId, status, updatedAt])
+}
+model AiReportSection {
+  id String @id @default(uuid()) @db.Uuid
+  reportId String @db.Uuid
+  key String @db.VarChar(100)
+  title String @db.VarChar(180)
+  narrative String @db.VarChar(6000)
+  confidence Decimal? @db.Decimal(5,2)
+  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@unique([reportId, key])
+}
+model AiReportEvidence {
+  id String @id @default(uuid()) @db.Uuid
+  reportId String @db.Uuid
+  sourceType String @db.VarChar(80)
+  sourceRef String @db.VarChar(180)
+  label String @db.VarChar(220)
+  value Json
+  capturedAt DateTime @default(now())
+  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@index([reportId, sourceType])
+}
+model AiReportVersion {
+  id String @id @default(uuid()) @db.Uuid
+  reportId String @db.Uuid
+  version Int
+  snapshot Json
+  approvedAt DateTime?
+  approvedById String? @db.Uuid
+  createdAt DateTime @default(now())
+  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@unique([reportId, version])
+}
+model AiReportReview {
+  id String @id @default(uuid()) @db.Uuid
+  reportId String @db.Uuid
+  reviewerId String @db.Uuid
+  decision String @db.VarChar(30)
+  comments String? @db.VarChar(2000)
+  createdAt DateTime @default(now())
+  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  @@index([reportId, createdAt])
+}
+model AiReportExport {
+  id String @id @default(uuid()) @db.Uuid
+  reportId String @db.Uuid
+  format String @db.VarChar(20)
+  status String @db.VarChar(30)
+  artifactRef String? @db.VarChar(300)
+  requestedById String? @db.Uuid
+  createdAt DateTime @default(now())
+  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+model AiReportAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

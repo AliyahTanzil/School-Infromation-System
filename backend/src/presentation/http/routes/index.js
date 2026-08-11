@@ -33,6 +33,7 @@ import billingRoutes from './billingRoutes.js';
 import platformAdminRoutes from './platformAdminRoutes.js';
 import securityAdminRoutes from './securityAdminRoutes.js';
 import aiAcademicRoutes from './aiAcademicRoutes.js';
+import aiReportRoutes from './aiReportRoutes.js';
 
 const router = Router();
 
@@ -71,5 +72,6 @@ router.use('/billing', billingRoutes);
 router.use('/platform-admin', platformAdminRoutes);
 router.use('/security-admin', securityAdminRoutes);
 router.use('/ai-academic', aiAcademicRoutes);
+router.use('/ai-reports', aiReportRoutes);
 
 export default router;
