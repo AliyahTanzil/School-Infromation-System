@@ -4908,6 +4908,62 @@ model AiChatAuditEvent {
   @@index([tenantId, createdAt])
 }
 
+enum IntegrationConnectionStatus {
+  DISCONNECTED
+  CONFIGURED
+  HEALTHY
+  DEGRADED
+  ERROR
+}
+model IntegrationConnection {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  providerKey String @db.VarChar(100)
+  displayName String @db.VarChar(180)
+  category String @db.VarChar(60)
+  status IntegrationConnectionStatus @default(DISCONNECTED)
+  enabled Boolean @default(false)
+  credentialRef String? @db.VarChar(240)
+  credentialLast4 String? @db.VarChar(8)
+  configRedacted Json
+  lastHealthCheckAt DateTime?
+  lastSyncAt DateTime?
+  lastErrorCode String? @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  jobs IntegrationSyncJob[]
+  auditEvents IntegrationAuditEvent[]
+  @@unique([tenantId, providerKey])
+  @@index([tenantId, status])
+}
+model IntegrationSyncJob {
+  id String @id @default(uuid()) @db.Uuid
+  integrationId String @db.Uuid
+  tenantId String @db.Uuid
+  operation String @db.VarChar(80)
+  status String @db.VarChar(30)
+  idempotencyKey String @db.VarChar(180)
+  attemptCount Int @default(0)
+  resultRedacted Json
+  errorCode String? @db.VarChar(100)
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  integration IntegrationConnection @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, createdAt])
+}
+model IntegrationAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  integrationId String @db.Uuid
+  tenantId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  metadata Json
+  createdAt DateTime @default(now())
+  integration IntegrationConnection @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  @@index([tenantId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

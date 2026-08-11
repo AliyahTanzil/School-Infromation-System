@@ -35,6 +35,7 @@ import securityAdminRoutes from './securityAdminRoutes.js';
 import aiAcademicRoutes from './aiAcademicRoutes.js';
 import aiReportRoutes from './aiReportRoutes.js';
 import aiChatRoutes from './aiChatRoutes.js';
+import integrationRoutes from './integrationRoutes.js';
 
 const router = Router();
 
@@ -75,5 +76,6 @@ router.use('/security-admin', securityAdminRoutes);
 router.use('/ai-academic', aiAcademicRoutes);
 router.use('/ai-reports', aiReportRoutes);
 router.use('/ai-chat', aiChatRoutes);
+router.use('/integrations', integrationRoutes);
 
 export default router;

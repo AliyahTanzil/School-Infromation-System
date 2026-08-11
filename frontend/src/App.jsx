@@ -38,6 +38,7 @@ import SecurityAdminDashboard from './SecurityAdminDashboard.jsx';
 import AIAcademicDashboard from './AIAcademicDashboard.jsx';
 import AIReportsDashboard from './AIReportsDashboard.jsx';
 import AIChatDashboard from './AIChatDashboard.jsx';
+import IntegrationsDashboard from './IntegrationsDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -102,9 +103,21 @@ function Login() {
     e.preventDefault();
     setBusy(true);
     try {
-      await login(form);
+      const result = await login(form);
       toast.success('Welcome back');
-      nav('/dashboard');
+      const roles = result.user?.roles ?? [];
+      const destination = roles.some((role) =>
+        ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'ADMIN'].includes(role)
+      )
+        ? '/school-admin'
+        : roles.includes('TEACHER')
+          ? '/teachers'
+          : roles.includes('PARENT')
+            ? '/parent-portal'
+            : roles.includes('STUDENT')
+              ? '/students'
+              : '/school-setup';
+      nav(destination, { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.error?.message ?? 'Unable to sign in');
     } finally {
@@ -689,6 +702,14 @@ export default function App() {
             element={
               <Protected>
                 <SchoolAdmin />
+              </Protected>
+            }
+          />
+          <Route
+            path="/integrations"
+            element={
+              <Protected>
+                <IntegrationsDashboard />
               </Protected>
             }
           />
