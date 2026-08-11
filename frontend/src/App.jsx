@@ -30,6 +30,7 @@ import AdminWorkspace from './AdminWorkspace.jsx';
 import ClassroomDashboard from './ClassroomDashboard.jsx';
 import StudentSubmissionCenter from './StudentSubmissionCenter.jsx';
 import AssessmentEngine from './AssessmentEngine.jsx';
+import QuizSystem from './QuizSystem.jsx';
 import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
 import CommunicationDashboard from './CommunicationDashboard.jsx';
 import HRDashboard from './HRDashboard.jsx';
@@ -648,6 +649,14 @@ export default function App() {
             element={
               <Protected>
                 <AssessmentEngine />
+              </Protected>
+            }
+          />
+          <Route
+            path="/quizzes"
+            element={
+              <Protected>
+                <QuizSystem />
               </Protected>
             }
           />
