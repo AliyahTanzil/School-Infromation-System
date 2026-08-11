@@ -33,6 +33,7 @@ import AssessmentEngine from './AssessmentEngine.jsx';
 import QuizSystem from './QuizSystem.jsx';
 import Gradebook from './Gradebook.jsx';
 import FeedbackWorkspace from './FeedbackWorkspace.jsx';
+import CalendarWorkspace from './CalendarWorkspace.jsx';
 import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
 import CommunicationDashboard from './CommunicationDashboard.jsx';
 import HRDashboard from './HRDashboard.jsx';
@@ -675,6 +676,14 @@ export default function App() {
             element={
               <Protected>
                 <FeedbackWorkspace />
+              </Protected>
+            }
+          />
+          <Route
+            path="/calendar"
+            element={
+              <Protected>
+                <CalendarWorkspace />
               </Protected>
             }
           />
