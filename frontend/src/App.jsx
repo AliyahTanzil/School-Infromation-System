@@ -97,6 +97,8 @@ function AuthShell({ children, title, subtitle }) {
 }
 function Login() {
   const { login } = useAuth();
+  const location = useLocation();
+  const isManager = location.pathname.startsWith('/manager');
   const nav = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [busy, setBusy] = useState(false);
@@ -107,10 +109,10 @@ function Login() {
       const result = await login(form);
       toast.success('Welcome back');
       const roles = result.user?.roles ?? [];
-      const destination = roles.some((role) =>
-        ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'ADMIN'].includes(role)
-      )
-        ? '/school-admin'
+      const destination = isManager
+        ? '/platform-admin'
+        : roles.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'ADMIN'].includes(role))
+          ? '/school-admin'
         : roles.includes('TEACHER')
           ? '/teachers'
           : roles.includes('PARENT')
@@ -127,8 +129,12 @@ function Login() {
   };
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Sign in to access your school administration workspace."
+      title={isManager ? 'Application Manager sign in' : 'Welcome back'}
+      subtitle={
+        isManager
+          ? 'Sign in to manage SAIS applications, tenants, and platform operations.'
+          : 'Sign in to access your school administration workspace.'
+      }
     >
       <form onSubmit={submit} className="space-y-5">
         <Field
@@ -162,15 +168,24 @@ function Login() {
       </form>
       <p className="mt-7 text-center text-sm text-slate-500">
         New to SAIS?{' '}
-        <Link to="/register" className="font-semibold text-indigo-600">
+        <Link to={isManager ? '/manager/register' : '/register'} className="font-semibold text-indigo-600">
           Create an account
         </Link>
+      </p>
+      <p className="mt-3 text-center text-xs text-slate-400">
+        {isManager ? (
+          <Link to="/login" className="font-semibold text-indigo-600">Tenant sign in</Link>
+        ) : (
+          <Link to="/manager/login" className="font-semibold text-indigo-600">Application Manager sign in</Link>
+        )}
       </p>
     </AuthShell>
   );
 }
 function Register() {
   const { register } = useAuth();
+  const location = useLocation();
+  const isManager = location.pathname.startsWith('/manager');
   const nav = useNavigate();
   const [form, setForm] = useState({
     firstName: '',
@@ -202,9 +217,9 @@ function Register() {
     e.preventDefault();
     setBusy(true);
     try {
-      await register(form);
+      await register({ ...form, accountType: isManager ? 'APPLICATION_MANAGER' : 'TENANT_ADMIN' });
       toast.success('Account created');
-      nav('/dashboard');
+      nav(isManager ? '/manager/login' : '/login', { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.error?.message ?? 'Unable to create account');
     } finally {
@@ -213,8 +228,12 @@ function Register() {
   };
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Set up your identity to begin managing your school securely."
+      title={isManager ? 'Create an Application Manager account' : 'Create your tenant account'}
+      subtitle={
+        isManager
+          ? 'This account is for SAIS platform operations and application oversight.'
+          : 'Set up your school identity to begin managing your tenant securely.'
+      }
     >
       <form onSubmit={submit} className="space-y-4">
         <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
@@ -601,6 +620,8 @@ export default function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/manager/login" element={<Login />} />
+          <Route path="/manager/register" element={<Register />} />
           <Route path="/forgot-password" element={<Forgot />} />
           <Route
             path="/dashboard"

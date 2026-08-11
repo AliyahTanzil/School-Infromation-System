@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import api from './api/auth.js';
 import {
   Activity,
   AlertTriangle,
@@ -34,6 +35,8 @@ const alerts = [
 export default function IoTDashboard() {
   const [tab, setTab] = useState('overview');
   const [commandSent, setCommandSent] = useState(false);
+  const [commandBusy, setCommandBusy] = useState(false);
+  const [commandError, setCommandError] = useState('');
   const kpis = useMemo(
     () => [
       ['48', 'Registered devices', Cpu],
@@ -43,6 +46,22 @@ export default function IoTDashboard() {
     ],
     []
   );
+  const sendCommand = async (command) => {
+    setCommandBusy(true);
+    setCommandError('');
+    try {
+      await api.post('/iot/commands', {
+        commandKey: command,
+        idempotencyKey: crypto.randomUUID(),
+      });
+      setCommandSent(true);
+    } catch (error) {
+      setCommandError(error.response?.data?.error?.message ?? 'Command could not be queued');
+    } finally {
+      setCommandBusy(false);
+    }
+  };
+
   return (
     <main className="module-page iot-page">
       <header className="module-hero">
@@ -140,14 +159,15 @@ export default function IoTDashboard() {
           </p>
           <div className="command-actions">
             {['LIGHTS_ON', 'LIGHTS_OFF', 'VENTILATION_ON', 'SCENE_APPLY'].map((command) => (
-              <button key={command} onClick={() => setCommandSent(true)}>
+              <button key={command} disabled={commandBusy} onClick={() => sendCommand(command)}>
                 <Send size={15} /> {command.replaceAll('_', ' ')}
               </button>
             ))}
           </div>
+          {commandError && <p className="command-error">{commandError}</p>}
           {commandSent && (
             <p className="command-confirm">
-              <span /> Command queued for review in Demo mode.
+              <span />               Command queued for review and audit.
             </p>
           )}
         </article>

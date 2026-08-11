@@ -30,6 +30,7 @@ export const registerSchema = z.object({
       .regex(/^#[0-9a-f]{6}$/i)
       .optional(),
     badgeUrl: z.string().max(2800000).optional(),
+    accountType: z.enum(['TENANT_ADMIN', 'APPLICATION_MANAGER']).default('TENANT_ADMIN'),
   }),
 });
 
