@@ -26,6 +26,7 @@ import {
   CircuitBoard,
   Building2,
   ServerCog,
+  LockKeyhole,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -157,6 +158,12 @@ const moduleGroups = [
         'Tenants, services, security, incidents, backups, integrations, and audit controls.',
         ServerCog,
       ],
+      [
+        '/security-admin',
+        'Advanced security & compliance',
+        'MFA, sessions, risk signals, privacy requests, retention, and evidence controls.',
+        LockKeyhole,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -209,7 +216,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['28', 'Modules available'],
+            ['29', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

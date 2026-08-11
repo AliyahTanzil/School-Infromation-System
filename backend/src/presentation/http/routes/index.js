@@ -31,6 +31,7 @@ import iotRoutes from './iotRoutes.js';
 import tenantAdminRoutes from './tenantAdminRoutes.js';
 import billingRoutes from './billingRoutes.js';
 import platformAdminRoutes from './platformAdminRoutes.js';
+import securityAdminRoutes from './securityAdminRoutes.js';
 
 const router = Router();
 
@@ -67,5 +68,6 @@ router.use('/iot', iotRoutes);
 router.use('/tenant-admin', tenantAdminRoutes);
 router.use('/billing', billingRoutes);
 router.use('/platform-admin', platformAdminRoutes);
+router.use('/security-admin', securityAdminRoutes);
 
 export default router;

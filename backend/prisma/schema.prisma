@@ -4447,6 +4447,100 @@ model PlatformAuditEvent {
   @@index([createdAt])
 }
 
+enum SecurityPolicyStatus {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+enum SecurityRiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+model SecurityPolicy {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  key String @db.VarChar(100)
+  version String @db.VarChar(40)
+  status SecurityPolicyStatus @default(DRAFT)
+  rules Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, key, version])
+  @@index([tenantId, status])
+}
+model SecuritySession {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  userId String @db.Uuid
+  sessionHash String @unique @db.VarChar(128)
+  deviceHash String? @db.VarChar(128)
+  ipHash String? @db.VarChar(128)
+  lastSeenAt DateTime @default(now())
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([tenantId, userId, revokedAt])
+}
+model SecurityRiskEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  userId String? @db.Uuid
+  eventType String @db.VarChar(100)
+  level SecurityRiskLevel
+  score Int
+  ipHash String? @db.VarChar(128)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, level, createdAt])
+}
+model AdvancedSecurityAlert {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  riskEventId String? @db.Uuid
+  title String @db.VarChar(180)
+  severity SecurityRiskLevel
+  status String @db.VarChar(30)
+  summary String @db.VarChar(500)
+  acknowledgedAt DateTime?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([tenantId, severity, status, createdAt])
+}
+model SecurityComplianceControl {
+  id String @id @default(uuid()) @db.Uuid
+  framework String @db.VarChar(80)
+  controlKey String @db.VarChar(100)
+  title String @db.VarChar(180)
+  status String @db.VarChar(30)
+  ownerRole String @db.VarChar(100)
+  evidenceRef String? @db.VarChar(300)
+  reviewedAt DateTime?
+  @@unique([framework, controlKey])
+}
+model SecurityPrivacyRequest {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  subjectId String @db.Uuid
+  requestType String @db.VarChar(40)
+  status String @db.VarChar(30)
+  requestedAt DateTime @default(now())
+  completedAt DateTime?
+  @@index([tenantId, status, requestedAt])
+}
+model SecurityAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String? @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW
