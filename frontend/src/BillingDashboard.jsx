@@ -1,56 +1,71 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import api from './api/auth.js';
 
-const money = (minor, currency = 'USD') =>
+const money = (minor = 0, currency = 'USD') =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(minor / 100);
 
-const overview = {
-  plan: { name: 'Growth', amountMinor: 24900, currency: 'USD', interval: 'month' },
-  subscription: { status: 'ACTIVE', currentPeriodEnd: '2026-09-01', cancelAtPeriodEnd: false },
-  usage: [
-    { metricKey: 'Active students', quantity: 842, includedQuantity: 1200 },
-    { metricKey: 'Storage', quantity: 48, includedQuantity: 100 },
-    { metricKey: 'Monthly messages', quantity: 18420, includedQuantity: 25000 },
-  ],
-  invoices: [
-    { number: 'INV-2026-08', status: 'PAID', totalMinor: 24900, issuedAt: 'Aug 01, 2026' },
-    { number: 'INV-2026-07', status: 'PAID', totalMinor: 24900, issuedAt: 'Jul 01, 2026' },
-  ],
-  plans: [
-    {
-      key: 'starter',
-      name: 'Starter',
-      amountMinor: 9900,
-      description: 'Core administration for growing schools.',
-    },
-    {
-      key: 'growth',
-      name: 'Growth',
-      amountMinor: 24900,
-      description: 'Automation, analytics, and family engagement.',
-    },
-    {
-      key: 'scale',
-      name: 'Scale',
-      amountMinor: 59900,
-      description: 'Multi-school operations with advanced controls.',
-    },
-  ],
-};
-
 export default function BillingDashboard() {
+  const [overview, setOverview] = useState(null);
   const [notice, setNotice] = useState('');
-  const queue = (action) => setNotice(`${action} queued for review in Demo mode.`);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    try {
+      const { data } = await api.get('/billing/overview');
+      setOverview(data.data);
+    } catch (err) {
+      setError(err.response?.data?.error?.message ?? 'Billing data could not be loaded.');
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const lifecycle = async (action, planKey) => {
+    setBusy(true);
+    setNotice('');
+    setError('');
+    try {
+      await api.post('/billing/lifecycle', { action, planKey });
+      setNotice('Billing change accepted and recorded.');
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.error?.message ?? 'Billing change could not be completed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (error && !overview)
+    return (
+      <main className="billing-page">
+        <div className="billing-notice">{error}</div>
+      </main>
+    );
+  if (!overview)
+    return (
+      <main className="billing-page">
+        <p>Loading billing workspace…</p>
+      </main>
+    );
+
   return (
     <main className="billing-page">
       <header className="billing-hero">
         <div>
-          <p className="eyebrow">MODULE 32 / FINANCIAL OPERATIONS</p>
+          <p className="eyebrow">MODULE 44 / FINANCIAL OPERATIONS</p>
           <h1>Subscription & billing</h1>
-          <p className="lede">Keep every school plan, entitlement, and payment decision visible.</p>
+          <p className="lede">Manage your school plan, entitlements, usage, and payment history.</p>
         </div>
         <div className="billing-status">
-          <span className="status-dot" /> {overview.subscription.status}
-          <small>Renews {overview.subscription.currentPeriodEnd}</small>
+          <span className="status-dot" /> {overview.subscription?.status ?? 'NOT CONFIGURED'}
+          <small>
+            {overview.subscription?.currentPeriodEnd
+              ? `Renews ${new Date(overview.subscription.currentPeriodEnd).toLocaleDateString()}`
+              : 'No renewal scheduled'}
+          </small>
         </div>
       </header>
       {notice && (
@@ -58,19 +73,26 @@ export default function BillingDashboard() {
           {notice}
         </div>
       )}
+      {error && (
+        <div className="billing-notice" role="alert">
+          {error}
+        </div>
+      )}
       <section className="billing-grid">
         <article className="billing-card plan-card">
           <p className="card-label">CURRENT PLAN</p>
-          <h2>{overview.plan.name}</h2>
+          <h2>{overview.plan?.name ?? 'No plan'}</h2>
           <strong>
-            {money(overview.plan.amountMinor)}
-            <small> / {overview.plan.interval}</small>
+            {money(overview.plan?.amountMinor, overview.plan?.currency)}
+            <small> / {overview.plan?.interval ?? 'month'}</small>
           </strong>
-          <p>Includes all core administration, analytics, and family engagement controls.</p>
+          <p>Your current tenant subscription and renewal controls.</p>
           <div className="button-row">
-            <button onClick={() => queue('Upgrade')}>Change plan</button>
-            <button className="ghost" onClick={() => queue('Cancellation')}>
-              Manage
+            <button disabled={busy} onClick={() => lifecycle('cancel')}>
+              Cancel at period end
+            </button>
+            <button className="ghost" disabled={busy} onClick={() => lifecycle('resume')}>
+              Resume
             </button>
           </div>
         </article>
@@ -87,18 +109,12 @@ export default function BillingDashboard() {
               <div className="usage-track">
                 <i
                   style={{
-                    width: `${Math.min(100, (item.quantity / item.includedQuantity) * 100)}%`,
+                    width: `${Math.min(100, (item.quantity / Math.max(1, item.includedQuantity)) * 100)}%`,
                   }}
                 />
               </div>
             </div>
           ))}
-        </article>
-        <article className="billing-card">
-          <p className="card-label">PAYMENT METHOD</p>
-          <h3>Visa •••• 4242</h3>
-          <p>Primary payment method · verified Aug 01, 2026</p>
-          <button onClick={() => queue('Payment method update')}>Update payment method</button>
         </article>
       </section>
       <section className="billing-lower">
@@ -108,27 +124,24 @@ export default function BillingDashboard() {
               <p className="card-label">INVOICES</p>
               <h2>Recent invoices</h2>
             </div>
-            <button className="ghost" onClick={() => queue('Export')}>
-              Export
-            </button>
           </div>
           {overview.invoices.map((invoice) => (
             <div className="invoice-row" key={invoice.number}>
               <div>
                 <b>{invoice.number}</b>
-                <small>{invoice.issuedAt}</small>
+                <small>{new Date(invoice.issuedAt).toLocaleDateString()}</small>
               </div>
               <span className="paid">{invoice.status}</span>
-              <strong>{money(invoice.totalMinor)}</strong>
+              <strong>{money(invoice.totalMinor, invoice.currency)}</strong>
             </div>
           ))}
         </article>
         <article className="billing-card">
           <p className="card-label">AVAILABLE PLANS</p>
-          <h2>Choose the right operating layer</h2>
+          <h2>Choose your operating layer</h2>
           {overview.plans.map((plan) => (
             <div
-              className={`plan-option ${plan.key === 'growth' ? 'selected' : ''}`}
+              className={`plan-option ${plan.name === overview.plan?.name ? 'selected' : ''}`}
               key={plan.key}
             >
               <div>
@@ -136,11 +149,22 @@ export default function BillingDashboard() {
                 <small>{plan.description}</small>
               </div>
               <strong>
-                {money(plan.amountMinor)}
+                {money(plan.amountMinor, plan.currency)}
                 <small>/mo</small>
               </strong>
-              {plan.key !== 'growth' && (
-                <button className="ghost" onClick={() => queue(`${plan.name} plan`)}>
+              {plan.name !== overview.plan?.name && (
+                <button
+                  className="ghost"
+                  disabled={busy}
+                  onClick={() =>
+                    lifecycle(
+                      plan.amountMinor > (overview.plan?.amountMinor ?? 0)
+                        ? 'upgrade'
+                        : 'downgrade',
+                      plan.key
+                    )
+                  }
+                >
                   Select
                 </button>
               )}

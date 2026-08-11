@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { BrowserRouter, Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 /* eslint-disable react/prop-types */
 import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
@@ -113,13 +121,13 @@ function Login() {
         ? '/platform-admin'
         : roles.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'ADMIN'].includes(role))
           ? '/school-admin'
-        : roles.includes('TEACHER')
-          ? '/teachers'
-          : roles.includes('PARENT')
-            ? '/parent-portal'
-            : roles.includes('STUDENT')
-              ? '/students'
-              : '/school-setup';
+          : roles.includes('TEACHER')
+            ? '/teachers'
+            : roles.includes('PARENT')
+              ? '/parent-portal'
+              : roles.includes('STUDENT')
+                ? '/students'
+                : '/school-setup';
       nav(destination, { replace: true });
     } catch (err) {
       toast.error(err.response?.data?.error?.message ?? 'Unable to sign in');
@@ -168,15 +176,22 @@ function Login() {
       </form>
       <p className="mt-7 text-center text-sm text-slate-500">
         New to SAIS?{' '}
-        <Link to={isManager ? '/manager/register' : '/register'} className="font-semibold text-indigo-600">
+        <Link
+          to={isManager ? '/manager/register' : '/register'}
+          className="font-semibold text-indigo-600"
+        >
           Create an account
         </Link>
       </p>
       <p className="mt-3 text-center text-xs text-slate-400">
         {isManager ? (
-          <Link to="/login" className="font-semibold text-indigo-600">Tenant sign in</Link>
+          <Link to="/login" className="font-semibold text-indigo-600">
+            Tenant sign in
+          </Link>
         ) : (
-          <Link to="/manager/login" className="font-semibold text-indigo-600">Application Manager sign in</Link>
+          <Link to="/manager/login" className="font-semibold text-indigo-600">
+            Application Manager sign in
+          </Link>
         )}
       </p>
     </AuthShell>
