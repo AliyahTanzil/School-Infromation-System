@@ -10,15 +10,13 @@ export async function list(req, res, next) {
 }
 export async function register(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        data: await service.registerDevice({
-          tenantId: tenantId(req),
-          actorId: req.user?.id,
-          input: req.body,
-        }),
-      });
+    res.status(201).json({
+      data: await service.registerDevice({
+        tenantId: tenantId(req),
+        actorId: req.user?.id,
+        input: req.body,
+      }),
+    });
   } catch (error) {
     next(error);
   }
@@ -37,15 +35,13 @@ export async function health(req, res, next) {
 }
 export async function verify(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        data: await service.recordVerification({
-          tenantId: tenantId(req),
-          actorId: req.user?.id,
-          input: req.body,
-        }),
-      });
+    res.status(201).json({
+      data: await service.recordVerification({
+        tenantId: tenantId(req),
+        actorId: req.user?.id,
+        input: req.body,
+      }),
+    });
   } catch (error) {
     next(error);
   }

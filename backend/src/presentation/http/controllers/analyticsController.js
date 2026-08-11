@@ -27,10 +27,8 @@ export async function kpi(req, res) {
 }
 
 export async function exportReport(req, res) {
-  return res
-    .status(202)
-    .json({
-      success: true,
-      data: requestExport({ tenantId: req.user?.tenantId, format: req.body?.format }),
-    });
+  return res.status(202).json({
+    success: true,
+    data: requestExport({ tenantId: req.user?.tenantId, format: req.body?.format }),
+  });
 }

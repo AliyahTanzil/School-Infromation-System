@@ -167,7 +167,7 @@ export default function IoTDashboard() {
           {commandError && <p className="command-error">{commandError}</p>}
           {commandSent && (
             <p className="command-confirm">
-              <span />               Command queued for review and audit.
+              <span /> Command queued for review and audit.
             </p>
           )}
         </article>

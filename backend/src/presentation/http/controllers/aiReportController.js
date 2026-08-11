@@ -18,16 +18,14 @@ export async function validate(req, res) {
 }
 
 export async function generate(req, res) {
-  return res
-    .status(202)
-    .json({
-      success: true,
-      data: requestGeneration({
-        tenantId: req.user?.tenantId,
-        templateKey: req.body?.templateKey,
-        period: req.body?.period,
-      }),
-    });
+  return res.status(202).json({
+    success: true,
+    data: requestGeneration({
+      tenantId: req.user?.tenantId,
+      templateKey: req.body?.templateKey,
+      period: req.body?.period,
+    }),
+  });
 }
 
 export async function approve(req, res) {
@@ -42,14 +40,12 @@ export async function approve(req, res) {
 }
 
 export async function exportReport(req, res) {
-  return res
-    .status(202)
-    .json({
-      success: true,
-      data: requestReportExport({
-        tenantId: req.user?.tenantId,
-        reportId: req.params.reportId,
-        format: req.body?.format,
-      }),
-    });
+  return res.status(202).json({
+    success: true,
+    data: requestReportExport({
+      tenantId: req.user?.tenantId,
+      reportId: req.params.reportId,
+      format: req.body?.format,
+    }),
+  });
 }

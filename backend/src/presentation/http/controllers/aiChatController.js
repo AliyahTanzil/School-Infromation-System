@@ -18,14 +18,12 @@ export async function message(req, res) {
 }
 
 export async function feedback(req, res) {
-  return res
-    .status(201)
-    .json({
-      success: true,
-      data: submitFeedback({
-        tenantId: req.user?.tenantId || 'demo-tenant',
-        userId: req.user?.id || 'demo-user',
-        rating: req.body?.rating,
-      }),
-    });
+  return res.status(201).json({
+    success: true,
+    data: submitFeedback({
+      tenantId: req.user?.tenantId || 'demo-tenant',
+      userId: req.user?.id || 'demo-user',
+      rating: req.body?.rating,
+    }),
+  });
 }

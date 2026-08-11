@@ -55,7 +55,13 @@ async function issueSingleUseToken(repository, { userId, context, ttlMs }) {
  * session so the user is logged in (status stays PENDING_VERIFICATION until the
  * email is confirmed).
  */
-export async function register({ email, password, deviceName, accountType = 'TENANT_ADMIN', context }) {
+export async function register({
+  email,
+  password,
+  deviceName,
+  accountType = 'TENANT_ADMIN',
+  context,
+}) {
   const existing = await userRepository.findByEmail(email);
   if (existing) {
     throw new ConflictError('An account with this email already exists');
