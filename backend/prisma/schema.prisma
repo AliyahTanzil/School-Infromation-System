@@ -4655,6 +4655,83 @@ model AnalyticsAuditEvent {
   @@index([tenantId, createdAt])
 }
 
+enum AiAcademicRequestStatus {
+  QUEUED
+  COMPLETED
+  REFUSED
+  FAILED
+}
+model AiAcademicPromptVersion {
+  id String @id @default(uuid()) @db.Uuid
+  key String @db.VarChar(100)
+  version String @db.VarChar(40)
+  systemPromptHash String @db.VarChar(128)
+  active Boolean @default(false)
+  createdAt DateTime @default(now())
+  @@unique([key, version])
+}
+model AiAcademicConversation {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  roleKey String @db.VarChar(40)
+  title String? @db.VarChar(180)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  requests AiAcademicRequest[]
+  @@index([tenantId, userId, updatedAt])
+}
+model AiAcademicRequest {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  conversationId String? @db.Uuid
+  userId String @db.Uuid
+  mode String @db.VarChar(60)
+  inputRedacted String @db.VarChar(4000)
+  responseRedacted String? @db.VarChar(8000)
+  evidence Json
+  status AiAcademicRequestStatus @default(QUEUED)
+  riskFlags Json
+  promptVersion String @db.VarChar(40)
+  inputTokens Int @default(0)
+  outputTokens Int @default(0)
+  createdAt DateTime @default(now())
+  completedAt DateTime?
+  conversation AiAcademicConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  @@index([tenantId, userId, createdAt])
+}
+model AiAcademicFeedback {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  requestId String @db.Uuid
+  userId String @db.Uuid
+  rating Int
+  comment String? @db.VarChar(1000)
+  createdAt DateTime @default(now())
+  @@unique([requestId, userId])
+}
+model AiAcademicUsage {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  requestCount Int @default(0)
+  inputTokens Int @default(0)
+  outputTokens Int @default(0)
+  @@unique([tenantId, userId, periodStart])
+}
+model AiAcademicSafetyEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId String?
+  eventType String @db.VarChar(100)
+  severity String @db.VarChar(30)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW
