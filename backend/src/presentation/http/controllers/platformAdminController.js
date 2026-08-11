@@ -10,7 +10,7 @@ export async function action(req, res) {
   if (!req.user?.isPlatformAdmin && req.user?.role !== 'PLATFORM_ADMIN')
     return res.status(403).json({ error: 'Platform administrator access required' });
   try {
-    return res.json(runAction(req.body));
+    return res.json(await runAction(req.body, req.user.id));
   } catch {
     return res.status(400).json({ error: 'Invalid platform action' });
   }

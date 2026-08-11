@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import prisma from '../../infrastructure/orm/prismaClient.js';
 
 const actionSchema = z.object({
   action: z.enum(['acknowledge-incident', 'schedule-maintenance']),
@@ -72,8 +73,21 @@ export function getOverview() {
   };
 }
 
-export function runAction(input) {
+export async function runAction(input, actorId) {
   const parsed = actionSchema.safeParse(input);
   if (!parsed.success) throw new Error('Invalid platform action');
-  return { ok: true, mode: 'demo', message: `${parsed.data.action} queued for audited review.` };
+  const audit = await prisma.platformAuditEvent.create({
+    data: {
+      actorId,
+      action: parsed.data.action,
+      entityType: 'PLATFORM_OPERATION',
+      metadata: { targetId: parsed.data.targetId, source: 'platform-admin' },
+    },
+  });
+  return {
+    ok: true,
+    auditId: audit.id,
+    status: 'recorded',
+    message: `${parsed.data.action} recorded for audited review.`,
+  };
 }

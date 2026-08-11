@@ -1,21 +1,61 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, AlertTriangle, Archive, CheckCircle2, ShieldAlert } from 'lucide-react';
-
-const services = [
-  ['Core API', 'OPERATIONAL', '84ms', '99.98%'],
-  ['Primary database', 'OPERATIONAL', '41ms', '99.99%'],
-  ['Notification delivery', 'DEGRADED', '312ms', '99.72%'],
-  ['Document storage', 'OPERATIONAL', '116ms', '99.95%'],
-];
+import api from './api/auth.js';
 
 export default function PlatformAdminDashboard() {
+  const [overview, setOverview] = useState(null);
   const [notice, setNotice] = useState('');
-  const queueAction = (label) => setNotice(`${label} queued for audited review in Demo mode.`);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/platform-admin/overview')
+      .then(({ data }) => active && setOverview(data.data ?? data))
+      .catch(
+        (err) => active && setError(err.response?.data?.error ?? 'Platform overview unavailable')
+      )
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const queueAction = async (label, targetId) => {
+    try {
+      const { data } = await api.post('/platform-admin/actions', {
+        action: 'schedule-maintenance',
+        targetId,
+      });
+      setNotice(data.message ?? `${label} recorded.`);
+    } catch (err) {
+      setError(err.response?.data?.error ?? 'Platform action failed');
+    }
+  };
+
+  if (loading)
+    return (
+      <main className="platform-page">
+        <p>Loading platform operations…</p>
+      </main>
+    );
+  if (error)
+    return (
+      <main className="platform-page">
+        <div className="platform-notice" role="alert">
+          {error}
+        </div>
+      </main>
+    );
+  const summary = overview?.summary ?? {};
+  const services = overview?.services ?? [];
+
   return (
     <main className="platform-page">
       <header className="platform-hero">
         <div>
-          <p className="eyebrow">PLATFORM OPERATIONS / MODULE 33</p>
+          <p className="eyebrow">PLATFORM OPERATIONS / MODULE 45</p>
           <h1>Control the whole school network.</h1>
           <p>
             Platform administration keeps tenants healthy, services observable, and sensitive
@@ -24,7 +64,7 @@ export default function PlatformAdminDashboard() {
         </div>
         <div className="platform-status">
           <CheckCircle2 size={18} />
-          <span>All core systems operational</span>
+          <span>Operational data loaded</span>
         </div>
       </header>
       {notice && (
@@ -34,13 +74,13 @@ export default function PlatformAdminDashboard() {
       )}
       <section className="platform-metrics">
         {[
-          ['18', 'Tenants'],
-          ['42', 'Schools'],
-          ['12,840', 'Active users'],
-          ['1', 'Open incident'],
+          [summary.tenants, 'Tenants'],
+          [summary.schools, 'Schools'],
+          [summary.activeUsers, 'Active users'],
+          [summary.openIncidents, 'Open incident'],
         ].map(([value, label]) => (
           <article key={label}>
-            <strong>{value}</strong>
+            <strong>{value ?? '—'}</strong>
             <span>{label}</span>
           </article>
         ))}
@@ -55,15 +95,15 @@ export default function PlatformAdminDashboard() {
             <Activity size={20} />
           </div>
           <div className="service-list">
-            {services.map(([name, status, latency, uptime]) => (
-              <div className="service-row" key={name}>
-                <span className={`health-dot ${status === 'DEGRADED' ? 'degraded' : ''}`} />
+            {services.map((service) => (
+              <div className="service-row" key={service.key}>
+                <span className={`health-dot ${service.status === 'DEGRADED' ? 'degraded' : ''}`} />
                 <div>
-                  <strong>{name}</strong>
-                  <small>{latency} latency</small>
+                  <strong>{service.name}</strong>
+                  <small>{service.latencyMs}ms latency</small>
                 </div>
-                <b>{uptime}</b>
-                <span className="service-state">{status}</span>
+                <b>{service.uptimePercent}%</b>
+                <span className="service-state">{service.status}</span>
               </div>
             ))}
           </div>
@@ -77,18 +117,17 @@ export default function PlatformAdminDashboard() {
             <ShieldAlert size={20} />
           </div>
           <ul className="event-list">
-            <li>
-              <AlertTriangle size={16} />
-              <span>
-                Blocked repeated login attempts<small>18 min ago · warning</small>
-              </span>
-            </li>
-            <li>
-              <CheckCircle2 size={16} />
-              <span>
-                Admin policy updated<small>46 min ago · info</small>
-              </span>
-            </li>
+            {(overview?.security ?? []).map((item) => (
+              <li key={item.event}>
+                <AlertTriangle size={16} />
+                <span>
+                  {item.event}
+                  <small>
+                    {item.time} · {item.severity}
+                  </small>
+                </span>
+              </li>
+            ))}
           </ul>
         </article>
         <article className="platform-panel">
@@ -99,17 +138,18 @@ export default function PlatformAdminDashboard() {
             </div>
             <Archive size={20} />
           </div>
-          <div className="stacked-detail">
-            <strong>Production PostgreSQL</strong>
-            <span>Verified · 8.4 GB</span>
-            <small>Last completed today at 03:15</small>
-          </div>
-          <div className="stacked-detail">
-            <strong>Database index maintenance</strong>
-            <span>Aug 14 · 02:00–02:30 UTC</span>
-            <small>Primary database</small>
-          </div>
-          <button onClick={() => queueAction('Backup verification')}>Review controls</button>
+          {(overview?.backups ?? []).map((backup) => (
+            <div className="stacked-detail" key={backup.scope}>
+              <strong>{backup.scope}</strong>
+              <span>
+                {backup.status} · {backup.size}
+              </span>
+              <small>{backup.completedAt}</small>
+            </div>
+          ))}
+          <button onClick={() => queueAction('Backup verification', 'backup-verification')}>
+            Record maintenance review
+          </button>
         </article>
       </section>
     </main>
