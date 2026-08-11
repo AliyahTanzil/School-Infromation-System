@@ -29,6 +29,7 @@ import aiIntelligenceRoutes from './aiIntelligenceRoutes.js';
 import smartIdentityRoutes from './smartIdentityRoutes.js';
 import iotRoutes from './iotRoutes.js';
 import tenantAdminRoutes from './tenantAdminRoutes.js';
+import billingRoutes from './billingRoutes.js';
 
 const router = Router();
 
@@ -63,5 +64,6 @@ router.use('/ai-intelligence', aiIntelligenceRoutes);
 router.use('/smart-identity', smartIdentityRoutes);
 router.use('/iot', iotRoutes);
 router.use('/tenant-admin', tenantAdminRoutes);
+router.use('/billing', billingRoutes);
 
 export default router;

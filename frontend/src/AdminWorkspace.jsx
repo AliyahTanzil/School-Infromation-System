@@ -144,6 +144,12 @@ const moduleGroups = [
         'Tenant health, schools, usage, quotas, feature flags, lifecycle, and audit controls.',
         Building2,
       ],
+      [
+        '/billing',
+        'Subscription & billing',
+        'Plans, entitlements, invoices, payments, usage, and lifecycle controls.',
+        CreditCard,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -196,7 +202,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['26', 'Modules available'],
+            ['27', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (
