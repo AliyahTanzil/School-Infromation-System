@@ -21,7 +21,7 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: true,
     // Vite automatically increments from 5174 when another process owns the port.
-    port: Number(globalThis.process?.env?.FRONTEND_PORT || 5173),
+    port: Number(globalThis.process?.env?.FRONTEND_PORT || 3000),
     strictPort: false,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {

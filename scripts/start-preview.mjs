@@ -33,10 +33,10 @@ function stop(child) {
   if (child && !child.killed) child.kill('SIGTERM');
 }
 
-const preferredBackend = Number(process.env.BACKEND_PORT || 3000);
-const preferredFrontend = Number(process.env.FRONTEND_PORT || 5173);
-const backend = await nextPort(preferredBackend);
-const frontend = await nextPort(Math.max(preferredFrontend, backend + 1));
+const preferredFrontend = Number(process.env.FRONTEND_PORT || 3000);
+const preferredBackend = Number(process.env.BACKEND_PORT || 3001);
+const frontend = await nextPort(preferredFrontend);
+const backend = await nextPort(Math.max(preferredBackend, frontend + 1));
 
 try {
   unlinkSync(backendPortFile);
