@@ -192,6 +192,12 @@ const moduleGroups = [
         'Secure provider connections, health checks, and sync safeguards.',
         PlugZap,
       ],
+      [
+        '/biometrics',
+        'Biometric Management',
+        'Privacy-first readers, device health, and auditable verification events.',
+        Fingerprint,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -244,7 +250,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['34', 'Modules available'],
+            ['35', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

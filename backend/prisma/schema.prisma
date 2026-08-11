@@ -4964,6 +4964,53 @@ model IntegrationAuditEvent {
   @@index([tenantId, createdAt])
 }
 
+enum BiometricDeviceStatus {
+  PENDING
+  ACTIVE
+  OFFLINE
+  DISABLED
+}
+model BiometricDevice {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  deviceKey String @db.VarChar(120)
+  displayName String @db.VarChar(180)
+  location String? @db.VarChar(180)
+  status BiometricDeviceStatus @default(PENDING)
+  capabilities Json
+  lastSeenAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events BiometricVerificationEvent[]
+  @@unique([tenantId, deviceKey])
+  @@index([tenantId, status])
+}
+model BiometricVerificationEvent {
+  id String @id @default(uuid()) @db.Uuid
+  deviceId String @db.Uuid
+  tenantId String @db.Uuid
+  subjectRef String @db.VarChar(180)
+  method String @db.VarChar(40)
+  outcome String @db.VarChar(30)
+  occurredAt DateTime
+  idempotencyKey String @db.VarChar(180)
+  metadataRedacted Json
+  createdAt DateTime @default(now())
+  device BiometricDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, occurredAt])
+}
+model BiometricAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

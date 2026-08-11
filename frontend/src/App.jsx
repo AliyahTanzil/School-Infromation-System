@@ -39,6 +39,7 @@ import AIAcademicDashboard from './AIAcademicDashboard.jsx';
 import AIReportsDashboard from './AIReportsDashboard.jsx';
 import AIChatDashboard from './AIChatDashboard.jsx';
 import IntegrationsDashboard from './IntegrationsDashboard.jsx';
+import BiometricManagementDashboard from './BiometricManagementDashboard.jsx';
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -702,6 +703,14 @@ export default function App() {
             element={
               <Protected>
                 <SchoolAdmin />
+              </Protected>
+            }
+          />
+          <Route
+            path="/biometrics"
+            element={
+              <Protected>
+                <BiometricManagementDashboard />
               </Protected>
             }
           />

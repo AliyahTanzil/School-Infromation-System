@@ -36,6 +36,7 @@ import aiAcademicRoutes from './aiAcademicRoutes.js';
 import aiReportRoutes from './aiReportRoutes.js';
 import aiChatRoutes from './aiChatRoutes.js';
 import integrationRoutes from './integrationRoutes.js';
+import biometricRoutes from './biometricRoutes.js';
 
 const router = Router();
 
@@ -77,5 +78,6 @@ router.use('/ai-academic', aiAcademicRoutes);
 router.use('/ai-reports', aiReportRoutes);
 router.use('/ai-chat', aiChatRoutes);
 router.use('/integrations', integrationRoutes);
+router.use('/biometrics', biometricRoutes);
 
 export default router;
