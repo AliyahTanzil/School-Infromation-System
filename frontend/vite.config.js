@@ -11,7 +11,7 @@ function resolveBackendTarget() {
     const port = Number(readFileSync(backendPortFile, 'utf8').trim());
     return `http://localhost:${port}`;
   } catch {
-    return process.env.VITE_BACKEND_URL || 'http://localhost:3000';
+    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:3000';
   }
 }
 
@@ -20,7 +20,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     allowedHosts: true,
-    port: 5174,
+    // Vite automatically increments from 5174 when another process owns the port.
+    port: Number(globalThis.process?.env?.FRONTEND_PORT || 5174),
     strictPort: false,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {

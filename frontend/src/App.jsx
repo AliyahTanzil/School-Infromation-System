@@ -28,6 +28,7 @@ import TimetableDashboard from './TimetableDashboard.jsx';
 import AdminDemoEntry from './AdminDemoEntry.jsx';
 import AdminWorkspace from './AdminWorkspace.jsx';
 import ClassroomDashboard from './ClassroomDashboard.jsx';
+import StudentSubmissionCenter from './StudentSubmissionCenter.jsx';
 import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
 import CommunicationDashboard from './CommunicationDashboard.jsx';
 import HRDashboard from './HRDashboard.jsx';
@@ -630,6 +631,14 @@ export default function App() {
             element={
               <Protected>
                 <ClassroomDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/my-work"
+            element={
+              <Protected>
+                <StudentSubmissionCenter />
               </Protected>
             }
           />
