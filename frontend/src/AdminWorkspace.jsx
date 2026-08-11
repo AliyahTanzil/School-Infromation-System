@@ -29,6 +29,7 @@ import {
   LockKeyhole,
   BrainCircuit,
   FileText,
+  MessagesSquare,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -178,6 +179,12 @@ const moduleGroups = [
         'Evidence-backed narratives, validation, review, approvals, and exports.',
         FileText,
       ],
+      [
+        '/ai-chat',
+        'AI Chat Assistant',
+        'Conversational school operations with citations, evidence, and safe boundaries.',
+        MessagesSquare,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -230,7 +237,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['32', 'Modules available'],
+            ['33', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

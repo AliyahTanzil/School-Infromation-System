@@ -34,6 +34,7 @@ import platformAdminRoutes from './platformAdminRoutes.js';
 import securityAdminRoutes from './securityAdminRoutes.js';
 import aiAcademicRoutes from './aiAcademicRoutes.js';
 import aiReportRoutes from './aiReportRoutes.js';
+import aiChatRoutes from './aiChatRoutes.js';
 
 const router = Router();
 
@@ -73,5 +74,6 @@ router.use('/platform-admin', platformAdminRoutes);
 router.use('/security-admin', securityAdminRoutes);
 router.use('/ai-academic', aiAcademicRoutes);
 router.use('/ai-reports', aiReportRoutes);
+router.use('/ai-chat', aiChatRoutes);
 
 export default router;
