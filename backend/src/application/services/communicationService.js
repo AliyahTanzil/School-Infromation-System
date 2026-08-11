@@ -48,6 +48,47 @@ const communicationService = {
       where: { userId, readAt: null, notification: { status: { not: 'CANCELLED' } } },
     });
   },
+
+  async getPreferences(userId, schoolId) {
+    if (!userId || !schoolId) throw new Error('userId and schoolId are required');
+    return prisma.notificationPreference.findUnique({
+      where: { userId_schoolId: { userId, schoolId } },
+    });
+  },
+
+  async upsertPreferences(input) {
+    if (!input.userId || !input.schoolId) throw new Error('userId and schoolId are required');
+    const data = {
+      email: input.email ?? true,
+      sms: input.sms ?? false,
+      push: input.push ?? true,
+      whatsapp: input.whatsapp ?? false,
+      inApp: input.inApp ?? true,
+      quietHours: input.quietHours || { start: '21:00', end: '07:00' },
+    };
+    return prisma.notificationPreference.upsert({
+      where: { userId_schoolId: { userId: input.userId, schoolId: input.schoolId } },
+      create: { userId: input.userId, schoolId: input.schoolId, ...data },
+      update: data,
+    });
+  },
+
+  async deliveryHealth(schoolId) {
+    const where = schoolId ? { notification: { schoolId } } : {};
+    const [total, delivered, failed, pending] = await Promise.all([
+      prisma.notificationDelivery.count({ where }),
+      prisma.notificationDelivery.count({ where: { ...where, status: 'DELIVERED' } }),
+      prisma.notificationDelivery.count({ where: { ...where, status: 'FAILED' } }),
+      prisma.notificationDelivery.count({ where: { ...where, status: 'PENDING' } }),
+    ]);
+    return {
+      total,
+      delivered,
+      failed,
+      pending,
+      deliveryRate: total ? Number(((delivered / total) * 100).toFixed(1)) : 100,
+    };
+  },
 };
 
 export default communicationService;

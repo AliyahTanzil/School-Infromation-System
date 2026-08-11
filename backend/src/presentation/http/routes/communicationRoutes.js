@@ -33,5 +33,28 @@ router.post('/notifications/:notificationId/read', async (req, res, next) => {
     next(error);
   }
 });
+router.get('/notification-preferences', async (req, res, next) => {
+  try {
+    res.json({
+      data: await communicationService.getPreferences(req.query.userId, req.query.schoolId),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+router.put('/notification-preferences', async (req, res, next) => {
+  try {
+    res.json({ data: await communicationService.upsertPreferences(req.body) });
+  } catch (error) {
+    next(error);
+  }
+});
+router.get('/notification-delivery-health', async (req, res, next) => {
+  try {
+    res.json({ data: await communicationService.deliveryHealth(req.query.schoolId) });
+  } catch (error) {
+    next(error);
+  }
+});
 
 export default router;
