@@ -19,7 +19,8 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate --schema prisma/schema.prisma"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
