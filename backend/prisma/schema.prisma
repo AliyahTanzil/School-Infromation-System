@@ -417,6 +417,12 @@ model Tenant {
   updatedAt DateTime  @updatedAt
 
   schools School[]
+  memberships TenantMembership[]
+  configurations TenantConfiguration[]
+  featureFlags TenantFeatureFlag[]
+  quotas TenantQuota[]
+  usage TenantUsage[]
+  subscriptions TenantSubscription[]
 
   @@index([status, deletedAt])
 }
@@ -4169,6 +4175,88 @@ model IoTAuditEvent {
   metadata Json
   createdAt DateTime @default(now())
   @@index([tenantId, schoolId, createdAt])
+}
+
+enum TenantLifecycleStatus {
+  ACTIVE
+  SUSPENDED
+  PROVISIONING
+  DEACTIVATED
+}
+enum TenantMemberStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+model TenantMembership {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  status TenantMemberStatus @default(INVITED)
+  joinedAt DateTime?
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, userId])
+  @@index([tenantId, status])
+}
+model TenantConfiguration {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  key String @db.VarChar(120)
+  value Json
+  updatedAt DateTime @updatedAt
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, key])
+}
+model TenantFeatureFlag {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  key String @db.VarChar(120)
+  enabled Boolean @default(false)
+  config Json?
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, key])
+}
+model TenantQuota {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  key String @db.VarChar(100)
+  limitValue Int
+  usedValue Int @default(0)
+  resetAt DateTime?
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, key])
+}
+model TenantUsage {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  metricKey String @db.VarChar(100)
+  periodStart DateTime
+  periodEnd DateTime
+  value Int @default(0)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, metricKey, periodStart])
+}
+model TenantSubscription {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  planKey String @db.VarChar(60)
+  status String @db.VarChar(40)
+  renewsAt DateTime?
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  @@index([tenantId, status])
+}
+model TenantAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, createdAt])
 }
 
 enum TimetableStatus {

@@ -24,6 +24,7 @@ import {
   Sparkles,
   Fingerprint,
   CircuitBoard,
+  Building2,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -137,6 +138,12 @@ const moduleGroups = [
         'Connected devices, gateways, telemetry, energy, classroom automation, and alerts.',
         CircuitBoard,
       ],
+      [
+        '/tenant-admin',
+        'Multi-Tenant SaaS',
+        'Tenant health, schools, usage, quotas, feature flags, lifecycle, and audit controls.',
+        Building2,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -189,7 +196,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['25', 'Modules available'],
+            ['26', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (
