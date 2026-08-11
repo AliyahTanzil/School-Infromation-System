@@ -23,6 +23,7 @@ import {
   ChartNoAxesCombined,
   Sparkles,
   Fingerprint,
+  CircuitBoard,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -130,6 +131,12 @@ const moduleGroups = [
         'QR, RFID, device verification, consent, policy, and offline identity controls.',
         Fingerprint,
       ],
+      [
+        '/iot',
+        'IoT Smart School',
+        'Connected devices, gateways, telemetry, energy, classroom automation, and alerts.',
+        CircuitBoard,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -182,7 +189,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['24', 'Modules available'],
+            ['25', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

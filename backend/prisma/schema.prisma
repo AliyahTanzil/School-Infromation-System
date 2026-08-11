@@ -4022,6 +4022,155 @@ model SmartIdentityAuditEvent {
   @@index([tenantId, schoolId, createdAt])
 }
 
+enum IoTDeviceStatus {
+  ONLINE
+  OFFLINE
+  DEGRADED
+  RETIRED
+}
+enum IoTCommandStatus {
+  QUEUED
+  SENT
+  ACKNOWLEDGED
+  FAILED
+  EXPIRED
+}
+enum IoTAlertSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+model IoTGateway {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  name String @db.VarChar(160)
+  gatewayKeyHash String @db.VarChar(128)
+  status IoTDeviceStatus @default(OFFLINE)
+  lastSeenAt DateTime?
+  firmwareVersion String? @db.VarChar(60)
+  createdAt DateTime @default(now())
+  devices IoTDevice[]
+  @@unique([tenantId, gatewayKeyHash])
+  @@index([tenantId, schoolId, status])
+}
+model IoTDevice {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  gatewayId String? @db.Uuid
+  name String @db.VarChar(160)
+  deviceType String @db.VarChar(80)
+  deviceKeyHash String @db.VarChar(128)
+  status IoTDeviceStatus @default(OFFLINE)
+  location String? @db.VarChar(180)
+  capabilities Json
+  lastSeenAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  gateway IoTGateway? @relation(fields: [gatewayId], references: [id], onDelete: SetNull)
+  telemetry IoTTelemetry[]
+  commands IoTCommand[]
+  @@unique([tenantId, deviceKeyHash])
+  @@index([tenantId, schoolId, deviceType, status])
+}
+model IoTTelemetry {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  deviceId String @db.Uuid
+  metricKey String @db.VarChar(100)
+  value Decimal @db.Decimal(18,6)
+  unit String @db.VarChar(30)
+  recordedAt DateTime
+  receivedAt DateTime @default(now())
+  device IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, metricKey, recordedAt])
+}
+model IoTCommand {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  deviceId String @db.Uuid
+  commandKey String @db.VarChar(100)
+  payload Json
+  idempotencyKey String @db.VarChar(120)
+  status IoTCommandStatus @default(QUEUED)
+  requestedById String? @db.Uuid
+  requestedAt DateTime @default(now())
+  acknowledgedAt DateTime?
+  device IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, schoolId, status, requestedAt])
+}
+model IoTDeviceRule {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  name String @db.VarChar(160)
+  metricKey String @db.VarChar(100)
+  condition Json
+  action Json
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, active])
+}
+model IoTAlert {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  deviceId String? @db.Uuid
+  title String @db.VarChar(180)
+  message String @db.VarChar(500)
+  severity IoTAlertSeverity
+  acknowledgedAt DateTime?
+  resolvedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, severity, createdAt])
+}
+model IoTFirmwareRelease {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  deviceType String @db.VarChar(80)
+  version String @db.VarChar(60)
+  checksum String @db.VarChar(128)
+  artifactKey String @db.VarChar(300)
+  releasedAt DateTime @default(now())
+  @@unique([tenantId, deviceType, version])
+}
+model IoTDevicePermission {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  roleId String @db.Uuid
+  scope String @db.VarChar(80)
+  canView Boolean @default(true)
+  canCommand Boolean @default(false)
+  @@unique([tenantId, roleId, scope])
+}
+model IoTOfflineEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  deviceKeyHash String @db.VarChar(128)
+  eventKey String @db.VarChar(120)
+  payload Json
+  occurredAt DateTime
+  receivedAt DateTime @default(now())
+  processedAt DateTime?
+  @@unique([tenantId, deviceKeyHash, eventKey])
+}
+model IoTAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String? @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, createdAt])
+}
+
 enum TimetableStatus {
   DRAFT
   REVIEW

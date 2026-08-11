@@ -27,6 +27,7 @@ import securityRoutes from './securityRoutes.js';
 import analyticsRoutes from './analyticsRoutes.js';
 import aiIntelligenceRoutes from './aiIntelligenceRoutes.js';
 import smartIdentityRoutes from './smartIdentityRoutes.js';
+import iotRoutes from './iotRoutes.js';
 
 const router = Router();
 
@@ -59,5 +60,6 @@ router.use('/security', securityRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/ai-intelligence', aiIntelligenceRoutes);
 router.use('/smart-identity', smartIdentityRoutes);
+router.use('/iot', iotRoutes);
 
 export default router;
