@@ -7,7 +7,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../scripts/start-preview.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
