@@ -49,7 +49,7 @@ writeFileSync(
 );
 
 console.log(`[sais] Allocated backend ${backend} and frontend ${frontend}.`);
-const backendChild = spawn('npm', ['run', 'dev', '-w', 'backend'], {
+const backendChild = spawn('npm', ['run', 'dev', '--workspace', 'sais-backend'], {
   cwd: root,
   env: {
     ...process.env,
@@ -71,7 +71,9 @@ while (
 }
 if (!existsSync(backendPortFile)) {
   stop(backendChild);
-  throw new Error('Backend did not publish its allocated port before the startup timeout.');
+  throw new Error(
+    `Backend did not publish port ${backend} before the startup timeout. Check the backend workspace script and logs above.`
+  );
 }
 
 const frontendChild = spawn(
@@ -98,6 +100,14 @@ frontendChild.on('exit', (code) => {
   stop(backendChild);
   process.exit(code ?? 0);
 });
-backendChild.on('exit', (code) => {
-  if (code && !frontendChild.killed) stop(frontendChild);
+backendChild.on('error', (error) => {
+  console.error(`[sais] Backend process could not start: ${error.message}`);
+});
+backendChild.on('exit', (code, signal) => {
+  if (code && !frontendChild.killed) {
+    console.error(
+      `[sais] Backend exited before preview readiness (code=${code}, signal=${signal ?? 'none'}).`
+    );
+    stop(frontendChild);
+  }
 });
