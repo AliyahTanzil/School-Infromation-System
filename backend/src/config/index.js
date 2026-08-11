@@ -10,10 +10,10 @@ const toBool = (value, fallback) =>
 
 const config = {
   env: process.env.NODE_ENV ?? 'development',
-  port: Number(process.env.PORT ?? 3000),
+  port: Number(process.env.PORT ?? 5000),
 
   // Public base URL of the frontend — used to build links in transactional emails.
-  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:4000',
 
   db: {
     url: process.env.DATABASE_URL ?? '',
@@ -22,7 +22,7 @@ const config = {
     url: process.env.REDIS_URL ?? '',
   },
   cors: {
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
+    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4000',
     credentials: true,
   },
 

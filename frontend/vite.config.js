@@ -20,8 +20,8 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     allowedHosts: true,
-    // Vite automatically increments from 5174 when another process owns the port.
-    port: Number(globalThis.process?.env?.FRONTEND_PORT || 3000),
+    // The preview launcher supplies the allocated port; 4000 is the standalone default.
+    port: Number(globalThis.process?.env?.FRONTEND_PORT || 4000),
     strictPort: false,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {

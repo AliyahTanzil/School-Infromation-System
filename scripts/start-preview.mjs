@@ -33,8 +33,8 @@ function stop(child) {
   if (child && !child.killed) child.kill('SIGTERM');
 }
 
-const preferredFrontend = Number(process.env.FRONTEND_PORT || 3000);
-const preferredBackend = Number(process.env.BACKEND_PORT || 3001);
+const preferredFrontend = Number(process.env.FRONTEND_PORT || 4000);
+const preferredBackend = Number(process.env.BACKEND_PORT || 5000);
 const frontend = await nextPort(preferredFrontend);
 const backend = await nextPort(Math.max(preferredBackend, frontend + 1));
 
@@ -49,31 +49,50 @@ writeFileSync(
 );
 
 console.log(`[sais] Allocated backend ${backend} and frontend ${frontend}.`);
-const backendChild = spawn('npm', ['run', 'dev', '--workspace', 'sais-backend'], {
-  cwd: root,
-  env: {
-    ...process.env,
-    PORT: String(backend),
-    FRONTEND_URL: `http://localhost:${frontend}`,
-    CORS_ORIGIN: `http://localhost:${frontend}`,
-  },
-  stdio: 'inherit',
-  shell: process.platform === 'win32',
+const backendChild = spawn(
+  process.execPath,
+  ['--env-file-if-exists=/vercel/share/.env.project', resolve(root, 'backend/src/main.js')],
+  {
+    cwd: resolve(root, 'backend'),
+    env: {
+      ...process.env,
+      PORT: String(backend),
+      FRONTEND_URL: `http://localhost:${frontend}`,
+      CORS_ORIGIN: `http://localhost:${frontend}`,
+    },
+    stdio: 'inherit',
+  }
+);
+
+let backendExit;
+backendChild.once('exit', (code, signal) => {
+  backendExit = { code, signal };
+});
+backendChild.once('error', (error) => {
+  console.error(`[sais] Backend process error: ${error.message}`);
 });
 
 const deadline = Date.now() + Number(process.env.BACKEND_START_TIMEOUT || 30000);
-while (
-  (!existsSync(backendPortFile) ||
-    Number.parseInt(readFileSync(backendPortFile, 'utf8'), 10) !== backend) &&
-  Date.now() < deadline
-) {
+while (Date.now() < deadline) {
+  if (backendExit) {
+    throw new Error(
+      `Backend exited before readiness (code=${backendExit.code ?? 'none'}, signal=${backendExit.signal ?? 'none'}). Review the backend error output above.`
+    );
+  }
+  if (
+    existsSync(backendPortFile) &&
+    Number.parseInt(readFileSync(backendPortFile, 'utf8'), 10) === backend
+  ) {
+    break;
+  }
   await new Promise((resolveWait) => setTimeout(resolveWait, 250));
 }
-if (!existsSync(backendPortFile)) {
+if (
+  !existsSync(backendPortFile) ||
+  Number.parseInt(readFileSync(backendPortFile, 'utf8'), 10) !== backend
+) {
   stop(backendChild);
-  throw new Error(
-    `Backend did not publish port ${backend} before the startup timeout. Check the backend workspace script and logs above.`
-  );
+  throw new Error(`Backend did not become ready on port ${backend} within the startup timeout.`);
 }
 
 const frontendChild = spawn(
