@@ -25,6 +25,7 @@ import {
   Fingerprint,
   CircuitBoard,
   Building2,
+  ServerCog,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 
@@ -150,6 +151,12 @@ const moduleGroups = [
         'Plans, entitlements, invoices, payments, usage, and lifecycle controls.',
         CreditCard,
       ],
+      [
+        '/platform-admin',
+        'Platform administration',
+        'Tenants, services, security, incidents, backups, integrations, and audit controls.',
+        ServerCog,
+      ],
       ['/parent-portal', 'Parent portal', 'Preview the family-facing school experience.', Users],
       [
         '/school-setup',
@@ -202,7 +209,7 @@ export default function AdminWorkspace() {
 
         <section className="mt-8 grid gap-4 md:grid-cols-3" aria-label="Demo environment details">
           {[
-            ['27', 'Modules available'],
+            ['28', 'Modules available'],
             ['Demo Admin', 'Active role'],
             ['Safe to explore', 'Data boundary'],
           ].map(([value, label]) => (

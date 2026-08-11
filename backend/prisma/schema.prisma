@@ -4365,7 +4365,89 @@ model BillingAuditEvent {
   @@index([tenantId, createdAt])
 }
 
- enum TimetableStatus {
+ enum PlatformServiceStatus {
+  OPERATIONAL
+  DEGRADED
+  OUTAGE
+  MAINTENANCE
+}
+enum PlatformIncidentStatus {
+  OPEN
+  INVESTIGATING
+  MITIGATED
+  RESOLVED
+}
+model PlatformService {
+  id String @id @default(uuid()) @db.Uuid
+  key String @unique @db.VarChar(80)
+  name String @db.VarChar(140)
+  status PlatformServiceStatus @default(OPERATIONAL)
+  latencyMs Int @default(0)
+  uptimePercent Decimal @db.Decimal(5,2)
+  checkedAt DateTime @default(now())
+  incidents PlatformIncident[]
+}
+model PlatformIncident {
+  id String @id @default(uuid()) @db.Uuid
+  serviceId String @db.Uuid
+  title String @db.VarChar(180)
+  status PlatformIncidentStatus @default(OPEN)
+  severity String @db.VarChar(30)
+  summary String @db.VarChar(500)
+  startedAt DateTime @default(now())
+  resolvedAt DateTime?
+  service PlatformService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  @@index([status, startedAt])
+}
+model PlatformMaintenanceWindow {
+  id String @id @default(uuid()) @db.Uuid
+  title String @db.VarChar(180)
+  scope String @db.VarChar(120)
+  startsAt DateTime
+  endsAt DateTime
+  status String @db.VarChar(30)
+  createdAt DateTime @default(now())
+}
+model PlatformBackup {
+  id String @id @default(uuid()) @db.Uuid
+  scope String @db.VarChar(120)
+  status String @db.VarChar(30)
+  sizeBytes BigInt
+  checksum String @db.VarChar(128)
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+}
+model PlatformIntegration {
+  id String @id @default(uuid()) @db.Uuid
+  providerKey String @db.VarChar(80)
+  name String @db.VarChar(140)
+  status String @db.VarChar(30)
+  secretRefHash String? @db.VarChar(128)
+  lastCheckedAt DateTime @default(now())
+  @@unique([providerKey, name])
+}
+model PlatformSecurityEvent {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String? @db.Uuid
+  eventType String @db.VarChar(100)
+  severity String @db.VarChar(30)
+  ipHash String? @db.VarChar(128)
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([severity, createdAt])
+}
+model PlatformAuditEvent {
+  id String @id @default(uuid()) @db.Uuid
+  actorId String? @db.Uuid
+  action String @db.VarChar(100)
+  entityType String @db.VarChar(80)
+  entityId String? @db.Uuid
+  metadata Json
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+enum TimetableStatus {
   DRAFT
   REVIEW
   PUBLISHED
