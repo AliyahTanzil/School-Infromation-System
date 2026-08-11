@@ -6,6 +6,11 @@ import { writeFileSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const portFile = resolve(process.cwd(), '.sais-port');
+try {
+  unlinkSync(portFile);
+} catch {
+  // A stale readiness file is safe to remove before startup.
+}
 
 let currentPort = config.port;
 const server = app.listen(currentPort, () => {
