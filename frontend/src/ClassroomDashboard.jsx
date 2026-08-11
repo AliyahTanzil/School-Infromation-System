@@ -9,8 +9,11 @@ import {
   ClipboardCheck,
   Clock3,
   FileText,
+  HelpCircle,
   LayoutDashboard,
   Plus,
+  Presentation,
+  RotateCcw,
   Users,
   X,
 } from 'lucide-react';
@@ -66,6 +69,18 @@ const upcoming = [
   },
 ];
 const tabs = ['Stream', 'Classwork', 'People', 'Grades', 'Analytics'];
+const initialTopics = ['Algebraic expressions', 'Practice & review', 'Resources'];
+const initialClasswork = [
+  { id: 1, title: 'Algebraic expressions', type: 'Assignment', topic: 'Algebraic expressions', due: 'Today, 3:30 PM', points: 20, status: 'Published', icon: FileText },
+  { id: 2, title: 'Expression vocabulary', type: 'Material', topic: 'Algebraic expressions', due: 'No due date', points: null, status: 'Published', icon: Presentation },
+  { id: 3, title: 'Fractions checkpoint', type: 'Quiz', topic: 'Practice & review', due: 'Fri, 11:30 AM', points: 15, status: 'Scheduled', icon: HelpCircle },
+  { id: 4, title: 'Unit 1 reference sheet', type: 'Material', topic: 'Resources', due: 'No due date', points: null, status: 'Draft', icon: FileText },
+];
+const classworkTypes = [
+  { label: 'Assignment', icon: FileText, description: 'Collect work from learners.' },
+  { label: 'Quiz', icon: HelpCircle, description: 'Check understanding with questions.' },
+  { label: 'Material', icon: Presentation, description: 'Share a lesson or resource.' },
+];
 
 function ClassroomDashboard() {
   const [classrooms, setClassrooms] = useState(initialClassrooms);
@@ -75,6 +90,13 @@ function ClassroomDashboard() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [form, setForm] = useState({ name: '', subject: '', grade: '', code: '' });
   const [error, setError] = useState('');
+  const [topics, setTopics] = useState(initialTopics);
+  const [classwork, setClasswork] = useState(initialClasswork);
+  const [classworkFilter, setClassworkFilter] = useState('All');
+  const [isClassworkOpen, setIsClassworkOpen] = useState(false);
+  const [classworkForm, setClassworkForm] = useState({ title: '', type: 'Assignment', topic: initialTopics[0], due: '', points: '20' });
+  const [topicName, setTopicName] = useState('');
+  const [classworkError, setClassworkError] = useState('');
   const visibleClassrooms = useMemo(
     () =>
       activeFilter === 'All classrooms'
@@ -83,6 +105,8 @@ function ClassroomDashboard() {
     [activeFilter, classrooms]
   );
   const selected = activeClassroom || visibleClassrooms[0];
+
+  const filteredClasswork = classwork.filter((item) => classworkFilter === 'All' || item.topic === classworkFilter);
 
   function createClassroom(event) {
     event.preventDefault();
@@ -102,6 +126,39 @@ function ClassroomDashboard() {
     setIsCreateOpen(false);
     setForm({ name: '', subject: '', grade: '', code: '' });
     setError('');
+  }
+
+  function createTopic(event) {
+    event.preventDefault();
+    const nextTopic = topicName.trim();
+    if (!nextTopic || topics.includes(nextTopic)) return;
+    setTopics((items) => [...items, nextTopic]);
+    setClassworkFilter(nextTopic);
+    setTopicName('');
+  }
+
+  function createClasswork(event) {
+    event.preventDefault();
+    if (!classworkForm.title.trim()) return setClassworkError('Add a title before saving this classwork.');
+    const nextItem = {
+      id: Date.now(),
+      title: classworkForm.title.trim(),
+      type: classworkForm.type,
+      topic: classworkForm.topic,
+      due: classworkForm.due || 'No due date',
+      points: classworkForm.type === 'Material' ? null : Number(classworkForm.points) || 0,
+      status: 'Draft',
+      icon: classworkTypes.find((item) => item.label === classworkForm.type)?.icon || FileText,
+    };
+    setClasswork((items) => [nextItem, ...items]);
+    setClassworkForm({ title: '', type: 'Assignment', topic: topics[0], due: '', points: '20' });
+    setClassworkError('');
+    setIsClassworkOpen(false);
+    setActiveTab('Classwork');
+  }
+
+  function updateClassworkStatus(id, status) {
+    setClasswork((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
   }
 
   return (
@@ -201,29 +258,39 @@ function ClassroomDashboard() {
               </button>
             ))}
           </nav>
-          <div className="detail-body">
-            <div>
-              <p className="eyebrow">{activeTab}</p>
-              <h3>
-                {activeTab === 'Stream'
-                  ? 'Keep your classroom moving.'
-                  : `${activeTab} is ready for your classroom.`}
-              </h3>
-              <p className="detail-copy">
-                {activeTab === 'Stream'
-                  ? 'Share an update, surface important work, and keep learners aligned from one calm command center.'
-                  : 'This workspace will connect to the classroom records and workflows in the next implementation slice.'}
-              </p>
-              <button className="primary-action">
-                <Plus /> {activeTab === 'Classwork' ? 'Create classwork' : 'Post an update'}
-              </button>
+          {activeTab === 'Classwork' ? (
+            <div className="classwork-workspace">
+              <div className="classwork-toolbar">
+                <div>
+                  <p className="eyebrow">Content library</p>
+                  <h3>Everything learners need, in order.</h3>
+                </div>
+                <button className="primary-action" onClick={() => setIsClassworkOpen(true)}><Plus data-icon="inline-start" /> Create classwork</button>
+              </div>
+              <div className="classwork-filters">
+                {['All', ...topics].map((filter) => <button key={filter} className={classworkFilter === filter ? 'filter-chip active' : 'filter-chip'} onClick={() => setClassworkFilter(filter)}>{filter}</button>)}
+              </div>
+              <div className="classwork-list">
+                {topics.filter((topic) => classworkFilter === 'All' || topic === classworkFilter).map((topic) => (
+                  <section className="topic-section" key={topic}>
+                    <div className="topic-heading"><h4>{topic}</h4><span>{filteredClasswork.filter((item) => item.topic === topic).length} items</span></div>
+                    {filteredClasswork.filter((item) => item.topic === topic).map(({ id, title, type, due, points, status, icon: Icon }) => (
+                      <article className="classwork-item" key={id}>
+                        <span className="classwork-icon"><Icon /></span>
+                        <div className="classwork-item-main"><div className="classwork-title-row"><div><span className="item-type">{type}</span><h4>{title}</h4></div><span className={`status-badge ${status.toLowerCase()}`}>{status}</span></div><p>{due}{points ? ` · ${points} points` : ''}</p></div>
+                        <button className="text-action" onClick={() => updateClassworkStatus(id, status === 'Archived' ? 'Draft' : 'Archived')}>{status === 'Archived' ? <RotateCcw /> : 'Archive'}</button>
+                      </article>
+                    ))}
+                  </section>
+                ))}
+              </div>
+              <form className="topic-create" onSubmit={createTopic}><input aria-label="New topic name" value={topicName} onChange={(event) => setTopicName(event.target.value)} placeholder="Add a topic" /><button className="secondary-action" type="submit"><Plus /> Topic</button></form>
             </div>
-            <div className="detail-placeholder">
-              <LayoutDashboard />
-              <strong>{selected.progress}% course progress</strong>
-              <span>{selected.next}</span>
+          ) : (
+            <div className="detail-body">
+              <div><p className="eyebrow">{activeTab}</p><h3>{activeTab === 'Stream' ? 'Keep your classroom moving.' : `${activeTab} is ready for your classroom.`}</h3><p className="detail-copy">{activeTab === 'Stream' ? 'Share an update, surface important work, and keep learners aligned from one calm command center.' : 'This workspace will connect to the classroom records and workflows in the next implementation slice.'}</p><button className="primary-action"><Plus /> {activeTab === 'Classwork' ? 'Create classwork' : 'Post an update'}</button></div><div className="detail-placeholder"><LayoutDashboard /><strong>{selected.progress}% course progress</strong><span>{selected.next}</span></div>
             </div>
-          </div>
+          )}
         </section>
       )}
       <div className="classroom-content-grid">
@@ -325,6 +392,22 @@ function ClassroomDashboard() {
           </button>
         </aside>
       </div>
+      {isClassworkOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="create-modal classwork-modal" role="dialog" aria-modal="true" aria-labelledby="create-classwork-title">
+            <button className="modal-close" aria-label="Close create classwork dialog" onClick={() => setIsClassworkOpen(false)}><X /></button>
+            <p className="eyebrow">New classwork</p><h2 id="create-classwork-title">Create something for learners.</h2><p className="modal-copy">Start with the essentials. You can add instructions and attachments in the next step.</p>
+            <form onSubmit={createClasswork} className="create-form">
+              <label>Title<input autoFocus value={classworkForm.title} onChange={(event) => setClassworkForm({ ...classworkForm, title: event.target.value })} placeholder="e.g. Linear equations practice" /></label>
+              <div className="type-picker">{classworkTypes.map(({ label, icon: Icon, description }) => <button type="button" key={label} className={classworkForm.type === label ? 'type-option active' : 'type-option'} onClick={() => setClassworkForm({ ...classworkForm, type: label })}><Icon /><strong>{label}</strong><span>{description}</span></button>)}</div>
+              <div className="form-row"><label>Topic<select value={classworkForm.topic} onChange={(event) => setClassworkForm({ ...classworkForm, topic: event.target.value })}>{topics.map((topic) => <option key={topic}>{topic}</option>)}</select></label><label>Due date<input type="text" value={classworkForm.due} onChange={(event) => setClassworkForm({ ...classworkForm, due: event.target.value })} placeholder="Fri, 3:30 PM" /></label></div>
+              {classworkForm.type !== 'Material' && <label>Points<input type="number" min="0" value={classworkForm.points} onChange={(event) => setClassworkForm({ ...classworkForm, points: event.target.value })} /></label>}
+              {classworkError && <p className="form-error" role="alert">{classworkError}</p>}
+              <button className="primary-action" type="submit">Save as draft <ArrowRight /></button>
+            </form>
+          </section>
+        </div>
+      )}
       {isCreateOpen && (
         <div className="modal-backdrop" role="presentation">
           <section
