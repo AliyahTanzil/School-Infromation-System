@@ -1,4 +1,3 @@
-import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express from 'express';
@@ -13,7 +12,6 @@ const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials }));
-app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
