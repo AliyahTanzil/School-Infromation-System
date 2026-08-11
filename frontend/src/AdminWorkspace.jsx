@@ -48,6 +48,7 @@ const moduleGroups = [
       ],
       ['/teachers', 'Teachers', 'Teaching staff profiles, assignments, and workload.', Users],
       ['/classes', 'Classes', 'Class groups, sections, and academic organization.', BookOpenCheck],
+      ['/classroom', 'Digital classroom', 'Lessons, assignments, quizzes, and learner progress.', BrainCircuit],
       ['/users', 'User management', 'Roles, permissions, and platform accounts.', ShieldCheck],
     ],
   },
