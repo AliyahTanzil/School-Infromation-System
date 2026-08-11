@@ -6,9 +6,17 @@ import {
   BookOpen,
   CalendarDays,
   CheckCircle2,
+  Archive,
   ClipboardCheck,
   Clock3,
+  Eye,
   FileText,
+  Folder,
+  History,
+  Link2,
+  Search,
+  Share2,
+  Upload,
   HelpCircle,
   LayoutDashboard,
   Plus,
@@ -69,7 +77,53 @@ const upcoming = [
     icon: ClipboardCheck,
   },
 ];
-const tabs = ['Stream', 'Classwork', 'People', 'Grades', 'Analytics'];
+const tabs = ['Stream', 'Classwork', 'Materials', 'People', 'Grades', 'Analytics'];
+const initialMaterials = [
+  {
+    id: 1,
+    name: 'Unit 1 reference sheet',
+    kind: 'PDF',
+    folder: 'Algebraic expressions',
+    size: '2.4 MB',
+    updated: 'Today, 9:12 AM',
+    shared: true,
+    archived: false,
+    version: 3,
+  },
+  {
+    id: 2,
+    name: 'Linear equations lesson',
+    kind: 'Presentation',
+    folder: 'Algebraic expressions',
+    size: '8 slides',
+    updated: 'Yesterday',
+    shared: true,
+    archived: false,
+    version: 2,
+  },
+  {
+    id: 3,
+    name: 'Practice problems',
+    kind: 'Document',
+    folder: 'Practice & review',
+    size: '640 KB',
+    updated: 'Mon, 3:44 PM',
+    shared: false,
+    archived: false,
+    version: 1,
+  },
+  {
+    id: 4,
+    name: 'Old diagnostic answers',
+    kind: 'PDF',
+    folder: 'Archive',
+    size: '1.1 MB',
+    updated: 'Aug 08',
+    shared: false,
+    archived: true,
+    version: 1,
+  },
+];
 const initialTopics = ['Algebraic expressions', 'Practice & review', 'Resources'];
 const initialClasswork = [
   {
@@ -178,6 +232,15 @@ function ClassroomDashboard() {
   const [studentSaveState, setStudentSaveState] = useState('Not started');
   const [teacherFeedback, setTeacherFeedback] = useState('');
   const [teacherGrade, setTeacherGrade] = useState('');
+  const [materials, setMaterials] = useState(initialMaterials);
+  const [materialQuery, setMaterialQuery] = useState('');
+  const [materialFolder, setMaterialFolder] = useState('All materials');
+  const [materialDialog, setMaterialDialog] = useState(null);
+  const [materialForm, setMaterialForm] = useState({
+    name: '',
+    kind: 'Document',
+    folder: 'Algebraic expressions',
+  });
   const visibleClassrooms = useMemo(
     () =>
       activeFilter === 'All classrooms'
@@ -274,6 +337,53 @@ function ClassroomDashboard() {
     setSelectedSubmission(submission);
     setTeacherGrade(submission.grade ?? '');
     setTeacherFeedback(submission.feedback || '');
+  }
+
+  const materialFolders = [
+    'All materials',
+    'Algebraic expressions',
+    'Practice & review',
+    'Archive',
+  ];
+  const visibleMaterials = materials.filter((item) => {
+    const matchesQuery = item.name.toLowerCase().includes(materialQuery.toLowerCase());
+    const matchesFolder = materialFolder === 'All materials' || item.folder === materialFolder;
+    return matchesQuery && matchesFolder;
+  });
+
+  function createMaterial(event) {
+    event.preventDefault();
+    if (!materialForm.name.trim()) return;
+    setMaterials((items) => [
+      {
+        id: Date.now(),
+        name: materialForm.name.trim(),
+        kind: materialForm.kind,
+        folder: materialForm.folder,
+        size: 'Local draft',
+        updated: 'Just now',
+        shared: false,
+        archived: false,
+        version: 1,
+      },
+      ...items,
+    ]);
+    setMaterialForm({ name: '', kind: 'Document', folder: 'Algebraic expressions' });
+    setMaterialDialog(null);
+  }
+
+  function toggleMaterialArchive(id) {
+    setMaterials((items) =>
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              archived: !item.archived,
+              folder: item.archived ? 'Algebraic expressions' : 'Archive',
+            }
+          : item
+      )
+    );
   }
 
   function returnSubmission(status) {
@@ -390,7 +500,99 @@ function ClassroomDashboard() {
               </button>
             ))}
           </nav>
-          {activeTab === 'Classwork' ? (
+          {activeTab === 'Materials' ? (
+            <div className="materials-workspace">
+              <div className="materials-toolbar">
+                <div>
+                  <p className="eyebrow">Materials repository</p>
+                  <h3>One home for every lesson asset.</h3>
+                  <p className="detail-copy">
+                    Store, organize, and reference resources across your classrooms.
+                  </p>
+                </div>
+                <div className="materials-actions">
+                  <button className="secondary-action" onClick={() => setMaterialDialog('link')}>
+                    <Link2 /> Add link
+                  </button>
+                  <button className="primary-action" onClick={() => setMaterialDialog('upload')}>
+                    <Upload /> Upload material
+                  </button>
+                </div>
+              </div>
+              <div className="materials-search-row">
+                <label className="materials-search">
+                  <Search />
+                  <input
+                    aria-label="Search materials"
+                    value={materialQuery}
+                    onChange={(event) => setMaterialQuery(event.target.value)}
+                    placeholder="Search materials..."
+                  />
+                </label>
+                <div className="folder-pills">
+                  {materialFolders.map((folder) => (
+                    <button
+                      key={folder}
+                      className={materialFolder === folder ? 'filter-chip active' : 'filter-chip'}
+                      onClick={() => setMaterialFolder(folder)}
+                    >
+                      {folder}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="materials-breadcrumb">
+                <Folder /> Workspace / Digital Classroom / <strong>{materialFolder}</strong>
+              </div>
+              <div className="materials-list">
+                {visibleMaterials.map((item) => (
+                  <article className="material-row" key={item.id}>
+                    <span className={`material-kind ${item.kind.toLowerCase()}`}>
+                      {item.kind === 'PDF' ? 'PDF' : item.kind === 'Presentation' ? 'P' : 'D'}
+                    </span>
+                    <div className="material-main">
+                      <div>
+                        <h4>{item.name}</h4>
+                        <span>
+                          {item.kind} · {item.size} · v{item.version}
+                        </span>
+                      </div>
+                      <small>{item.updated}</small>
+                    </div>
+                    <span className={item.shared ? 'shared-label' : 'private-label'}>
+                      {item.shared ? 'Shared' : 'Private'}
+                    </span>
+                    <div className="material-row-actions">
+                      <button
+                        aria-label={`Preview ${item.name}`}
+                        onClick={() => setMaterialDialog({ type: 'preview', item })}
+                      >
+                        <Eye />
+                      </button>
+                      <button
+                        aria-label={`Share ${item.name}`}
+                        onClick={() => setMaterialDialog({ type: 'share', item })}
+                      >
+                        <Share2 />
+                      </button>
+                      <button
+                        aria-label={`${item.archived ? 'Restore' : 'Archive'} ${item.name}`}
+                        onClick={() => toggleMaterialArchive(item.id)}
+                      >
+                        <Archive />
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <div className="materials-footer">
+                <span>{visibleMaterials.length} materials shown</span>
+                <span>
+                  <History /> Version history is available from preview.
+                </span>
+              </div>
+            </div>
+          ) : activeTab === 'Classwork' ? (
             <div className="classwork-workspace">
               <div className="classwork-toolbar">
                 <div className="assignment-mode-switch">
@@ -680,6 +882,138 @@ function ClassroomDashboard() {
           </button>
         </aside>
       </div>
+      {materialDialog && materialDialog.type === 'preview' && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="create-modal material-preview" role="dialog" aria-modal="true">
+            <button
+              className="modal-close"
+              aria-label="Close material preview"
+              onClick={() => setMaterialDialog(null)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">Material preview</p>
+            <h2>{materialDialog.item.name}</h2>
+            <p className="modal-copy">
+              {materialDialog.item.kind} · Version {materialDialog.item.version} · Updated{' '}
+              {materialDialog.item.updated}
+            </p>
+            <div className="preview-canvas">
+              <FileText />
+              <strong>Preview ready</strong>
+              <span>Reference this material from Classwork or share it with your classroom.</span>
+            </div>
+            <div className="review-actions">
+              <button
+                className="secondary-action"
+                onClick={() => setMaterialDialog({ type: 'share', item: materialDialog.item })}
+              >
+                <Share2 /> Share
+              </button>
+              <button className="primary-action" onClick={() => setMaterialDialog(null)}>
+                Use in classwork <ArrowRight />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {materialDialog && (materialDialog.type === 'upload' || materialDialog === 'link') && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="create-modal" role="dialog" aria-modal="true">
+            <button
+              className="modal-close"
+              aria-label="Close material dialog"
+              onClick={() => setMaterialDialog(null)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">
+              {materialDialog === 'link' ? 'Add a link' : 'Upload material'}
+            </p>
+            <h2>Add to your repository.</h2>
+            <p className="modal-copy">
+              Create a local material record now; storage and sharing policies can be connected
+              later.
+            </p>
+            <form className="create-form" onSubmit={createMaterial}>
+              <label>
+                Name
+                <input
+                  autoFocus
+                  value={materialForm.name}
+                  onChange={(event) =>
+                    setMaterialForm({ ...materialForm, name: event.target.value })
+                  }
+                  placeholder="e.g. Week 4 study guide"
+                />
+              </label>
+              <div className="form-row">
+                <label>
+                  Type
+                  <select
+                    value={materialForm.kind}
+                    onChange={(event) =>
+                      setMaterialForm({ ...materialForm, kind: event.target.value })
+                    }
+                  >
+                    <option>Document</option>
+                    <option>PDF</option>
+                    <option>Presentation</option>
+                    <option>Link</option>
+                  </select>
+                </label>
+                <label>
+                  Folder
+                  <select
+                    value={materialForm.folder}
+                    onChange={(event) =>
+                      setMaterialForm({ ...materialForm, folder: event.target.value })
+                    }
+                  >
+                    {materialFolders.slice(1, 3).map((folder) => (
+                      <option key={folder}>{folder}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button className="primary-action" type="submit">
+                Save material <ArrowRight />
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
+      {materialDialog && materialDialog.type === 'share' && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="create-modal" role="dialog" aria-modal="true">
+            <button
+              className="modal-close"
+              aria-label="Close share dialog"
+              onClick={() => setMaterialDialog(null)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">Sharing & permissions</p>
+            <h2>Share {materialDialog.item.name}</h2>
+            <p className="modal-copy">Choose who can use this material in their classroom.</p>
+            <div className="share-options">
+              <button className="type-option active">
+                <Users />
+                <strong>Classroom members</strong>
+                <span>Can view and reference this material.</span>
+              </button>
+              <button className="type-option">
+                <Eye />
+                <strong>Teachers only</strong>
+                <span>Keep editing access limited to staff.</span>
+              </button>
+            </div>
+            <button className="primary-action" onClick={() => setMaterialDialog(null)}>
+              Save permissions <CheckCircle2 />
+            </button>
+          </section>
+        </div>
+      )}
       {selectedSubmission && (
         <div className="modal-backdrop" role="presentation">
           <section
