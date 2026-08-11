@@ -15,12 +15,18 @@ if (!existsSync(portFile)) {
 }
 
 const port = readFileSync(portFile, 'utf8').trim();
-if (!/^\d+$/.test(port)) {
-  console.error('[sais] Backend readiness file contained an invalid port.');
+const manifest = JSON.parse(readFileSync(new URL('../.sais-ports.json', import.meta.url), 'utf8'));
+if (!/^\d+$/.test(port) || Number(port) !== manifest.backend) {
+  console.error('[sais] Backend readiness file contained an unexpected port.');
   process.exit(1);
 }
 console.log(`[sais] Backend ready on port ${port}; starting frontend.`);
 const child = spawn('npm', ['run', 'dev', '-w', 'frontend'], {
+  env: {
+    ...process.env,
+    FRONTEND_PORT: String(manifest.frontend),
+    VITE_BACKEND_URL: `http://localhost:${port}`,
+  },
   stdio: 'inherit',
   shell: process.platform === 'win32',
 });
