@@ -14,6 +14,7 @@ import {
   Plus,
   Presentation,
   RotateCcw,
+  Send,
   Users,
   X,
 } from 'lucide-react';
@@ -71,10 +72,78 @@ const upcoming = [
 const tabs = ['Stream', 'Classwork', 'People', 'Grades', 'Analytics'];
 const initialTopics = ['Algebraic expressions', 'Practice & review', 'Resources'];
 const initialClasswork = [
-  { id: 1, title: 'Algebraic expressions', type: 'Assignment', topic: 'Algebraic expressions', due: 'Today, 3:30 PM', points: 20, status: 'Published', icon: FileText },
-  { id: 2, title: 'Expression vocabulary', type: 'Material', topic: 'Algebraic expressions', due: 'No due date', points: null, status: 'Published', icon: Presentation },
-  { id: 3, title: 'Fractions checkpoint', type: 'Quiz', topic: 'Practice & review', due: 'Fri, 11:30 AM', points: 15, status: 'Scheduled', icon: HelpCircle },
-  { id: 4, title: 'Unit 1 reference sheet', type: 'Material', topic: 'Resources', due: 'No due date', points: null, status: 'Draft', icon: FileText },
+  {
+    id: 1,
+    title: 'Algebraic expressions',
+    type: 'Assignment',
+    topic: 'Algebraic expressions',
+    due: 'Today, 3:30 PM',
+    points: 20,
+    status: 'Published',
+    icon: FileText,
+  },
+  {
+    id: 2,
+    title: 'Expression vocabulary',
+    type: 'Material',
+    topic: 'Algebraic expressions',
+    due: 'No due date',
+    points: null,
+    status: 'Published',
+    icon: Presentation,
+  },
+  {
+    id: 3,
+    title: 'Fractions checkpoint',
+    type: 'Quiz',
+    topic: 'Practice & review',
+    due: 'Fri, 11:30 AM',
+    points: 15,
+    status: 'Scheduled',
+    icon: HelpCircle,
+  },
+  {
+    id: 4,
+    title: 'Unit 1 reference sheet',
+    type: 'Material',
+    topic: 'Resources',
+    due: 'No due date',
+    points: null,
+    status: 'Draft',
+    icon: FileText,
+  },
+];
+const initialSubmissions = [
+  {
+    id: 1,
+    student: 'Maya Johnson',
+    initials: 'MJ',
+    status: 'Submitted',
+    submittedAt: 'Today, 2:48 PM',
+    content: 'I simplified the expression to 4x + 7 and checked it with substitution.',
+    grade: null,
+    feedback: '',
+  },
+  {
+    id: 2,
+    student: 'Daniel Mensah',
+    initials: 'DM',
+    status: 'Needs revision',
+    submittedAt: 'Yesterday, 4:12 PM',
+    content: 'My first step is complete, but I need to review combining like terms.',
+    grade: null,
+    feedback: 'Show the combining-like-terms step before simplifying.',
+  },
+  {
+    id: 3,
+    student: 'Ava Williams',
+    initials: 'AW',
+    status: 'Returned',
+    submittedAt: 'Mon, 9:20 AM',
+    content: 'The final answer is 12 when x = 2.',
+    grade: 18,
+    feedback: 'Clear reasoning and a well-labeled check.',
+  },
 ];
 const classworkTypes = [
   { label: 'Assignment', icon: FileText, description: 'Collect work from learners.' },
@@ -94,9 +163,21 @@ function ClassroomDashboard() {
   const [classwork, setClasswork] = useState(initialClasswork);
   const [classworkFilter, setClassworkFilter] = useState('All');
   const [isClassworkOpen, setIsClassworkOpen] = useState(false);
-  const [classworkForm, setClassworkForm] = useState({ title: '', type: 'Assignment', topic: initialTopics[0], due: '', points: '20' });
+  const [classworkForm, setClassworkForm] = useState({
+    title: '',
+    type: 'Assignment',
+    topic: initialTopics[0],
+    due: '',
+    points: '20',
+  });
   const [topicName, setTopicName] = useState('');
   const [classworkError, setClassworkError] = useState('');
+  const [submissions, setSubmissions] = useState(initialSubmissions);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [studentSubmission, setStudentSubmission] = useState({ content: '', link: '' });
+  const [studentSaveState, setStudentSaveState] = useState('Not started');
+  const [teacherFeedback, setTeacherFeedback] = useState('');
+  const [teacherGrade, setTeacherGrade] = useState('');
   const visibleClassrooms = useMemo(
     () =>
       activeFilter === 'All classrooms'
@@ -106,7 +187,9 @@ function ClassroomDashboard() {
   );
   const selected = activeClassroom || visibleClassrooms[0];
 
-  const filteredClasswork = classwork.filter((item) => classworkFilter === 'All' || item.topic === classworkFilter);
+  const filteredClasswork = classwork.filter(
+    (item) => classworkFilter === 'All' || item.topic === classworkFilter
+  );
 
   function createClassroom(event) {
     event.preventDefault();
@@ -139,7 +222,8 @@ function ClassroomDashboard() {
 
   function createClasswork(event) {
     event.preventDefault();
-    if (!classworkForm.title.trim()) return setClassworkError('Add a title before saving this classwork.');
+    if (!classworkForm.title.trim())
+      return setClassworkError('Add a title before saving this classwork.');
     const nextItem = {
       id: Date.now(),
       title: classworkForm.title.trim(),
@@ -159,6 +243,54 @@ function ClassroomDashboard() {
 
   function updateClassworkStatus(id, status) {
     setClasswork((items) => items.map((item) => (item.id === id ? { ...item, status } : item)));
+  }
+
+  function saveStudentDraft(event) {
+    event.preventDefault();
+    setStudentSaveState('Draft saved just now');
+  }
+
+  function submitStudentWork(event) {
+    event.preventDefault();
+    if (!studentSubmission.content.trim())
+      return setStudentSaveState('Add a response before submitting.');
+    setSubmissions((items) => [
+      {
+        id: Date.now(),
+        student: 'You',
+        initials: 'SA',
+        status: 'Submitted',
+        submittedAt: 'Just now',
+        content: studentSubmission.content.trim(),
+        grade: null,
+        feedback: '',
+      },
+      ...items,
+    ]);
+    setStudentSaveState('Submitted for review');
+  }
+
+  function openSubmission(submission) {
+    setSelectedSubmission(submission);
+    setTeacherGrade(submission.grade ?? '');
+    setTeacherFeedback(submission.feedback || '');
+  }
+
+  function returnSubmission(status) {
+    if (!selectedSubmission) return;
+    setSubmissions((items) =>
+      items.map((item) =>
+        item.id === selectedSubmission.id
+          ? {
+              ...item,
+              status,
+              grade: teacherGrade ? Number(teacherGrade) : item.grade,
+              feedback: teacherFeedback,
+            }
+          : item
+      )
+    );
+    setSelectedSubmission(null);
   }
 
   return (
@@ -261,34 +393,190 @@ function ClassroomDashboard() {
           {activeTab === 'Classwork' ? (
             <div className="classwork-workspace">
               <div className="classwork-toolbar">
+                <div className="assignment-mode-switch">
+                  <button
+                    className={activeTab === 'Classwork' ? 'filter-chip active' : 'filter-chip'}
+                    onClick={() => setActiveTab('Classwork')}
+                  >
+                    Teacher view
+                  </button>
+                  <button className="filter-chip" onClick={() => setActiveTab('Classwork')}>
+                    Student preview
+                  </button>
+                </div>
                 <div>
                   <p className="eyebrow">Content library</p>
                   <h3>Everything learners need, in order.</h3>
                 </div>
-                <button className="primary-action" onClick={() => setIsClassworkOpen(true)}><Plus data-icon="inline-start" /> Create classwork</button>
+                <button className="primary-action" onClick={() => setIsClassworkOpen(true)}>
+                  <Plus data-icon="inline-start" /> Create classwork
+                </button>
               </div>
               <div className="classwork-filters">
-                {['All', ...topics].map((filter) => <button key={filter} className={classworkFilter === filter ? 'filter-chip active' : 'filter-chip'} onClick={() => setClassworkFilter(filter)}>{filter}</button>)}
-              </div>
-              <div className="classwork-list">
-                {topics.filter((topic) => classworkFilter === 'All' || topic === classworkFilter).map((topic) => (
-                  <section className="topic-section" key={topic}>
-                    <div className="topic-heading"><h4>{topic}</h4><span>{filteredClasswork.filter((item) => item.topic === topic).length} items</span></div>
-                    {filteredClasswork.filter((item) => item.topic === topic).map(({ id, title, type, due, points, status, icon: Icon }) => (
-                      <article className="classwork-item" key={id}>
-                        <span className="classwork-icon"><Icon /></span>
-                        <div className="classwork-item-main"><div className="classwork-title-row"><div><span className="item-type">{type}</span><h4>{title}</h4></div><span className={`status-badge ${status.toLowerCase()}`}>{status}</span></div><p>{due}{points ? ` · ${points} points` : ''}</p></div>
-                        <button className="text-action" onClick={() => updateClassworkStatus(id, status === 'Archived' ? 'Draft' : 'Archived')}>{status === 'Archived' ? <RotateCcw /> : 'Archive'}</button>
-                      </article>
-                    ))}
-                  </section>
+                {['All', ...topics].map((filter) => (
+                  <button
+                    key={filter}
+                    className={classworkFilter === filter ? 'filter-chip active' : 'filter-chip'}
+                    onClick={() => setClassworkFilter(filter)}
+                  >
+                    {filter}
+                  </button>
                 ))}
               </div>
-              <form className="topic-create" onSubmit={createTopic}><input aria-label="New topic name" value={topicName} onChange={(event) => setTopicName(event.target.value)} placeholder="Add a topic" /><button className="secondary-action" type="submit"><Plus /> Topic</button></form>
+              <div className="classwork-list">
+                {topics
+                  .filter((topic) => classworkFilter === 'All' || topic === classworkFilter)
+                  .map((topic) => (
+                    <section className="topic-section" key={topic}>
+                      <div className="topic-heading">
+                        <h4>{topic}</h4>
+                        <span>
+                          {filteredClasswork.filter((item) => item.topic === topic).length} items
+                        </span>
+                      </div>
+                      {filteredClasswork
+                        .filter((item) => item.topic === topic)
+                        .map(({ id, title, type, due, points, status, icon: Icon }) => (
+                          <article className="classwork-item" key={id}>
+                            <span className="classwork-icon">
+                              <Icon />
+                            </span>
+                            <div className="classwork-item-main">
+                              <div className="classwork-title-row">
+                                <div>
+                                  <span className="item-type">{type}</span>
+                                  <h4>{title}</h4>
+                                </div>
+                                <span className={`status-badge ${status.toLowerCase()}`}>
+                                  {status}
+                                </span>
+                              </div>
+                              <p>
+                                {due}
+                                {points ? ` · ${points} points` : ''}
+                              </p>
+                            </div>
+                            <button
+                              className="text-action"
+                              onClick={() =>
+                                updateClassworkStatus(
+                                  id,
+                                  status === 'Archived' ? 'Draft' : 'Archived'
+                                )
+                              }
+                            >
+                              {status === 'Archived' ? <RotateCcw /> : 'Archive'}
+                            </button>
+                          </article>
+                        ))}
+                    </section>
+                  ))}
+              </div>
+              <section className="submission-panel">
+                <div className="panel-heading">
+                  <div>
+                    <p className="eyebrow">Assignment lifecycle</p>
+                    <h3>Algebraic expressions</h3>
+                  </div>
+                  <span className="status-badge published">Published</span>
+                </div>
+                <div className="submission-summary">
+                  <span>
+                    <strong>{submissions.length}</strong> submissions
+                  </span>
+                  <span>
+                    <strong>
+                      {submissions.filter((item) => item.status === 'Submitted').length}
+                    </strong>{' '}
+                    awaiting review
+                  </span>
+                  <span>
+                    <strong>20</strong> points
+                  </span>
+                </div>
+                <div className="submission-list">
+                  {submissions.map((submission) => (
+                    <button
+                      className="submission-row"
+                      key={submission.id}
+                      onClick={() => openSubmission(submission)}
+                    >
+                      <span className="student-avatar">{submission.initials}</span>
+                      <span className="submission-person">
+                        <strong>{submission.student}</strong>
+                        <small>{submission.submittedAt}</small>
+                      </span>
+                      <span
+                        className={`status-badge ${submission.status === 'Needs revision' ? 'draft' : submission.status === 'Returned' ? 'published' : 'scheduled'}`}
+                      >
+                        {submission.status}
+                      </span>
+                      <ArrowRight />
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section className="student-submit-card">
+                <div>
+                  <p className="eyebrow">Student preview</p>
+                  <h3>Submit your response</h3>
+                  <p>Save a draft, then submit it when you are ready for teacher review.</p>
+                </div>
+                <form onSubmit={submitStudentWork} className="student-submit-form">
+                  <textarea
+                    aria-label="Student response"
+                    value={studentSubmission.content}
+                    onChange={(event) =>
+                      setStudentSubmission({ ...studentSubmission, content: event.target.value })
+                    }
+                    placeholder="Write your response here..."
+                  />
+                  <div className="student-submit-actions">
+                    <span>{studentSaveState}</span>
+                    <button className="secondary-action" type="button" onClick={saveStudentDraft}>
+                      Save draft
+                    </button>
+                    <button className="primary-action" type="submit">
+                      <Send /> Submit work
+                    </button>
+                  </div>
+                </form>
+              </section>
+              <form className="topic-create" onSubmit={createTopic}>
+                <input
+                  aria-label="New topic name"
+                  value={topicName}
+                  onChange={(event) => setTopicName(event.target.value)}
+                  placeholder="Add a topic"
+                />
+                <button className="secondary-action" type="submit">
+                  <Plus /> Topic
+                </button>
+              </form>
             </div>
           ) : (
             <div className="detail-body">
-              <div><p className="eyebrow">{activeTab}</p><h3>{activeTab === 'Stream' ? 'Keep your classroom moving.' : `${activeTab} is ready for your classroom.`}</h3><p className="detail-copy">{activeTab === 'Stream' ? 'Share an update, surface important work, and keep learners aligned from one calm command center.' : 'This workspace will connect to the classroom records and workflows in the next implementation slice.'}</p><button className="primary-action"><Plus /> {activeTab === 'Classwork' ? 'Create classwork' : 'Post an update'}</button></div><div className="detail-placeholder"><LayoutDashboard /><strong>{selected.progress}% course progress</strong><span>{selected.next}</span></div>
+              <div>
+                <p className="eyebrow">{activeTab}</p>
+                <h3>
+                  {activeTab === 'Stream'
+                    ? 'Keep your classroom moving.'
+                    : `${activeTab} is ready for your classroom.`}
+                </h3>
+                <p className="detail-copy">
+                  {activeTab === 'Stream'
+                    ? 'Share an update, surface important work, and keep learners aligned from one calm command center.'
+                    : 'This workspace will connect to the classroom records and workflows in the next implementation slice.'}
+                </p>
+                <button className="primary-action">
+                  <Plus /> {activeTab === 'Classwork' ? 'Create classwork' : 'Post an update'}
+                </button>
+              </div>
+              <div className="detail-placeholder">
+                <LayoutDashboard />
+                <strong>{selected.progress}% course progress</strong>
+                <span>{selected.next}</span>
+              </div>
             </div>
           )}
         </section>
@@ -392,18 +680,175 @@ function ClassroomDashboard() {
           </button>
         </aside>
       </div>
+      {selectedSubmission && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="create-modal review-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-title"
+          >
+            <button
+              className="modal-close"
+              aria-label="Close submission review"
+              onClick={() => setSelectedSubmission(null)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">Teacher review</p>
+            <h2 id="review-title">{selectedSubmission.student}&apos;s submission</h2>
+            <p className="modal-copy">{selectedSubmission.submittedAt} · Algebraic expressions</p>
+            <div className="student-response">
+              <span>Response</span>
+              <p>{selectedSubmission.content}</p>
+            </div>
+            <div className="form-row">
+              <label>
+                Grade
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={teacherGrade}
+                  onChange={(event) => setTeacherGrade(event.target.value)}
+                  placeholder="/ 20"
+                />
+              </label>
+              <label>
+                Status
+                <select
+                  value={selectedSubmission.status}
+                  onChange={(event) =>
+                    setSubmissions((items) =>
+                      items.map((item) =>
+                        item.id === selectedSubmission.id
+                          ? { ...item, status: event.target.value }
+                          : item
+                      )
+                    )
+                  }
+                >
+                  <option>Submitted</option>
+                  <option>Needs revision</option>
+                  <option>Returned</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              Feedback
+              <textarea
+                value={teacherFeedback}
+                onChange={(event) => setTeacherFeedback(event.target.value)}
+                placeholder="Add a helpful note for the learner..."
+              />
+            </label>
+            <div className="review-actions">
+              <button
+                className="secondary-action"
+                onClick={() => returnSubmission('Needs revision')}
+              >
+                Return for revision
+              </button>
+              <button className="primary-action" onClick={() => returnSubmission('Returned')}>
+                Return graded work <CheckCircle2 />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {isClassworkOpen && (
         <div className="modal-backdrop" role="presentation">
-          <section className="create-modal classwork-modal" role="dialog" aria-modal="true" aria-labelledby="create-classwork-title">
-            <button className="modal-close" aria-label="Close create classwork dialog" onClick={() => setIsClassworkOpen(false)}><X /></button>
-            <p className="eyebrow">New classwork</p><h2 id="create-classwork-title">Create something for learners.</h2><p className="modal-copy">Start with the essentials. You can add instructions and attachments in the next step.</p>
+          <section
+            className="create-modal classwork-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-classwork-title"
+          >
+            <button
+              className="modal-close"
+              aria-label="Close create classwork dialog"
+              onClick={() => setIsClassworkOpen(false)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">New classwork</p>
+            <h2 id="create-classwork-title">Create something for learners.</h2>
+            <p className="modal-copy">
+              Start with the essentials. You can add instructions and attachments in the next step.
+            </p>
             <form onSubmit={createClasswork} className="create-form">
-              <label>Title<input autoFocus value={classworkForm.title} onChange={(event) => setClassworkForm({ ...classworkForm, title: event.target.value })} placeholder="e.g. Linear equations practice" /></label>
-              <div className="type-picker">{classworkTypes.map(({ label, icon: Icon, description }) => <button type="button" key={label} className={classworkForm.type === label ? 'type-option active' : 'type-option'} onClick={() => setClassworkForm({ ...classworkForm, type: label })}><Icon /><strong>{label}</strong><span>{description}</span></button>)}</div>
-              <div className="form-row"><label>Topic<select value={classworkForm.topic} onChange={(event) => setClassworkForm({ ...classworkForm, topic: event.target.value })}>{topics.map((topic) => <option key={topic}>{topic}</option>)}</select></label><label>Due date<input type="text" value={classworkForm.due} onChange={(event) => setClassworkForm({ ...classworkForm, due: event.target.value })} placeholder="Fri, 3:30 PM" /></label></div>
-              {classworkForm.type !== 'Material' && <label>Points<input type="number" min="0" value={classworkForm.points} onChange={(event) => setClassworkForm({ ...classworkForm, points: event.target.value })} /></label>}
-              {classworkError && <p className="form-error" role="alert">{classworkError}</p>}
-              <button className="primary-action" type="submit">Save as draft <ArrowRight /></button>
+              <label>
+                Title
+                <input
+                  autoFocus
+                  value={classworkForm.title}
+                  onChange={(event) =>
+                    setClassworkForm({ ...classworkForm, title: event.target.value })
+                  }
+                  placeholder="e.g. Linear equations practice"
+                />
+              </label>
+              <div className="type-picker">
+                {classworkTypes.map(({ label, icon: Icon, description }) => (
+                  <button
+                    type="button"
+                    key={label}
+                    className={classworkForm.type === label ? 'type-option active' : 'type-option'}
+                    onClick={() => setClassworkForm({ ...classworkForm, type: label })}
+                  >
+                    <Icon />
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="form-row">
+                <label>
+                  Topic
+                  <select
+                    value={classworkForm.topic}
+                    onChange={(event) =>
+                      setClassworkForm({ ...classworkForm, topic: event.target.value })
+                    }
+                  >
+                    {topics.map((topic) => (
+                      <option key={topic}>{topic}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Due date
+                  <input
+                    type="text"
+                    value={classworkForm.due}
+                    onChange={(event) =>
+                      setClassworkForm({ ...classworkForm, due: event.target.value })
+                    }
+                    placeholder="Fri, 3:30 PM"
+                  />
+                </label>
+              </div>
+              {classworkForm.type !== 'Material' && (
+                <label>
+                  Points
+                  <input
+                    type="number"
+                    min="0"
+                    value={classworkForm.points}
+                    onChange={(event) =>
+                      setClassworkForm({ ...classworkForm, points: event.target.value })
+                    }
+                  />
+                </label>
+              )}
+              {classworkError && (
+                <p className="form-error" role="alert">
+                  {classworkError}
+                </p>
+              )}
+              <button className="primary-action" type="submit">
+                Save as draft <ArrowRight />
+              </button>
             </form>
           </section>
         </div>

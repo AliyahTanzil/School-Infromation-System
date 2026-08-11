@@ -1,6 +1,19 @@
 /* global process */
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
+
+const backendPortFile = resolve(process.cwd(), '../backend/.sais-port');
+
+function resolveBackendTarget() {
+  try {
+    const port = Number(readFileSync(backendPortFile, 'utf8').trim());
+    return `http://localhost:${port}`;
+  } catch {
+    return process.env.VITE_BACKEND_URL || 'http://localhost:3000';
+  }
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -12,7 +25,7 @@ export default defineConfig({
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:3000',
+        target: resolveBackendTarget(),
         changeOrigin: true,
       },
     },

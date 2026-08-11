@@ -2,11 +2,16 @@ import app from './app.js';
 import config from './config/index.js';
 import logger from './infrastructure/logger/index.js';
 import { disconnectDatabase } from './infrastructure/orm/database.js';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const portFile = resolve(process.cwd(), '.sais-port');
 
 let currentPort = config.port;
 const server = app.listen(currentPort, () => {
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : config.port;
+  writeFileSync(portFile, String(port));
   logger.info(`SAIS backend running at http://localhost:${port} [${config.env}]`);
 });
 
@@ -26,6 +31,11 @@ server.on('error', (error) => {
 async function shutdown(signal) {
   logger.info(`${signal} received; starting graceful shutdown.`);
   server.close(async () => {
+    try {
+      unlinkSync(portFile);
+    } catch {
+      // The port file may already be absent after a forced shutdown.
+    }
     await disconnectDatabase();
     logger.info('HTTP server closed.');
     process.exit(0);
