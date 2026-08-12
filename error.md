@@ -26,12 +26,12 @@
 - Remediation history: workspace dependencies were reinstalled and the dependency was verified from the backend resolution path.
 - Current verification: pending this SOP run.
 
-### ERR-003 — Vercel workspace build command mismatch
+### ERR-003 — Vercel project-root build command mismatch
 
-- Symptom: deployment failed with `Missing script: "build:frontend"` from the frontend workspace.
-- Evidence: Vercel invokes workspace scripts differently from the local root invocation.
-- Remediation: `vercel.json` was changed to invoke `npm run build --workspace frontend` directly.
-- Current verification: pending this SOP run.
+- Symptom: deployment failed with `No workspaces found: --workspace=frontend` from `/vercel/path0/frontend`.
+- Evidence: the Vercel project is configured with `frontend` as its project root, so npm runs inside the frontend package rather than the monorepo workspace root.
+- Remediation: `vercel.json` now uses `npm run build` and `dist`, both relative to the configured frontend project root.
+- Current verification: `cd frontend && npm run build` passes and creates `frontend/dist/index.html`.
 
 ### WARN-001 — External browser-extension console noise
 
@@ -117,7 +117,9 @@ SyntaxError: The requested module '@prisma/client' does not provide an export na
 
 ## Fixes applied in this run
 
-_None yet._
+- Updated `vercel.json` for the Vercel project root `frontend`: `buildCommand` is now `npm run build` and `outputDirectory` is now `dist`.
+- Verified the exact frontend-root build context successfully produces `dist/index.html`.
+- Classified `SANDBOX_NOT_LISTENING`, `localhost:3000` connection failures, external extension messages, external CDN timeout, and favicon 404 as separate preview/browser concerns rather than causes of the Vercel build failure.
 
 ## Final verification
 
