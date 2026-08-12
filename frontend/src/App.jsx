@@ -30,6 +30,7 @@ import TimetableDashboard from './TimetableDashboard.jsx';
 import AdminDemoEntry from './AdminDemoEntry.jsx';
 import AdminWorkspace from './AdminWorkspace.jsx';
 import ClassroomDashboard from './ClassroomDashboard.jsx';
+import LiveLearningWorkspace from './LiveLearningWorkspace.jsx';
 import StudentSubmissionCenter from './StudentSubmissionCenter.jsx';
 import AssessmentEngine from './AssessmentEngine.jsx';
 import QuizSystem from './QuizSystem.jsx';
@@ -639,6 +640,14 @@ export default function App() {
             element={
               <Protected>
                 <ClassroomDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/live-learning"
+            element={
+              <Protected>
+                <LiveLearningWorkspace />
               </Protected>
             }
           />
