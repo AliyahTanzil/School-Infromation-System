@@ -47,6 +47,7 @@ import TransportDashboard from './TransportDashboard.jsx';
 import BoardingDashboard from './BoardingDashboard.jsx';
 import SecurityDashboard from './SecurityDashboard.jsx';
 import AnalyticsDashboard from './AnalyticsDashboard.jsx';
+import LearningAnalyticsWorkspace from './LearningAnalyticsWorkspace.jsx';
 import AIIntelligenceDashboard from './AIIntelligenceDashboard.jsx';
 import SmartIdentityDashboard from './SmartIdentityDashboard.jsx';
 import IoTDashboard from './IoTDashboard.jsx';
@@ -528,6 +529,14 @@ export default function App() {
             element={
               <Protected>
                 <AnalyticsDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/learning-analytics"
+            element={
+              <Protected>
+                <LearningAnalyticsWorkspace />
               </Protected>
             }
           />
