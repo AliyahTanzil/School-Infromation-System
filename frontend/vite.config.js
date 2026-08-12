@@ -11,7 +11,7 @@ function resolveBackendTarget() {
     const port = Number(readFileSync(backendPortFile, 'utf8').trim());
     return `http://localhost:${port}`;
   } catch {
-    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:5000';
+    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:4000';
   }
 }
 
@@ -20,8 +20,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     allowedHosts: true,
-    // The preview launcher supplies the allocated port; 4000 is the standalone default.
-    port: Number(globalThis.process?.env?.FRONTEND_PORT || 4000),
+    // The preview launcher supplies the allocated port; 3000 is the frontend's
+    // canonical standalone default. It must never fall back to the backend port.
+    port: Number(globalThis.process?.env?.FRONTEND_PORT || 3000),
     strictPort: false,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {
