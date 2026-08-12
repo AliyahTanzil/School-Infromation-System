@@ -57,6 +57,7 @@ import PlatformAdminDashboard from './PlatformAdminDashboard.jsx';
 import SecurityAdminDashboard from './SecurityAdminDashboard.jsx';
 import AIAcademicDashboard from './AIAcademicDashboard.jsx';
 import AILearningWorkspace from './AILearningWorkspace.jsx';
+import AcademicIntegrityWorkspace from './AcademicIntegrityWorkspace.jsx';
 import AIReportsDashboard from './AIReportsDashboard.jsx';
 import AIChatDashboard from './AIChatDashboard.jsx';
 import IntegrationsDashboard from './IntegrationsDashboard.jsx';
@@ -610,6 +611,14 @@ export default function App() {
             element={
               <Protected>
                 <AILearningWorkspace />
+              </Protected>
+            }
+          />
+          <Route
+            path="/academic-integrity"
+            element={
+              <Protected>
+                <AcademicIntegrityWorkspace />
               </Protected>
             }
           />

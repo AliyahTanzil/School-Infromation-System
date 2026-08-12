@@ -27,8 +27,8 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.37",
-    "ai": "^7.0.59",
     "@prisma/client": "^5.22.0",
+    "ai": "^7.0.59",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
