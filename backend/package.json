@@ -8,7 +8,8 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=/vercel/share/.env.project src/main.js",
+    "predev": "npx kill-port 3000",
+    "dev": "PORT=3001 node --env-file-if-exists=/vercel/share/.env.project src/main.js",
     "start": "node src/main.js",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -47,6 +48,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "kill-port": "^2.0.1",
     "nodemon": "^3.1.4",
     "prisma": "^5.22.0",
     "supertest": "^7.0.0"
