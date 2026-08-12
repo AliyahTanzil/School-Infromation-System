@@ -16,6 +16,7 @@ import SchoolAdmin from './SchoolAdmin.jsx';
 import StudentDashboard from './StudentDashboard.jsx';
 import StudentHomeDashboard from './StudentHomeDashboard.jsx';
 import ParentPortal from './ParentPortal.jsx';
+import ParentClassroomWorkspace from './ParentClassroomWorkspace.jsx';
 import LandingPage from './LandingPage.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
 import ClassDashboard from './ClassDashboard.jsx';
@@ -812,6 +813,14 @@ export default function App() {
             element={
               <Protected>
                 <ParentPortal />
+              </Protected>
+            }
+          />
+          <Route
+            path="/parent-classroom"
+            element={
+              <Protected>
+                <ParentClassroomWorkspace />
               </Protected>
             }
           />
