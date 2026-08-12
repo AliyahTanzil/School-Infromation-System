@@ -20,8 +20,11 @@ function findPort(start) {
   });
 }
 
-const backend = await findPort(Number(process.env.BACKEND_PORT || 3000));
-const frontend = await findPort(Number(process.env.FRONTEND_PORT || Math.max(5174, backend + 1)));
+// The v0 preview auto-detects the lowest common dev port, so the user-facing
+// frontend must own it. The frontend proxies /api to the backend, which lives
+// on a higher port and never needs to be the detected preview target.
+const frontend = await findPort(Number(process.env.FRONTEND_PORT || 3000));
+const backend = await findPort(Number(process.env.BACKEND_PORT || Math.max(4000, frontend + 1)));
 const manifest = resolve(process.cwd(), '.sais-ports.json');
 try {
   unlinkSync(resolve(process.cwd(), 'backend/.sais-port'));
