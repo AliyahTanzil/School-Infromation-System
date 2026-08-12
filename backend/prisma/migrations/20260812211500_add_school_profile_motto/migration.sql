@@ -1,0 +1,1 @@
+ALTER TABLE "SchoolProfile" ADD COLUMN IF NOT EXISTS "motto" VARCHAR(300);

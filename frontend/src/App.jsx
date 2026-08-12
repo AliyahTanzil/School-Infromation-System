@@ -120,7 +120,33 @@ function AuthShell({ children, title, subtitle }) {
 function Login() {
   const { login } = useAuth();
   const location = useLocation();
-  const isManager = location.pathname.startsWith('/manager');
+  const rolePath = location.pathname;
+  const isManager = rolePath.startsWith('/manager') || rolePath.startsWith('/owner');
+  const isStaff = rolePath.startsWith('/staff');
+  const roleConfig = rolePath.startsWith('/owner')
+    ? {
+        title: 'Application owner sign in',
+        subtitle: 'Manage the SAIS platform, tenants, security, and system operations.',
+        registerPath: '/owner/register',
+        alternatePath: '/tenant/login',
+        alternateLabel: 'Tenant sign in',
+      }
+    : isStaff
+      ? {
+          title: 'Staff sign in',
+          subtitle:
+            'Access your role-based teaching, administration, student, parent, or support workspace.',
+          registerPath: '/staff/login',
+          alternatePath: '/tenant/login',
+          alternateLabel: 'Tenant sign in',
+        }
+      : {
+          title: 'Tenant administrator sign in',
+          subtitle: 'Sign in to access your school administration workspace.',
+          registerPath: '/tenant/register',
+          alternatePath: '/owner/login',
+          alternateLabel: 'Application owner sign in',
+        };
   const nav = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [busy, setBusy] = useState(false);
@@ -150,14 +176,7 @@ function Login() {
     }
   };
   return (
-    <AuthShell
-      title={isManager ? 'Application Manager sign in' : 'Welcome back'}
-      subtitle={
-        isManager
-          ? 'Sign in to manage SAIS applications, tenants, and platform operations.'
-          : 'Sign in to access your school administration workspace.'
-      }
-    >
+    <AuthShell title={roleConfig.title} subtitle={roleConfig.subtitle}>
       <form onSubmit={submit} className="space-y-5">
         <Field
           label="Email address"
@@ -198,15 +217,10 @@ function Login() {
         </Link>
       </p>
       <p className="mt-3 text-center text-xs text-slate-400">
-        {isManager ? (
-          <Link to="/login" className="font-semibold text-indigo-600">
-            Tenant sign in
-          </Link>
-        ) : (
-          <Link to="/manager/login" className="font-semibold text-indigo-600">
-            Application Manager sign in
-          </Link>
-        )}
+        <Link to={roleConfig.alternatePath} className="font-semibold text-indigo-600">
+          {roleConfig.alternateLabel}
+        </Link>
+        {isStaff && <span className="ml-2 text-slate-400">Use your assigned staff role</span>}
       </p>
     </AuthShell>
   );
@@ -214,7 +228,8 @@ function Login() {
 function Register() {
   const { register } = useAuth();
   const location = useLocation();
-  const isManager = location.pathname.startsWith('/manager');
+  const isManager =
+    location.pathname.startsWith('/manager') || location.pathname.startsWith('/owner');
   const nav = useNavigate();
   const [form, setForm] = useState({
     firstName: '',
@@ -248,7 +263,9 @@ function Register() {
     try {
       await register({ ...form, accountType: isManager ? 'APPLICATION_MANAGER' : 'TENANT_ADMIN' });
       toast.success('Account created');
-      nav(isManager ? '/manager/login' : '/login', { replace: true });
+      nav(location.pathname.startsWith('/owner') ? '/owner/login' : '/tenant/login', {
+        replace: true,
+      });
     } catch (err) {
       toast.error(err.response?.data?.error?.message ?? 'Unable to create account');
     } finally {
@@ -745,6 +762,11 @@ export default function App() {
 
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/owner/login" element={<Login />} />
+          <Route path="/owner/register" element={<Register />} />
+          <Route path="/tenant/login" element={<Login />} />
+          <Route path="/tenant/register" element={<Register />} />
+          <Route path="/staff/login" element={<Login />} />
           <Route path="/manager/login" element={<Login />} />
           <Route path="/manager/register" element={<Register />} />
           <Route path="/forgot-password" element={<Forgot />} />
