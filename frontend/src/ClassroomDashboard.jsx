@@ -33,6 +33,10 @@ const initialClassrooms = [
     name: 'Grade 8 · Mathematics',
     code: 'MTH-8A',
     students: 32,
+    teacher: 'Ms. Sesay',
+    academicYear: '2025/26',
+    term: 'Term 1',
+    pending: 4,
     next: 'Algebraic expressions',
     progress: 72,
     tone: 'violet',
@@ -41,6 +45,10 @@ const initialClassrooms = [
     name: 'Grade 9 · Integrated Science',
     code: 'SCI-9B',
     students: 28,
+    teacher: 'Mr. Kamara',
+    academicYear: '2025/26',
+    term: 'Term 1',
+    pending: 2,
     next: 'Cell structure lab',
     progress: 48,
     tone: 'cyan',
@@ -49,6 +57,10 @@ const initialClassrooms = [
     name: 'Grade 7 · Mathematics',
     code: 'MTH-7C',
     students: 30,
+    teacher: 'Ms. Conteh',
+    academicYear: '2025/26',
+    term: 'Term 1',
+    pending: 1,
     next: 'Fractions checkpoint',
     progress: 86,
     tone: 'amber',
@@ -248,7 +260,7 @@ function ClassroomDashboard() {
         : classrooms.filter((item) => item.name.includes(activeFilter)),
     [activeFilter, classrooms]
   );
-  const selected = activeClassroom || visibleClassrooms[0];
+  const selected = activeClassroom;
 
   const filteredClasswork = classwork.filter(
     (item) => classworkFilter === 'All' || item.topic === classworkFilter
@@ -822,6 +834,7 @@ function ClassroomDashboard() {
                       <span>
                         {item.code} · {item.students} students
                       </span>
+                      <small className="classroom-card-teacher">{item.teacher}</small>
                     </div>
                     <button
                       className="more-button"
@@ -833,6 +846,11 @@ function ClassroomDashboard() {
                     >
                       ···
                     </button>
+                  </div>
+                  <div className="classroom-card-meta">
+                    <span>{item.academicYear}</span>
+                    <span>{item.term}</span>
+                    <span>{item.pending} pending grading</span>
                   </div>
                   <div className="next-lesson">
                     <span>Next up</span>
