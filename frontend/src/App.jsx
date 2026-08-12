@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 import SchoolAdmin from './SchoolAdmin.jsx';
 import StudentDashboard from './StudentDashboard.jsx';
+import StudentHomeDashboard from './StudentHomeDashboard.jsx';
 import ParentPortal from './ParentPortal.jsx';
 import LandingPage from './LandingPage.jsx';
 import TeacherDashboard from './TeacherDashboard.jsx';
@@ -723,6 +724,14 @@ export default function App() {
             element={
               <Protected>
                 <StudentDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/student-dashboard"
+            element={
+              <Protected>
+                <StudentHomeDashboard />
               </Protected>
             }
           />
