@@ -1,8 +1,23 @@
+/* eslint-disable react/prop-types */
 import { useMemo, useState } from 'react';
 import {
-  ArrowDownRight, ArrowUpRight, BarChart3, BellRing, BookOpen, CalendarDays,
-  ChevronDown, Download, FileText, Filter, GraduationCap, Info, MoreHorizontal,
-  Search, ShieldCheck, Sparkles, Target, TrendingUp, UsersRound, X,
+  ArrowUpRight,
+  BellRing,
+  BookOpen,
+  CalendarDays,
+  ChevronDown,
+  Download,
+  FileText,
+  Filter,
+  Info,
+  MoreHorizontal,
+  Search,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TrendingUp,
+  UsersRound,
+  X,
 } from 'lucide-react';
 
 const audiences = ['School overview', 'Teaching teams', 'Student support', 'Family view'];
@@ -13,13 +28,43 @@ const subjects = [
   { name: 'Social studies', score: 73, completion: 80, color: 'amber' },
 ];
 const learners = [
-  { name: 'Year 8 · Cedar group', detail: '28 learners · 3 need review', score: '82%', trend: '+6%', risk: 'Low risk', color: 'mint' },
-  { name: 'Year 9 · Maple group', detail: '24 learners · 5 need review', score: '76%', trend: '+2%', risk: 'Watch', color: 'amber' },
-  { name: 'Year 10 · Oak group', detail: '26 learners · 7 need review', score: '68%', trend: '-4%', risk: 'Priority', color: 'pink' },
+  {
+    name: 'Year 8 · Cedar group',
+    detail: '28 learners · 3 need review',
+    score: '82%',
+    trend: '+6%',
+    risk: 'Low risk',
+    color: 'mint',
+  },
+  {
+    name: 'Year 9 · Maple group',
+    detail: '24 learners · 5 need review',
+    score: '76%',
+    trend: '+2%',
+    risk: 'Watch',
+    color: 'amber',
+  },
+  {
+    name: 'Year 10 · Oak group',
+    detail: '26 learners · 7 need review',
+    score: '68%',
+    trend: '-4%',
+    risk: 'Priority',
+    color: 'pink',
+  },
 ];
 
 function Metric({ label, value, note, tone, icon: Icon }) {
-  return <article className={`analytics-metric ${tone}`}><div className="analytics-metric-icon"><Icon size={16} /></div><span>{label}</span><strong>{value}</strong><small>{note}</small></article>;
+  return (
+    <article className={`analytics-metric ${tone}`}>
+      <div className="analytics-metric-icon">
+        <Icon size={16} />
+      </div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{note}</small>
+    </article>
+  );
 }
 
 export default function LearningAnalyticsWorkspace() {
@@ -29,22 +74,393 @@ export default function LearningAnalyticsWorkspace() {
   const [toast, setToast] = useState('');
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [query, setQuery] = useState('');
-  const filteredGroups = useMemo(() => learners.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())), [query]);
-  const announce = (message) => { setToast(message); window.setTimeout(() => setToast(''), 2600); };
+  const filteredGroups = useMemo(
+    () => learners.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())),
+    [query]
+  );
+  const announce = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2600);
+  };
 
-  return <main className="analytics-shell">
-    <header className="analytics-header"><div><p className="eyebrow">Learning intelligence / {audience}</p><h1>See learning clearly.</h1><p>One trusted view of progress, participation, and support signals across the school. Use insights to decide what needs attention next.</p></div><div className="analytics-header-actions"><span className="analytics-privacy"><ShieldCheck size={14} /> Tenant-scoped data</span><button className="analytics-icon-button" onClick={() => announce('Analytics alerts are up to date')} aria-label="Open analytics notifications"><BellRing size={16} /><i /></button><button className="analytics-primary" onClick={() => announce('Report export queued securely')}><Download size={14} /> Export report</button></div></header>
-    <div className="analytics-toolbar"><div className="analytics-audience"><span>Perspective</span>{audiences.map((item) => <button key={item} className={audience === item ? 'active' : ''} onClick={() => setAudience(item)}>{item}</button>)}</div><div className="analytics-toolbar-actions"><label className="analytics-select"><CalendarDays size={14} /><select value={period} onChange={(event) => setPeriod(event.target.value)}><option>This term</option><option>Last 30 days</option><option>Last academic year</option></select><ChevronDown size={13} /></label><button className="analytics-filter" onClick={() => setShowFilters((value) => !value)}><Filter size={14} /> Filters</button><span className="analytics-sync"><span className="analytics-dot" /> Updated 8 min ago</span></div></div>
-    {showFilters && <div className="analytics-filter-panel"><strong>Report filters</strong><span>Year groups: all</span><span>Attendance: all learners</span><span>Assessment status: released only</span><button onClick={() => setShowFilters(false)} aria-label="Close filters"><X size={14} /></button></div>}
-    <section className="analytics-metrics"><Metric label="Learning progress" value="78%" note="↑ 4.8% from last term" tone="mint" icon={TrendingUp} /><Metric label="Assignment completion" value="86%" note="↑ 7.2% from last term" tone="blue" icon={Target} /><Metric label="Attendance" value="94.2%" note="↓ 0.8% needs review" tone="amber" icon={CalendarDays} /><Metric label="Learners needing support" value="12" note="3 fewer than last week" tone="violet" icon={UsersRound} /></section>
-    <div className="analytics-grid"><div className="analytics-column"><section className="analytics-panel analytics-trend"><div className="analytics-section-heading"><div><span className="analytics-kicker">Learning trend</span><h2>Progress is moving upward</h2></div><button className="analytics-link" onClick={() => announce('Trend detail opened')}>View details <TrendingUp size={13} /></button></div><div className="analytics-chart"><div className="chart-y"><span>100</span><span>75</span><span>50</span><span>25</span></div><div className="chart-bars">{[48,58,54,67,64,75,78,86,82,91,88,94].map((height, index) => <i key={index} style={{ height: `${height}%` }} className={index > 8 ? 'highlight' : ''} />)}</div></div><div className="analytics-chart-labels"><span>Sep</span><span>Oct</span><span>Nov</span><span>Dec</span><span>Jan</span><span>Feb</span><span>Mar</span></div><div className="analytics-trend-footer"><span><i className="legend-mint" /> Learning progress</span><span><i className="legend-violet" /> Engagement</span><b><ArrowUpRight size={13} /> +4.8% <small>term over term</small></b></div></section>
-    <section className="analytics-panel"><div className="analytics-section-heading"><div><span className="analytics-kicker">Performance by subject</span><h2>Where learners are thriving</h2></div><button className="analytics-link" onClick={() => announce('Subject report opened')}>Full report <ChevronDown size={13} /></button></div><div className="subject-list">{subjects.map((subject) => <button key={subject.name} className="subject-row" onClick={() => setSelectedSubject(subject)}><span className={`subject-icon ${subject.color}`}><BookOpen size={15} /></span><span className="subject-copy"><strong>{subject.name}</strong><small>{subject.completion}% completion</small></span><span className="subject-bar"><i style={{ width: `${subject.score}%` }} className={subject.color} /></span><b>{subject.score}%</b><ChevronDown size={14} /></button>)}</div></section>
-    <section className="analytics-panel"><div className="analytics-section-heading"><div><span className="analytics-kicker">Intervention review</span><h2>Support signals to act on</h2></div><button className="analytics-link" onClick={() => announce('Support queue opened')}>Open support queue <ChevronDown size={13} /></button></div><div className="risk-list"><div className="risk-item"><span className="risk-icon amber"><Info size={15} /></span><span><strong>Attendance and progress dip</strong><small>4 learners across Year 10 · review together</small></span><b className="risk-badge watch">Review</b></div><div className="risk-item"><span className="risk-icon violet"><Sparkles size={15} /></span><span><strong>Incomplete assessment evidence</strong><small>6 learners have missing work this week</small></span><b className="risk-badge priority">Priority</b></div></div></section></div>
-    <aside className="analytics-column"><section className="analytics-panel analytics-insight"><div className="analytics-section-heading"><div><span className="analytics-kicker">Insight brief</span><h2>Small actions, visible impact</h2></div><Sparkles className="insight-spark" size={17} /></div><p>Completion improved most where feedback was returned within three school days. Year 10 has the strongest opportunity for a targeted check-in.</p><button className="analytics-primary" onClick={() => announce('Insight action drafted')}><Target size={14} /> Draft action plan</button><div className="insight-note"><ShieldCheck size={14} /><span><strong>Evidence-led by design</strong><small>Released grades and attendance are shown only within your authorized school scope.</small></span></div></section>
-    <section className="analytics-panel"><div className="analytics-section-heading"><div><span className="analytics-kicker">Cohort performance</span><h2>Groups needing context</h2></div><button className="analytics-icon-button" onClick={() => announce('Cohort menu opened')} aria-label="More cohort options"><MoreHorizontal size={15} /></button></div><label className="analytics-search"><Search size={14} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search year groups" /></label><div className="cohort-list">{filteredGroups.map((item) => <button key={item.name} className="cohort-row" onClick={() => announce(`${item.name} cohort opened`)}><span className={`cohort-mark ${item.color}`}>{item.name.split('·')[0].trim().replace('Year ', 'Y')}</span><span><strong>{item.name}</strong><small>{item.detail}</small></span><b>{item.score}<small>{item.trend}</small></b><em className={`risk-badge ${item.risk === 'Priority' ? 'priority' : item.risk === 'Watch' ? 'watch' : 'healthy'}`}>{item.risk}</em></button>)}</div></section>
-    <section className="analytics-panel analytics-quick"><div className="analytics-section-heading"><div><span className="analytics-kicker">Quick access</span><h2>Reports and exports</h2></div></div><button onClick={() => announce('Assessment report queued')}><FileText size={15} /><span><strong>Assessment report</strong><small>Released results by subject</small></span><ChevronDown size={14} /></button><button onClick={() => announce('Attendance report queued')}><CalendarDays size={15} /><span><strong>Attendance context</strong><small>Presence and learning comparison</small></span><ChevronDown size={14} /></button></section></aside></div>
-    <footer className="analytics-footer"><span><ShieldCheck size={13} /> School-managed analytics · Read-only view</span><span>Source refresh: {period.toLowerCase()} · Audit logged</span></footer>
-    {selectedSubject && <div className="analytics-modal"><div className="analytics-modal-card"><button className="analytics-modal-close" onClick={() => setSelectedSubject(null)} aria-label="Close subject details"><X size={16} /></button><span className={`subject-icon ${selectedSubject.color}`}><BookOpen size={16} /></span><h2>{selectedSubject.name}</h2><p>Authorized performance summary for {period.toLowerCase()}. Use this context alongside teacher observation and released assessment evidence.</p><div className="analytics-detail-list"><span><strong>Average progress</strong><b>{selectedSubject.score}%</b></span><span><strong>Completion rate</strong><b>{selectedSubject.completion}%</b></span><span><strong>Trend</strong><b className="positive"><ArrowUpRight size={13} /> Improving</b></span></div><button className="analytics-primary" onClick={() => announce('Subject detail report queued')}>Open subject report</button></div></div>}
-    {toast && <div className="analytics-toast"><ShieldCheck size={14} /> {toast}</div>}
-  </main>;
+  return (
+    <main className="analytics-shell">
+      <header className="analytics-header">
+        <div>
+          <p className="eyebrow">Learning intelligence / {audience}</p>
+          <h1>See learning clearly.</h1>
+          <p>
+            One trusted view of progress, participation, and support signals across the school. Use
+            insights to decide what needs attention next.
+          </p>
+        </div>
+        <div className="analytics-header-actions">
+          <span className="analytics-privacy">
+            <ShieldCheck size={14} /> Tenant-scoped data
+          </span>
+          <button
+            className="analytics-icon-button"
+            onClick={() => announce('Analytics alerts are up to date')}
+            aria-label="Open analytics notifications"
+          >
+            <BellRing size={16} />
+            <i />
+          </button>
+          <button
+            className="analytics-primary"
+            onClick={() => announce('Report export queued securely')}
+          >
+            <Download size={14} /> Export report
+          </button>
+        </div>
+      </header>
+      <div className="analytics-toolbar">
+        <div className="analytics-audience">
+          <span>Perspective</span>
+          {audiences.map((item) => (
+            <button
+              key={item}
+              className={audience === item ? 'active' : ''}
+              onClick={() => setAudience(item)}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <div className="analytics-toolbar-actions">
+          <label className="analytics-select">
+            <CalendarDays size={14} />
+            <select value={period} onChange={(event) => setPeriod(event.target.value)}>
+              <option>This term</option>
+              <option>Last 30 days</option>
+              <option>Last academic year</option>
+            </select>
+            <ChevronDown size={13} />
+          </label>
+          <button className="analytics-filter" onClick={() => setShowFilters((value) => !value)}>
+            <Filter size={14} /> Filters
+          </button>
+          <span className="analytics-sync">
+            <span className="analytics-dot" /> Updated 8 min ago
+          </span>
+        </div>
+      </div>
+      {showFilters && (
+        <div className="analytics-filter-panel">
+          <strong>Report filters</strong>
+          <span>Year groups: all</span>
+          <span>Attendance: all learners</span>
+          <span>Assessment status: released only</span>
+          <button onClick={() => setShowFilters(false)} aria-label="Close filters">
+            <X size={14} />
+          </button>
+        </div>
+      )}
+      <section className="analytics-metrics">
+        <Metric
+          label="Learning progress"
+          value="78%"
+          note="↑ 4.8% from last term"
+          tone="mint"
+          icon={TrendingUp}
+        />
+        <Metric
+          label="Assignment completion"
+          value="86%"
+          note="↑ 7.2% from last term"
+          tone="blue"
+          icon={Target}
+        />
+        <Metric
+          label="Attendance"
+          value="94.2%"
+          note="↓ 0.8% needs review"
+          tone="amber"
+          icon={CalendarDays}
+        />
+        <Metric
+          label="Learners needing support"
+          value="12"
+          note="3 fewer than last week"
+          tone="violet"
+          icon={UsersRound}
+        />
+      </section>
+      <div className="analytics-grid">
+        <div className="analytics-column">
+          <section className="analytics-panel analytics-trend">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Learning trend</span>
+                <h2>Progress is moving upward</h2>
+              </div>
+              <button className="analytics-link" onClick={() => announce('Trend detail opened')}>
+                View details <TrendingUp size={13} />
+              </button>
+            </div>
+            <div className="analytics-chart">
+              <div className="chart-y">
+                <span>100</span>
+                <span>75</span>
+                <span>50</span>
+                <span>25</span>
+              </div>
+              <div className="chart-bars">
+                {[48, 58, 54, 67, 64, 75, 78, 86, 82, 91, 88, 94].map((height, index) => (
+                  <i
+                    key={index}
+                    style={{ height: `${height}%` }}
+                    className={index > 8 ? 'highlight' : ''}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="analytics-chart-labels">
+              <span>Sep</span>
+              <span>Oct</span>
+              <span>Nov</span>
+              <span>Dec</span>
+              <span>Jan</span>
+              <span>Feb</span>
+              <span>Mar</span>
+            </div>
+            <div className="analytics-trend-footer">
+              <span>
+                <i className="legend-mint" /> Learning progress
+              </span>
+              <span>
+                <i className="legend-violet" /> Engagement
+              </span>
+              <b>
+                <ArrowUpRight size={13} /> +4.8% <small>term over term</small>
+              </b>
+            </div>
+          </section>
+          <section className="analytics-panel">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Performance by subject</span>
+                <h2>Where learners are thriving</h2>
+              </div>
+              <button className="analytics-link" onClick={() => announce('Subject report opened')}>
+                Full report <ChevronDown size={13} />
+              </button>
+            </div>
+            <div className="subject-list">
+              {subjects.map((subject) => (
+                <button
+                  key={subject.name}
+                  className="subject-row"
+                  onClick={() => setSelectedSubject(subject)}
+                >
+                  <span className={`subject-icon ${subject.color}`}>
+                    <BookOpen size={15} />
+                  </span>
+                  <span className="subject-copy">
+                    <strong>{subject.name}</strong>
+                    <small>{subject.completion}% completion</small>
+                  </span>
+                  <span className="subject-bar">
+                    <i style={{ width: `${subject.score}%` }} className={subject.color} />
+                  </span>
+                  <b>{subject.score}%</b>
+                  <ChevronDown size={14} />
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="analytics-panel">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Intervention review</span>
+                <h2>Support signals to act on</h2>
+              </div>
+              <button className="analytics-link" onClick={() => announce('Support queue opened')}>
+                Open support queue <ChevronDown size={13} />
+              </button>
+            </div>
+            <div className="risk-list">
+              <div className="risk-item">
+                <span className="risk-icon amber">
+                  <Info size={15} />
+                </span>
+                <span>
+                  <strong>Attendance and progress dip</strong>
+                  <small>4 learners across Year 10 · review together</small>
+                </span>
+                <b className="risk-badge watch">Review</b>
+              </div>
+              <div className="risk-item">
+                <span className="risk-icon violet">
+                  <Sparkles size={15} />
+                </span>
+                <span>
+                  <strong>Incomplete assessment evidence</strong>
+                  <small>6 learners have missing work this week</small>
+                </span>
+                <b className="risk-badge priority">Priority</b>
+              </div>
+            </div>
+          </section>
+        </div>
+        <aside className="analytics-column">
+          <section className="analytics-panel analytics-insight">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Insight brief</span>
+                <h2>Small actions, visible impact</h2>
+              </div>
+              <Sparkles className="insight-spark" size={17} />
+            </div>
+            <p>
+              Completion improved most where feedback was returned within three school days. Year 10
+              has the strongest opportunity for a targeted check-in.
+            </p>
+            <button
+              className="analytics-primary"
+              onClick={() => announce('Insight action drafted')}
+            >
+              <Target size={14} /> Draft action plan
+            </button>
+            <div className="insight-note">
+              <ShieldCheck size={14} />
+              <span>
+                <strong>Evidence-led by design</strong>
+                <small>
+                  Released grades and attendance are shown only within your authorized school scope.
+                </small>
+              </span>
+            </div>
+          </section>
+          <section className="analytics-panel">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Cohort performance</span>
+                <h2>Groups needing context</h2>
+              </div>
+              <button
+                className="analytics-icon-button"
+                onClick={() => announce('Cohort menu opened')}
+                aria-label="More cohort options"
+              >
+                <MoreHorizontal size={15} />
+              </button>
+            </div>
+            <label className="analytics-search">
+              <Search size={14} />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search year groups"
+              />
+            </label>
+            <div className="cohort-list">
+              {filteredGroups.map((item) => (
+                <button
+                  key={item.name}
+                  className="cohort-row"
+                  onClick={() => announce(`${item.name} cohort opened`)}
+                >
+                  <span className={`cohort-mark ${item.color}`}>
+                    {item.name.split('·')[0].trim().replace('Year ', 'Y')}
+                  </span>
+                  <span>
+                    <strong>{item.name}</strong>
+                    <small>{item.detail}</small>
+                  </span>
+                  <b>
+                    {item.score}
+                    <small>{item.trend}</small>
+                  </b>
+                  <em
+                    className={`risk-badge ${item.risk === 'Priority' ? 'priority' : item.risk === 'Watch' ? 'watch' : 'healthy'}`}
+                  >
+                    {item.risk}
+                  </em>
+                </button>
+              ))}
+            </div>
+          </section>
+          <section className="analytics-panel analytics-quick">
+            <div className="analytics-section-heading">
+              <div>
+                <span className="analytics-kicker">Quick access</span>
+                <h2>Reports and exports</h2>
+              </div>
+            </div>
+            <button onClick={() => announce('Assessment report queued')}>
+              <FileText size={15} />
+              <span>
+                <strong>Assessment report</strong>
+                <small>Released results by subject</small>
+              </span>
+              <ChevronDown size={14} />
+            </button>
+            <button onClick={() => announce('Attendance report queued')}>
+              <CalendarDays size={15} />
+              <span>
+                <strong>Attendance context</strong>
+                <small>Presence and learning comparison</small>
+              </span>
+              <ChevronDown size={14} />
+            </button>
+          </section>
+        </aside>
+      </div>
+      <footer className="analytics-footer">
+        <span>
+          <ShieldCheck size={13} /> School-managed analytics · Read-only view
+        </span>
+        <span>Source refresh: {period.toLowerCase()} · Audit logged</span>
+      </footer>
+      {selectedSubject && (
+        <div className="analytics-modal">
+          <div className="analytics-modal-card">
+            <button
+              className="analytics-modal-close"
+              onClick={() => setSelectedSubject(null)}
+              aria-label="Close subject details"
+            >
+              <X size={16} />
+            </button>
+            <span className={`subject-icon ${selectedSubject.color}`}>
+              <BookOpen size={16} />
+            </span>
+            <h2>{selectedSubject.name}</h2>
+            <p>
+              Authorized performance summary for {period.toLowerCase()}. Use this context alongside
+              teacher observation and released assessment evidence.
+            </p>
+            <div className="analytics-detail-list">
+              <span>
+                <strong>Average progress</strong>
+                <b>{selectedSubject.score}%</b>
+              </span>
+              <span>
+                <strong>Completion rate</strong>
+                <b>{selectedSubject.completion}%</b>
+              </span>
+              <span>
+                <strong>Trend</strong>
+                <b className="positive">
+                  <ArrowUpRight size={13} /> Improving
+                </b>
+              </span>
+            </div>
+            <button
+              className="analytics-primary"
+              onClick={() => announce('Subject detail report queued')}
+            >
+              Open subject report
+            </button>
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div className="analytics-toast">
+          <ShieldCheck size={14} /> {toast}
+        </div>
+      )}
+    </main>
+  );
 }
