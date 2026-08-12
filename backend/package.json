@@ -8,8 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "predev": "npx kill-port 3000",
-    "dev": "PORT=3001 node --env-file-if-exists=/vercel/share/.env.project src/main.js",
+    "dev": "node --env-file-if-exists=/vercel/share/.env.project src/main.js",
     "start": "node src/main.js",
     "lint": "eslint .",
     "format": "prettier --write .",
