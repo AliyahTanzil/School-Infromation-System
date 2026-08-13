@@ -10,10 +10,13 @@ import config from '../../config/index.js';
  */
 
 function baseCookieOptions() {
+  const isProduction = (process.env.NODE_ENV ?? config.env) === 'production';
   return {
     httpOnly: true,
-    secure: config.env === 'production',
-    sameSite: 'strict',
+    secure: isProduction,
+    // v0 previews and separately hosted frontends are cross-site contexts.
+    // SameSite=None is required there so refresh can reach the API function.
+    sameSite: isProduction ? 'none' : 'lax',
     path: '/api/auth',
   };
 }

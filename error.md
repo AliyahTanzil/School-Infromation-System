@@ -131,6 +131,14 @@ SyntaxError: The requested module '@prisma/client' does not provide an export na
 - Proxy verification: Vite on 5174 read `backend/.sais-port` and proxied `GET /api/health` = 200. `POST /api/auth/register` directly returned 201 and through Vite returned 409 for the same email, proving the request reached the backend.
 - Classification: initial failure = BACKEND_CONNECTIVITY caused by BACKEND_STARTUP dependency error; after dependency restoration, proxy and registration connectivity pass.
 
+## ERR-006 — Production refresh returned 500 after login
+
+- Symptom: deployed `POST /api/auth/login` or `POST /api/auth/refresh` returned 500, while the browser also showed v0 dashboard websocket failures, extension connection errors, and telemetry failures.
+- Root cause: required JWT and database environment variables are available. The refresh token was issued as `SameSite=Strict`; in a v0 preview or separately hosted frontend/API context, the browser did not send it back to `/api/auth/refresh`.
+- Fix: production refresh cookies now use `SameSite=None; Secure` with `HttpOnly` and `/api/auth` scope. Local development uses `SameSite=Lax`. Added regression coverage for the production cookie contract and made environment detection read the runtime `NODE_ENV`.
+- Unrelated errors: v0 dashboard websocket/telemetry failures, browser extension errors, CDN timeouts, and favicon 404s do not cause application auth failure.
+- Redeploy is required for the deployed function to use this fix.
+
 ## Fixes applied in this run
 
 - Updated `vercel.json` for the Vercel project root `frontend`: `buildCommand` is now `npm run build` and `outputDirectory` is now `dist`.
