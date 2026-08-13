@@ -11,9 +11,9 @@
     "frontend"
   ],
   "scripts": {
-    "dev:backend": "node --env-file-if-exists=/vercel/share/.env.project ./node_modules/npm/bin/npm-cli.js run dev -w backend",
-    "dev:frontend": "node --env-file-if-exists=/vercel/share/.env.project ./node_modules/npm/bin/npm-cli.js run dev -w frontend",
-    "dev": "node --env-file-if-exists=/vercel/share/.env.project ./node_modules/npm/bin/npm-cli.js run dev:all",
+    "dev:backend": "npm run dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "dev": "npm run dev:all",
     "dev:all": "node scripts/allocate-ports.mjs && concurrently -k -n backend,frontend -c blue,green \"node scripts/start-backend.mjs\" \"node scripts/wait-for-backend.mjs\"",
     "build:frontend": "npm run build -w frontend",
     "lint": "eslint .",
