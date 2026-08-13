@@ -267,7 +267,14 @@ function Register() {
         replace: true,
       });
     } catch (err) {
-      toast.error(err.response?.data?.error?.message ?? 'Unable to create account');
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.error?.message;
+      const message = !err.response
+        ? 'The registration service is unavailable. Please restart the backend or redeploy the API, then try again.'
+        : status === 404
+          ? 'Registration API route was not found. Check the deployed API function and try again.'
+          : serverMessage || 'Unable to create account';
+      toast.error(message);
     } finally {
       setBusy(false);
     }

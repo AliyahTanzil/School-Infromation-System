@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const isLocalApiUrl = configuredApiUrl && /localhost|127\.0\.0\.1/.test(configuredApiUrl);
 const api = axios.create({
-  // Use Vite's same-origin proxy by default; absolute URLs are only needed for deployed environments.
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  // Production must use the deployed same-origin function, never a localhost URL from local development.
+  baseURL: configuredApiUrl && !isLocalApiUrl ? configuredApiUrl.replace(/\/$/, '') : '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });

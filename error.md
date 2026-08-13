@@ -114,6 +114,13 @@ SyntaxError: The requested module '@prisma/client' does not provide an export na
 - Evidence: the exact child process tree remained after task stop; ports 3000 and 4000 were still listening.
 - Disposition: terminate the identified process tree explicitly and verify all debug ports are closed. This is task-runner cleanup, not an application startup failure.
 
+## ERR-004 — Registration unavailable in deployed preview
+
+- Symptom: account creation showed `Unable to create account`; the browser requested `localhost:3000/api/auth/register` and received `ERR_CONNECTION_REFUSED`, while deployed `/register` returned 404.
+- Root cause: `VITE_API_URL` could point at a local development URL in the built client, and the Vercel rewrite `{ "source": "/api/(.*)", "destination": "/api" }` collapsed the API path before the Express function could receive `/api/auth/register`. The deployed project must also include the `/api` function in its configured project root.
+- Fix: ignore localhost API configuration in the browser build and use same-origin `/api`; remove the API path-collapsing rewrite; preserve the SPA fallback only for non-API routes; show distinct connection and 404 messages in the registration form.
+- Unrelated messages: `infird.com` timeout, extension connection errors, and missing favicon are external/browser noise and do not cause registration failure.
+- Verification target: run the backend and frontend together, request `POST /api/auth/register`, verify the Vercel build output, and inspect the deployed function route after redeploy.
 
 ## Fixes applied in this run
 
