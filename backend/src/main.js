@@ -12,7 +12,8 @@ try {
   // A stale readiness file is safe to remove before startup.
 }
 
-let currentPort = Number(process.env.PORT || config.port || 5000);
+// Preserve port 0 so the operating system can select a free port dynamically.
+let currentPort = Number(process.env.PORT ?? config.port ?? 0);
 const server = app.listen(currentPort, '0.0.0.0', () => {
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : config.port;

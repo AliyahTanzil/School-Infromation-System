@@ -122,6 +122,15 @@ SyntaxError: The requested module '@prisma/client' does not provide an export na
 - Unrelated messages: `infird.com` timeout, extension connection errors, and missing favicon are external/browser noise and do not cause registration failure.
 - Verification target: run the backend and frontend together, request `POST /api/auth/register`, verify the Vercel build output, and inspect the deployed function route after redeploy.
 
+## ERR-005 — Backend startup failure caused proxy refusal
+
+- Symptom: Vite started, but `/api/auth/refresh` failed with `connect ECONNREFUSED 127.0.0.1:4000`.
+- Root cause: the backend process exited before listening because `cookie-parser` was missing from the installed dependency tree. After dependencies were restored, the backend started on port 5000; the configured `PORT=0` was being converted back to 5000 by `config.port || 5000`, so dynamic allocation was bypassed.
+- Fix: preserve port `0` in `backend/src/main.js` using nullish fallback semantics. The root orchestrator remains the supported development entrypoint because it allocates ports, starts the backend, writes `.sais-port`, waits for readiness, and starts Vite with the matching proxy target.
+- Direct verification: `GET http://127.0.0.1:4000/api/health` = connection refused because nothing is required to listen on fixed port 4000; `GET http://127.0.0.1:5000/api/health` = 200; `GET /api/health/deep` = 404 because this backend exposes `/health`, `/ready`, and `/live`, not `/health/deep`.
+- Proxy verification: Vite on 5174 read `backend/.sais-port` and proxied `GET /api/health` = 200. `POST /api/auth/register` directly returned 201 and through Vite returned 409 for the same email, proving the request reached the backend.
+- Classification: initial failure = BACKEND_CONNECTIVITY caused by BACKEND_STARTUP dependency error; after dependency restoration, proxy and registration connectivity pass.
+
 ## Fixes applied in this run
 
 - Updated `vercel.json` for the Vercel project root `frontend`: `buildCommand` is now `npm run build` and `outputDirectory` is now `dist`.
