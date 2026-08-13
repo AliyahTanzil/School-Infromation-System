@@ -23,8 +23,10 @@ function findPort(start) {
 // The v0 preview auto-detects the lowest common dev port, so the user-facing
 // frontend must own it. The frontend proxies /api to the backend, which lives
 // on a higher port and never needs to be the detected preview target.
-const frontend = await findPort(Number(process.env.FRONTEND_PORT || 3000));
-const backend = await findPort(Number(process.env.BACKEND_PORT || Math.max(4000, frontend + 1)));
+// Port 0 asks the operating system for an available ephemeral port. Explicit
+// values remain supported for CI and deployment environments that require them.
+const frontend = await findPort(Number(process.env.FRONTEND_PORT || 0));
+const backend = await findPort(Number(process.env.BACKEND_PORT || 0));
 const manifest = resolve(process.cwd(), '.sais-ports.json');
 try {
   unlinkSync(resolve(process.cwd(), 'backend/.sais-port'));

@@ -20,9 +20,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     allowedHosts: true,
-    // The preview launcher supplies the allocated port; 3000 is the frontend's
-    // canonical standalone default. It must never fall back to the backend port.
-    port: Number(globalThis.process?.env?.FRONTEND_PORT || 3000),
+    // The orchestrator supplies a reserved port; standalone Vite uses an
+    // operating-system-selected port instead of competing for a fixed port.
+    port: Number(globalThis.process?.env?.FRONTEND_PORT || 0),
     strictPort: false,
     // Proxy /api calls to the backend during development so CORS is avoided locally.
     proxy: {
