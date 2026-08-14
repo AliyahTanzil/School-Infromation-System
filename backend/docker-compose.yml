@@ -1,16 +1,40 @@
 services:
   postgres:
     image: postgres:16-alpine
+    container_name: sais-postgres-dev
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: sais
-      POSTGRES_PASSWORD: sais_password
-      POSTGRES_DB: sais
+      POSTGRES_DB: ${POSTGRES_DB:-sais_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-sais_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sais_dev_local_only}
+      TZ: UTC
+      LANG: C.UTF-8
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - sais-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U sais -d sais']
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: sais-postgres-test
+    restart: 'no'
+    environment:
+      POSTGRES_DB: sais_test
+      POSTGRES_USER: sais_test
+      POSTGRES_PASSWORD: sais_test_local_only
+      TZ: UTC
+      LANG: C.UTF-8
+    ports:
+      - '${POSTGRES_TEST_PORT:-5433}:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
       interval: 5s
       timeout: 5s
       retries: 10
