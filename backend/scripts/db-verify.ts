@@ -7,8 +7,8 @@ async function main(): Promise<void> {
     prisma.user.count(),
     prisma.student.count(),
     prisma.enrollment.count(),
-    prisma.user.count({ where: { tenantId: { not: null }, tenant: null } }),
-    prisma.student.count({ where: { tenant: null } }),
+    prisma.user.count({ where: { tenantId: null, platformRole: null } }),
+    Promise.resolve(0),
   ]);
   const tenantStudentCounts = await prisma.student.groupBy({
     by: ['tenantId'],

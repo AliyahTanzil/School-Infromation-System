@@ -1,3 +1,0 @@
-ALTER TABLE "SchoolProfile" ADD COLUMN IF NOT EXISTS "motto" VARCHAR(300);
-ALTER TABLE "SchoolProfile" ADD COLUMN IF NOT EXISTS "primaryColor" VARCHAR(7);
-ALTER TABLE "SchoolProfile" ADD COLUMN IF NOT EXISTS "secondaryColor" VARCHAR(7);
