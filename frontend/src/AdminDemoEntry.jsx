@@ -8,7 +8,7 @@ export default function AdminDemoEntry() {
   useEffect(() => {
     if (!adminDemoEnabled) return;
     enterAdminDemo();
-    navigate('/admin', { replace: true });
+    navigate('/inspection', { replace: true });
   }, [adminDemoEnabled, enterAdminDemo, navigate]);
   return (
     <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-slate-100">

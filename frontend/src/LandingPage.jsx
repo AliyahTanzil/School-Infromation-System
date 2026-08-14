@@ -121,7 +121,7 @@ export default function LandingPage() {
             </Link>
             <div className="flex flex-col items-stretch gap-2">
               <Link
-                to="/login"
+                to="/admin-demo"
                 className="rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-indigo-400"
               >
                 Get started
@@ -163,7 +163,7 @@ export default function LandingPage() {
                 Sign in
               </Link>
               <Link
-                to="/login"
+                to="/admin-demo"
                 className="rounded-lg bg-indigo-500 px-3 py-2 text-center text-sm font-semibold"
               >
                 Get started
@@ -197,7 +197,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/login"
+                to="/admin-demo"
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
               >
                 Get started <ArrowRight size={17} />
@@ -307,7 +307,7 @@ export default function LandingPage() {
             Start with a secure foundation and grow into the connected platform your school needs.
           </p>
           <Link
-            to="/login"
+            to="/admin-demo"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-6 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
           >
             Get started with SAIS <ArrowRight size={17} />

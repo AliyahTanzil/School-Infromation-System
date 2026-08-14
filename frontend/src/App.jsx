@@ -28,6 +28,7 @@ import ResultsDashboard from './ResultsDashboard.jsx';
 import UserManagement from './UserManagement.jsx';
 import TimetableDashboard from './TimetableDashboard.jsx';
 import AdminDemoEntry from './AdminDemoEntry.jsx';
+import RoadmapInspectionHub from './RoadmapInspectionHub.jsx';
 import AdminWorkspace from './AdminWorkspace.jsx';
 import ClassroomDashboard from './ClassroomDashboard.jsx';
 import LiveLearningWorkspace from './LiveLearningWorkspace.jsx';
@@ -510,6 +511,14 @@ export default function App() {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/admin-demo" element={<AdminDemoEntry />} />
+          <Route
+            path="/inspection"
+            element={
+              <Protected>
+                <RoadmapInspectionHub />
+              </Protected>
+            }
+          />
           <Route
             path="/library"
             element={
