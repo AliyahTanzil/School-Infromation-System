@@ -51,4 +51,16 @@ export async function resetPassword(values) {
 export async function verifyEmail(token) {
   return api.post('/auth/verify-email', { token });
 }
+export async function listActivationRequests() {
+  const { data } = await api.get('/activation-requests');
+  return data.data;
+}
+export async function decideActivationRequest(id, decision) {
+  const { data } = await api.post(`/activation-requests/${id}/decision`, { decision });
+  return data.data;
+}
+export async function listDevelopmentOutbox() {
+  const { data } = await api.get('/activation-requests/outbox');
+  return data.data;
+}
 export default api;

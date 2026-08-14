@@ -29,6 +29,7 @@ import UserManagement from './UserManagement.jsx';
 import TimetableDashboard from './TimetableDashboard.jsx';
 import AdminDemoEntry from './AdminDemoEntry.jsx';
 import RoadmapInspectionHub from './RoadmapInspectionHub.jsx';
+import OwnerActivationPanel from './OwnerActivationPanel.jsx';
 import AdminWorkspace from './AdminWorkspace.jsx';
 import ClassroomDashboard from './ClassroomDashboard.jsx';
 import LiveLearningWorkspace from './LiveLearningWorkspace.jsx';
@@ -620,6 +621,14 @@ export default function App() {
             element={
               <Protected>
                 <PlatformAdminDashboard />
+              </Protected>
+            }
+          />
+          <Route
+            path="/owner/activations"
+            element={
+              <Protected>
+                <OwnerActivationPanel />
               </Protected>
             }
           />
