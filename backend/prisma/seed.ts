@@ -262,7 +262,7 @@ async function main(): Promise<void> {
       await tx.role.upsert({
         where: { id },
         update: {},
-        create: { id, tenantId, name, description: 'Demo administrator role' },
+        create: { id, tenantId, name, code: 'ADMIN', description: 'Demo administrator role' },
       });
     }
     await tx.rolePermission.upsert({

@@ -22,9 +22,34 @@ enum TenantStatus {
 
 enum UserStatus {
   INVITED
+  PENDING_VERIFICATION
   ACTIVE
   SUSPENDED
+  LOCKED
   DISABLED
+}
+
+enum AccountType {
+  APPLICATION_MANAGER
+  TENANT_ADMIN
+  STAFF
+  TEACHER
+  PARENT
+  STUDENT
+}
+
+enum LoginEventType {
+  REGISTERED
+  LOGIN_SUCCEEDED
+  LOGIN_FAILED
+  ACCOUNT_LOCKED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  TOKEN_REFRESHED
+  SESSION_REVOKED
+  LOGGED_OUT
+  LOGGED_OUT_ALL
+  EMAIL_VERIFIED
 }
 
 enum Gender {
@@ -99,24 +124,42 @@ model Tenant {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  tenantId      String?        @db.Uuid
-  email         String         @unique
-  firstName     String
-  lastName      String
-  phone         String?
-  status        UserStatus     @default(INVITED)
-  platformRole  PlatformRole?
-  lastLoginAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  tenant        Tenant?        @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  roles         UserRole[]
-  devices       UserDevice[]
-  sessions      UserSession[]
-  staff         Staff?
-  notifications Notification[]
-  auditLogs     AuditLog[]
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tenantId           String?                  @db.Uuid
+  email              String                   @unique
+  firstName          String
+  lastName           String
+  phone              String?
+  passwordHash       String?
+  accountType        AccountType              @default(TENANT_ADMIN)
+  status             UserStatus               @default(INVITED)
+  platformRole       PlatformRole?
+  emailVerifiedAt    DateTime?
+  failedLoginCount   Int                      @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  tenant             Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  roles              UserRole[]
+  devices            UserDevice[]
+  sessions           UserSession[]
+  staff              Staff?
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  loginAttempts      LoginAttempt[]
+  auditLogins        AuditLogin[]
+  refreshTokens      RefreshToken[]
+  passwordResets     PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+  trustedDevices     TrustedDevice[]
+  activationRequests ActivationRequest[]      @relation("ActivationApplicant")
+  ownedActivations   ActivationRequest[]      @relation("ActivationOwner")
+  profile            UserProfile?
+  preference         UserPreference?
+  userAudits         UserAudit[]              @relation("UserAuditSubject")
+  actedUserAudits    UserAudit[]              @relation("UserAuditActor")
 
   @@index([tenantId, status])
 }
@@ -153,12 +196,15 @@ model Role {
   id          String           @id @default(uuid()) @db.Uuid
   tenantId    String           @db.Uuid
   name        String
+  code        String
   description String?
+  deletedAt   DateTime?
   tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   users       UserRole[]
   permissions RolePermission[]
 
   @@unique([tenantId, name])
+  @@unique([tenantId, code])
 }
 
 model Permission {
@@ -169,10 +215,12 @@ model Permission {
 }
 
 model UserRole {
-  userId String @db.Uuid
-  roleId String @db.Uuid
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  userId    String    @db.Uuid
+  roleId    String    @db.Uuid
+  revokedAt DateTime?
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   @@id([userId, roleId])
 }
@@ -199,13 +247,22 @@ model UserDevice {
 }
 
 model UserSession {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @db.Uuid
-  tokenHash String    @unique
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  tokenHash     String         @unique
+  deviceName    String?
+  deviceType    String?
+  deviceHash    String?
+  ipAddress     String?
+  userAgent     String?
+  lastActiveAt  DateTime       @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokeReason  String?
+  createdAt     DateTime       @default(now())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  auditLogins   AuditLogin[]
 
   @@index([userId, expiresAt])
 }
@@ -371,6 +428,145 @@ model TenantSetting {
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, key])
+}
+
+model RefreshToken {
+  id            String      @id @default(uuid()) @db.Uuid
+  tokenHash     String      @unique
+  userId        String      @db.Uuid
+  sessionId     String      @db.Uuid
+  parentTokenId String?     @db.Uuid
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokeReason  String?
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session       UserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([sessionId, revokedAt])
+}
+
+model PasswordResetToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  tokenHash   String    @unique
+  userId      String    @db.Uuid
+  expiresAt   DateTime
+  usedAt      DateTime?
+  requestedIp String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt, usedAt])
+}
+
+model EmailVerificationToken {
+  id          String    @id @default(uuid()) @db.Uuid
+  tokenHash   String    @unique
+  userId      String    @db.Uuid
+  expiresAt   DateTime
+  usedAt      DateTime?
+  requestedIp String?
+  userAgent   String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt, usedAt])
+}
+
+model LoginAttempt {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String?  @db.Uuid
+  email         String
+  ipAddress     String?
+  userAgent     String?
+  succeeded     Boolean
+  failureReason String?
+  createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email, succeeded, createdAt])
+  @@index([ipAddress, succeeded, createdAt])
+}
+
+model AuditLogin {
+  id        String         @id @default(uuid()) @db.Uuid
+  userId    String?        @db.Uuid
+  sessionId String?        @db.Uuid
+  event     LoginEventType
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime       @default(now())
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  session   UserSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([event, createdAt])
+}
+
+model TrustedDevice {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  fingerprint String
+  name        String?
+  userAgent   String?
+  lastIp      String?
+  lastSeenAt  DateTime  @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fingerprint])
+}
+
+model ActivationRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  ownerUserId String    @db.Uuid
+  email       String
+  firstName   String?
+  lastName    String?
+  designation String?
+  status      String    @default("PENDING")
+  expiresAt   DateTime
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  applicant   User      @relation("ActivationApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  owner       User      @relation("ActivationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+
+  @@index([ownerUserId, status, createdAt])
+  @@index([userId, status])
+}
+
+model UserProfile {
+  userId      String  @id @db.Uuid
+  designation String?
+  firstName   String?
+  lastName    String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserPreference {
+  userId   String @id @db.Uuid
+  locale   String @default("en")
+  timezone String @default("UTC")
+  settings Json?
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  subjectId String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  subject   User     @relation("UserAuditSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("UserAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([subjectId, createdAt])
 }
 
 model DatabaseSentinel {
