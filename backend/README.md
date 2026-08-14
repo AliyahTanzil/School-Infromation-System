@@ -1,6 +1,34 @@
-# SAIS Backend 3 — PostgreSQL database foundation
+# SAIS Backend 6 — authentication and security foundation
 
-Backend 3 establishes reproducible PostgreSQL 16 infrastructure and the minimum Prisma connectivity schema. Authentication, business models, CRUD modules, and frontend integration remain deferred to later steps.
+Backend 6 adds the production-oriented authentication persistence and service boundary on top of the normalized SAIS schema. It supports email/password registration and login, short-lived JWT access tokens, rotating hashed refresh sessions, email verification, password reset, lockout tracking, trusted devices, activation requests, and security audit trails.
+
+The existing `/api/auth/*` routes remain the compatibility contract for the current frontend. Refresh tokens are issued only as `httpOnly` cookies; access tokens are returned in the response body and should remain in memory in the browser.
+
+## Security boundaries
+
+- Passwords are stored only as adaptive password hashes; plaintext passwords are never persisted or logged.
+- Refresh, reset, and verification tokens are stored as SHA-256 hashes and are single-use or rotated.
+- JWT access tokens are short-lived and validated against issuer, audience, signature, expiry, and an active database session.
+- Login failures are recorded and temporary account lockout is enforced.
+- Password recovery responses are enumeration-safe.
+- Session and role queries are scoped to the authenticated user; logout and revocation invalidate active sessions.
+- The application owner is unique and tenant-admin activation is explicitly approval-gated.
+
+## Auth operations
+
+```bash
+npm run db:generate -w backend
+npm run db:migrate:status -w backend
+npm run db:migrate:deploy -w backend
+npm run build -w backend
+npm test -w backend
+npm run lint -w backend
+npm run format:check -w backend
+```
+
+Required runtime secrets are `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET`; they must be supplied by the deployment environment and must not be committed. Local development may use the project-provided development values, but production must use independently generated high-entropy secrets.
+
+Backend 6 intentionally stops before account-management authorization APIs. Role administration, tenant switching, profile management, and privileged endpoint policy enforcement are the next boundary.
 
 ## Requirements
 
