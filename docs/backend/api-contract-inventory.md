@@ -146,6 +146,7 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - `GET` '/health/deep', getDeepHealth);
 - `GET` '/ready', getReady);
 - `GET` '/live', getLive);
+- `GET` '/health/database', getDatabaseHealth);
 
 ## hrRoutes
 
