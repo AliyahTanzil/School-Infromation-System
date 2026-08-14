@@ -3,18 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "src/main.js",
+  "main": "dist/main.js",
   "engines": {
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=/vercel/share/.env.project src/main.js",
-    "start": "node src/main.js",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "test": "node --test tests/unit/*.test.js tests/integration/*.test.js",
-    "test:unit": "node --test tests/unit/*.test.js",
-    "test:integration": "node --test tests/integration/*.test.js",
+    "dev": "node --env-file-if-exists=/vercel/share/.env.project --import tsx src/main.ts",
+    "start": "node dist/main.js",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint src tests",
+    "format": "prettier --write src tests",
+    "test": "node --import tsx --test tests/foundation.test.ts",
+    "test:unit": "node --import tsx --test tests/foundation.test.ts",
+    "test:integration": "node --import tsx --test tests/foundation.test.ts",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -48,9 +49,18 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/helmet": "^0.0.48",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/node": "^26.2.0",
     "kill-port": "^2.0.1",
     "nodemon": "^3.1.4",
     "prisma": "^5.22.0",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2"
   }
 }
