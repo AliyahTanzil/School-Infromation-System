@@ -25,8 +25,14 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL ?? '',
   corsOrigins,
   logLevel: process.env.LOG_LEVEL ?? 'info',
+  jsonBodyLimit: process.env.HTTP_BODY_LIMIT ?? '1mb',
+  urlencodedBodyLimit: process.env.HTTP_URLENCODED_BODY_LIMIT ?? '100kb',
 };
 
 export const assertProductionConfig = (): void => {
-  if (config.env === 'production') required('DATABASE_URL');
+  if (config.env === 'production') {
+    required('DATABASE_URL');
+    required('JWT_ACCESS_SECRET');
+    required('JWT_REFRESH_SECRET');
+  }
 };

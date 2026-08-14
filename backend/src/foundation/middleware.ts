@@ -4,7 +4,8 @@ import { isAppError } from './errors.js';
 import { logger } from './logger.js';
 
 export const requestId: RequestHandler = (request, response, next) => {
-  const id = request.header('x-request-id') ?? randomUUID();
+  const supplied = request.header('x-request-id');
+  const id = supplied && /^[a-zA-Z0-9._:-]{1,128}$/.test(supplied) ? supplied : randomUUID();
   response.setHeader('x-request-id', id);
   response.locals.requestId = id;
   next();
@@ -37,6 +38,12 @@ export const notFound: RequestHandler = (request, response) => {
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, next) => {
   void next;
+  logger.error('request failed', {
+    requestId: response.locals.requestId,
+    code: isAppError(error) ? error.code : 'INTERNAL_ERROR',
+    status: isAppError(error) ? error.statusCode : 500,
+    message: isAppError(error) ? error.message : 'Internal server error',
+  });
   const appError = isAppError(error) ? error : undefined;
   const statusCode = appError?.statusCode ?? 500;
   response.status(statusCode).json({

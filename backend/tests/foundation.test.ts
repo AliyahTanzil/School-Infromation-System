@@ -16,4 +16,10 @@ test('unknown routes return a consistent error envelope', async () => {
   assert.equal(response.status, 404);
   assert.equal(response.body.success, false);
   assert.equal(response.body.error.code, 'NOT_FOUND');
+  assert.ok(response.body.requestId);
+});
+
+test('invalid request IDs are replaced with a safe generated identifier', async () => {
+  const response = await request(createApp()).get('/api/v1/health').set('x-request-id', '<unsafe>');
+  assert.match(response.headers['x-request-id'], /^[a-f0-9-]{36}$/);
 });

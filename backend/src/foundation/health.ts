@@ -19,9 +19,22 @@ healthRouter.get('/health', (_request, response) => {
 healthRouter.get('/health/live', (_request, response) =>
   response.json({ success: true, data: { status: 'live' } })
 );
-healthRouter.get('/health/ready', (_request, response) =>
-  response.json({ success: true, data: { status: 'ready' } })
-);
+healthRouter.get('/health/ready', async (_request, response) => {
+  if (!config.databaseUrl) {
+    response
+      .status(503)
+      .json({ success: false, data: { status: 'not_ready', database: 'unavailable' } });
+    return;
+  }
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    response.json({ success: true, data: { status: 'ready', database: 'connected' } });
+  } catch {
+    response
+      .status(503)
+      .json({ success: false, data: { status: 'not_ready', database: 'unavailable' } });
+  }
+});
 
 healthRouter.get('/health/database', async (_request, response) => {
   if (!config.databaseUrl) {

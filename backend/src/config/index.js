@@ -26,6 +26,10 @@ const config = {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:4000',
     credentials: true,
   },
+  http: {
+    bodyLimit: process.env.HTTP_BODY_LIMIT ?? '2mb',
+    trustProxy: toBool(process.env.TRUST_PROXY, false),
+  },
 
   auth: {
     // Access token — short-lived JWT sent on every request.

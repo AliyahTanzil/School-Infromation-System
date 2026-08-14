@@ -4,7 +4,12 @@ import logger from '../../infrastructure/logger/index.js';
 
 // Attach/propagate a request ID so logs across middleware/controllers are traceable.
 function requestContext(req, res, next) {
-  req.requestId = req.headers['x-request-id'] || randomUUID();
+  const supplied = req.headers['x-request-id'];
+  const requestId =
+    typeof supplied === 'string' && /^[a-zA-Z0-9._:-]{1,128}$/.test(supplied)
+      ? supplied
+      : randomUUID();
+  req.requestId = requestId;
   res.setHeader('x-request-id', req.requestId);
   next();
 }

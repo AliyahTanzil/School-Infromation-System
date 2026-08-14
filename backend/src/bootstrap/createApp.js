@@ -12,10 +12,11 @@ export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
+  if (config.http.trustProxy) app.set('trust proxy', 1);
   app.use(helmet());
   app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials }));
-  app.use(express.json({ limit: '2mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+  app.use(express.json({ limit: config.http.bodyLimit }));
+  app.use(express.urlencoded({ extended: true, limit: config.http.bodyLimit }));
   app.use(cookieParser());
   app.use(requestLogger);
   app.use('/api', router);
