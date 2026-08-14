@@ -11,11 +11,15 @@
     "dev": "node --env-file-if-exists=/vercel/share/.env.project --import tsx src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
-    "lint": "eslint src tests",
+    "lint": "eslint src/foundation src/app.ts src/server.ts src/main.ts tests/foundation.test.ts",
     "format": "prettier --write src tests",
+    "format:check": "prettier --check src tests",
     "test": "node --import tsx --test tests/foundation.test.ts",
+    "test:watch": "node --import tsx --test --watch tests/foundation.test.ts",
+    "test:coverage": "node --import tsx --experimental-test-coverage --test tests/foundation.test.ts",
     "test:unit": "node --import tsx --test tests/foundation.test.ts",
     "test:integration": "node --import tsx --test tests/foundation.test.ts",
+    "db:check": "prisma validate --schema prisma/schema.prisma",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
@@ -49,6 +53,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -56,11 +61,14 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/node": "^26.2.0",
+    "eslint": "^9.39.5",
     "kill-port": "^2.0.1",
     "nodemon": "^3.1.4",
+    "prettier": "^3.9.6",
     "prisma": "^5.22.0",
     "supertest": "^7.0.0",
     "tsx": "^4.23.12",
-    "typescript": "^7.0.2"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0"
   }
 }

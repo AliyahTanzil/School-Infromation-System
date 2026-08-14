@@ -13,7 +13,14 @@ async function requireOwner(ownerUserId) {
   return owner;
 }
 
-export async function createRequest({ userId, email, firstName, lastName, designation, ownerUserId }) {
+export async function createRequest({
+  userId,
+  email,
+  firstName,
+  lastName,
+  designation,
+  ownerUserId,
+}) {
   const token = generateOpaqueToken(32);
   const expiresAt = new Date(Date.now() + ACTIVATION_TTL_MS);
   const tokenHash = hashToken(token);
@@ -59,7 +66,10 @@ export async function decide({ ownerUserId, requestId, decision }) {
     WHERE "id" = ${requestId}::uuid
   `;
   if (status === 'APPROVED') {
-    await prisma.user.update({ where: { id: request.userId }, data: { status: 'ACTIVE', emailVerifiedAt: new Date() } });
+    await prisma.user.update({
+      where: { id: request.userId },
+      data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+    });
   }
   return { status, userId: request.userId };
 }
