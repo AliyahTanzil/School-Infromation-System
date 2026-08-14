@@ -27,8 +27,15 @@ npm run db:check -w backend
 npm run db:migrate -w backend
 npm run db:migrate:status -w backend
 npm run db:generate -w backend
-npm run db:seed -w backend
+ALLOW_DEMO_SEED=true npm run db:seed -w backend
+npm run db:verify -w backend
 npm run db:studio -w backend
 ```
 
 Run `db:reset` only against disposable development databases. Never reset production data. Production deploys should use `db:migrate:deploy` after reviewing the migration SQL.
+
+## Backend 5 development seed
+
+The development seed is deterministic and idempotent. It creates two isolated demo tenants, platform/tenant administrators, permissions, schools, academic years, students, guardians, staff, enrollments, settings, and RBAC links. It never creates passwords, sessions, access tokens, refresh tokens, or production records.
+
+The seed refuses to run unless `NODE_ENV` is not `production` and `ALLOW_DEMO_SEED=true`. Re-running it updates only the known demo records and does not duplicate them. Run `db:verify` afterward to check tenant references, orphan records, and isolation-safe counts. Do not point it at a production or important personal database.
