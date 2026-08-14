@@ -28,7 +28,18 @@ npm run format:check -w backend
 
 Required runtime secrets are `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET`; they must be supplied by the deployment environment and must not be committed. Local development may use the project-provided development values, but production must use independently generated high-entropy secrets.
 
-Backend 6 intentionally stops before account-management authorization APIs. Role administration, tenant switching, profile management, and privileged endpoint policy enforcement are the next boundary.
+Backend 7 adds the authorization and tenant-administration boundary. Authenticated requests resolve a database-backed tenant context, role codes, account type, and platform scope before handlers run. Tenant-scoped account routes live under `/api/account`; platform-owner tenant lifecycle routes live under `/api/tenants`.
+
+## Authorization rules
+
+- `x-tenant-id` may select a tenant only for a platform owner; regular users are pinned to their own tenant.
+- Tenant user listing, profile updates, lifecycle changes, and role assignment require an active tenant-management permission.
+- Platform tenant creation, updates, status changes, and archival require an active `OWNER` account and never trust role claims from the client.
+- Users cannot suspend, disable, or delete themselves through administrative endpoints.
+- Protected application-manager accounts cannot be changed by tenant administrators.
+- Disabled, locked, suspended, deleted, and archived principals cannot obtain a usable authorization context.
+
+Backend 7 intentionally stops before domain-module authorization policies and business CRUD implementation. Those are the next boundary.
 
 ## Requirements
 

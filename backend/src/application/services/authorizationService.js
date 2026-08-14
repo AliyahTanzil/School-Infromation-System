@@ -17,7 +17,6 @@ export async function effectivePermissions(userId, scopeKey = 'global') {
   const assignments = await prisma.userRole.findMany({
     where: {
       userId,
-      scopeKey,
       revokedAt: null,
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       role: { deletedAt: null },

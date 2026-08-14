@@ -38,6 +38,8 @@ import aiChatRoutes from './aiChatRoutes.js';
 import integrationRoutes from './integrationRoutes.js';
 import biometricRoutes from './biometricRoutes.js';
 import activationRoutes from './activationRoutes.js';
+import accountRoutes from './accountRoutes.js';
+import tenantLifecycleRoutes from './tenantLifecycleRoutes.js';
 
 const router = Router();
 
@@ -81,5 +83,7 @@ router.use('/ai-chat', aiChatRoutes);
 router.use('/integrations', integrationRoutes);
 router.use('/biometrics', biometricRoutes);
 router.use('/activation-requests', activationRoutes);
+router.use('/account', accountRoutes);
+router.use('/tenants', tenantLifecycleRoutes);
 
 export default router;
