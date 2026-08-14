@@ -1,18 +1,39 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from './context/AuthContext.jsx';
+
+const demoPortal = {
+  profile: { firstName: 'Development', lastName: 'Parent' },
+  notifications: [],
+  children: [],
+};
 
 export default function ParentPortal() {
-  const [portal, setPortal] = useState(null);
+  const { user } = useAuth();
+  const [portal, setPortal] = useState(user?.id === 'demo-admin' ? demoPortal : null);
   const [error, setError] = useState('');
   useEffect(() => {
+    if (user?.id === 'demo-admin') return undefined;
+    const controller = new AbortController();
     fetch('/api/parents/me', {
+      credentials: 'include',
       headers: { Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}` },
+      signal: controller.signal,
     })
-      .then((response) =>
-        response.ok ? response.json() : Promise.reject(new Error('Unable to load parent portal'))
-      )
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(
+            payload.error?.message ?? payload.message ?? 'Unable to load parent portal'
+          );
+        }
+        return payload;
+      })
       .then(({ data }) => setPortal(data))
-      .catch((reason) => setError(reason.message));
-  }, []);
+      .catch((reason) => {
+        if (reason.name !== 'AbortError') setError(reason.message);
+      });
+    return () => controller.abort();
+  }, [user?.id]);
   if (error)
     return (
       <main className="min-h-screen bg-slate-950 p-8 text-white">

@@ -15,6 +15,23 @@ export const registerSchema = z.object({
     email,
     password,
     deviceName: z.string().trim().max(255).optional(),
+    firstName: z.string().trim().min(1).max(100).optional(),
+    lastName: z.string().trim().min(1).max(100).optional(),
+    designation: z.string().trim().max(120).optional(),
+    schoolName: z.string().trim().max(200).optional(),
+    schoolMotto: z.string().trim().max(300).optional(),
+    schoolCity: z.string().trim().max(100).optional(),
+    schoolCountry: z.string().trim().max(100).optional(),
+    primaryColor: z
+      .string()
+      .regex(/^#[0-9a-f]{6}$/i)
+      .optional(),
+    secondaryColor: z
+      .string()
+      .regex(/^#[0-9a-f]{6}$/i)
+      .optional(),
+    badgeUrl: z.string().max(2800000).optional(),
+    accountType: z.enum(['TENANT_ADMIN', 'APPLICATION_MANAGER']).default('TENANT_ADMIN'),
   }),
 });
 

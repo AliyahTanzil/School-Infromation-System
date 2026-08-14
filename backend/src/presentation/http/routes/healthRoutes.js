@@ -12,11 +12,12 @@
  */
 
 import { Router } from 'express';
-import { getHealth, getReady, getLive } from '../controllers/healthController.js';
+import { getHealth, getReady, getLive, getDeepHealth } from '../controllers/healthController.js';
 
 const router = Router();
 
 router.get('/health', getHealth);
+router.get('/health/deep', getDeepHealth);
 router.get('/ready', getReady);
 router.get('/live', getLive);
 

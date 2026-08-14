@@ -119,12 +119,22 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <Link
-              to="/register"
-              className="rounded-xl bg-indigo-500 px-4 py-2.5 text-sm font-semibold transition hover:bg-indigo-400"
-            >
-              Get started
-            </Link>
+            <div className="flex flex-col items-stretch gap-2">
+              <Link
+                to="/admin-demo"
+                className="rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-indigo-400"
+              >
+                Get started
+              </Link>
+              {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true') && (
+                <Link
+                  to="/admin-demo"
+                  className="rounded-xl border border-amber-400/40 px-4 py-2.5 text-center text-sm font-semibold text-amber-200"
+                >
+                  Demo
+                </Link>
+              )}
+            </div>
           </div>
           <button
             type="button"
@@ -153,11 +163,19 @@ export default function LandingPage() {
                 Sign in
               </Link>
               <Link
-                to="/register"
+                to="/admin-demo"
                 className="rounded-lg bg-indigo-500 px-3 py-2 text-center text-sm font-semibold"
               >
                 Get started
               </Link>
+              {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true') && (
+                <Link
+                  to="/admin-demo"
+                  className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-amber-200"
+                >
+                  Demo
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -179,7 +197,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/register"
+                to="/admin-demo"
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
               >
                 Get started <ArrowRight size={17} />
@@ -289,7 +307,7 @@ export default function LandingPage() {
             Start with a secure foundation and grow into the connected platform your school needs.
           </p>
           <Link
-            to="/register"
+            to="/admin-demo"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-6 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
           >
             Get started with SAIS <ArrowRight size={17} />

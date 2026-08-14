@@ -15,6 +15,8 @@ import logger from '../../infrastructure/logger/index.js';
 import { generateOpaqueToken, hashToken } from '../../shared/utils/tokenUtils.js';
 import { toPublicUser } from '../dtos/userDto.js';
 import sessionService from './sessionService.js';
+import activationService from './activationService.js';
+import prisma from '../../infrastructure/orm/prismaClient.js';
 
 /**
  * AuthService
@@ -55,10 +57,27 @@ async function issueSingleUseToken(repository, { userId, context, ttlMs }) {
  * session so the user is logged in (status stays PENDING_VERIFICATION until the
  * email is confirmed).
  */
-export async function register({ email, password, deviceName, context }) {
+export async function register({
+  email,
+  password,
+  deviceName,
+  accountType = 'TENANT_ADMIN',
+  firstName,
+  lastName,
+  designation,
+  context,
+}) {
   const existing = await userRepository.findByEmail(email);
   if (existing) {
     throw new ConflictError('An account with this email already exists');
+  }
+  if (accountType === 'APPLICATION_MANAGER') {
+    const existingOwner = await prisma.user.findFirst({
+      where: { accountType: 'APPLICATION_MANAGER', deletedAt: null },
+    });
+    if (existingOwner) {
+      throw new ConflictError('Application owner creation is restricted to the existing owner');
+    }
   }
 
   const passwordHash = await passwordService.hashPassword(password);
@@ -66,6 +85,7 @@ export async function register({ email, password, deviceName, context }) {
     email,
     passwordHash,
     status: 'PENDING_VERIFICATION',
+    accountType,
   });
 
   const verificationToken = await issueSingleUseToken(emailVerificationTokenRepository, {
@@ -86,6 +106,30 @@ export async function register({ email, password, deviceName, context }) {
     ipAddress: context?.ipAddress,
     userAgent: context?.userAgent,
   });
+
+  if (accountType === 'TENANT_ADMIN') {
+    const owner = await prisma.user.findFirst({
+      where: { accountType: 'APPLICATION_MANAGER', status: 'ACTIVE', deletedAt: null },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!owner) {
+      throw new ConflictError('No active application owner is available to approve this account');
+    }
+    const approval = await activationService.createRequest({
+      userId: user.id,
+      ownerUserId: owner.id,
+      email,
+      firstName,
+      lastName,
+      designation,
+    });
+    return {
+      user: toPublicUser(user, { roles: [] }),
+      activationPending: true,
+      ownerEmail: approval.ownerEmail,
+      expiresAt: approval.expiresAt,
+    };
+  }
 
   const { accessToken, refreshToken, session, roles } = await sessionService.issueSession({
     user,
@@ -136,6 +180,10 @@ export async function login({ email, password, deviceName, context }) {
   if (user.status === 'SUSPENDED') {
     await recordFailure('account_suspended', user.id);
     throw new AuthenticationError('This account has been suspended');
+  }
+  if (user.status !== 'ACTIVE') {
+    await recordFailure('account_pending_activation', user.id);
+    throw new AuthenticationError('This account is awaiting activation by the application owner');
   }
 
   // Honor an active lockout; auto-clear it once the window elapses.

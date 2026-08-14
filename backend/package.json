@@ -8,7 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=/vercel/share/.env.project ../node_modules/nodemon/bin/nodemon.js --watch src --ext js src/main.js",
+    "dev": "node --env-file-if-exists=/vercel/share/.env.project src/main.js",
     "start": "node src/main.js",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -19,20 +19,21 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate --schema prisma/schema.prisma"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.37",
     "@prisma/client": "^5.22.0",
+    "ai": "^7.0.59",
     "bcryptjs": "^2.4.3",
-    "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "express-async-errors": "^3.1.1",
+    "express": "^5.1.0",
     "express-rate-limit": "^7.4.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
@@ -42,10 +43,12 @@
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.13.1",
     "winston-daily-rotate-file": "^5.0.0",
+    "xlsx": "^0.18.5",
     "yamljs": "^0.3.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "kill-port": "^2.0.1",
     "nodemon": "^3.1.4",
     "prisma": "^5.22.0",
     "supertest": "^7.0.0"

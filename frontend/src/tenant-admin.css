@@ -1,0 +1,202 @@
+tenant-admin-page {
+  min-height: 100vh;
+  background: #0b1220;
+  color: #e6edf7;
+  padding: 40px clamp(20px, 5vw, 80px);
+  font-family: Inter, system-ui, sans-serif;
+}
+.tenant-admin-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 28px;
+  align-items: flex-start;
+  border-bottom: 1px solid #263247;
+  padding-bottom: 32px;
+}
+.tenant-admin-hero h1 {
+  font-size: clamp(2.2rem, 5vw, 4.8rem);
+  letter-spacing: -0.06em;
+  line-height: 1.02;
+  max-width: 760px;
+  margin: 10px 0;
+}
+.tenant-admin-hero p {
+  color: #8fa0b8;
+  max-width: 640px;
+  line-height: 1.6;
+}
+.tenant-kicker,
+.tenant-eyebrow {
+  color: #5eead4 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.tenant-status {
+  color: #86efac;
+  border: 1px solid #27583f;
+  background: #10291f;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+.tenant-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 24px 0;
+}
+.tenant-tabs button,
+.tenant-action {
+  border: 1px solid #293750;
+  background: #111b2d;
+  color: #a9b7cc;
+  padding: 10px 15px;
+  border-radius: 10px;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+.tenant-tabs button.active,
+.tenant-action {
+  background: #164e63;
+  color: #cffafe;
+  border-color: #2dd4bf;
+}
+.tenant-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin: 26px 0;
+}
+.tenant-metrics article,
+.tenant-panel {
+  border: 1px solid #263247;
+  background: #101a2b;
+  border-radius: 16px;
+  padding: 22px;
+}
+.tenant-metrics strong {
+  display: block;
+  font-size: 1.9rem;
+}
+.tenant-metrics span,
+.usage-row span,
+.school-list span,
+.audit-list small {
+  display: block;
+  color: #8393aa;
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+.tenant-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 16px;
+}
+.tenant-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 26px;
+}
+.tenant-panel h2 {
+  margin: 6px 0;
+  font-size: 1.25rem;
+}
+.tenant-panel-heading > span {
+  color: #5eead4;
+  font-size: 0.8rem;
+}
+.usage-row {
+  margin: 20px 0;
+}
+.usage-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+}
+.usage-row b {
+  font-size: 0.9rem;
+}
+.usage-track {
+  height: 7px;
+  background: #1e2c43;
+  border-radius: 99px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.usage-track i {
+  display: block;
+  height: 100%;
+  background: #2dd4bf;
+  border-radius: 99px;
+}
+.feature-list > div,
+.school-list > div,
+.audit-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+  border-top: 1px solid #263247;
+  padding: 16px 0;
+  text-transform: capitalize;
+}
+.feature-list b,
+.school-list b {
+  font-size: 0.72rem;
+  color: #fbbf24;
+}
+.feature-list b.on,
+.school-list b.on {
+  color: #86efac;
+}
+.tenant-wide {
+  max-width: 900px;
+}
+.toggle {
+  border: 1px solid #42526b;
+  background: #17243a;
+  color: #a9b7cc;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.toggle.on {
+  background: #164e63;
+  color: #cffafe;
+  border-color: #2dd4bf;
+}
+.audit-list span {
+  color: #5eead4;
+  font-size: 0.78rem;
+}
+.audit-list strong {
+  margin-left: auto;
+}
+.audit-list small {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .tenant-admin-hero,
+  .tenant-grid {
+    display: block;
+  }
+  .tenant-status {
+    display: inline-block;
+    margin-top: 20px;
+  }
+  .tenant-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .tenant-panel {
+    margin-top: 16px;
+  }
+  .audit-list > div {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .audit-list strong {
+    margin-left: 0;
+    width: 100%;
+  }
+}

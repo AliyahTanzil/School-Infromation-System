@@ -2,11 +2,22 @@ import app from './app.js';
 import config from './config/index.js';
 import logger from './infrastructure/logger/index.js';
 import { disconnectDatabase } from './infrastructure/orm/database.js';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-let currentPort = config.port;
-const server = app.listen(currentPort, () => {
+const portFile = resolve(process.cwd(), '.sais-port');
+try {
+  unlinkSync(portFile);
+} catch {
+  // A stale readiness file is safe to remove before startup.
+}
+
+// Preserve port 0 so the operating system can select a free port dynamically.
+let currentPort = Number(process.env.PORT ?? config.port ?? 0);
+const server = app.listen(currentPort, '0.0.0.0', () => {
   const address = server.address();
   const port = typeof address === 'object' && address ? address.port : config.port;
+  writeFileSync(portFile, String(port));
   logger.info(`SAIS backend running at http://localhost:${port} [${config.env}]`);
 });
 
@@ -26,6 +37,11 @@ server.on('error', (error) => {
 async function shutdown(signal) {
   logger.info(`${signal} received; starting graceful shutdown.`);
   server.close(async () => {
+    try {
+      unlinkSync(portFile);
+    } catch {
+      // The port file may already be absent after a forced shutdown.
+    }
     await disconnectDatabase();
     logger.info('HTTP server closed.');
     process.exit(0);

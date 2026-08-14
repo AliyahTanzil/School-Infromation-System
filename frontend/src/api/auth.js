@@ -1,8 +1,10 @@
 import axios from 'axios';
 
+const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
+const isLocalApiUrl = configuredApiUrl && /localhost|127\.0\.0\.1/.test(configuredApiUrl);
 const api = axios.create({
-  // Use Vite's same-origin proxy by default; absolute URLs are only needed for deployed environments.
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  // Production must use the deployed same-origin function, never a localhost URL from local development.
+  baseURL: configuredApiUrl && !isLocalApiUrl ? configuredApiUrl.replace(/\/$/, '') : '/api',
   withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
 });
@@ -48,5 +50,17 @@ export async function resetPassword(values) {
 }
 export async function verifyEmail(token) {
   return api.post('/auth/verify-email', { token });
+}
+export async function listActivationRequests() {
+  const { data } = await api.get('/activation-requests');
+  return data.data;
+}
+export async function decideActivationRequest(id, decision) {
+  const { data } = await api.post(`/activation-requests/${id}/decision`, { decision });
+  return data.data;
+}
+export async function listDevelopmentOutbox() {
+  const { data } = await api.get('/activation-requests/outbox');
+  return data.data;
 }
 export default api;

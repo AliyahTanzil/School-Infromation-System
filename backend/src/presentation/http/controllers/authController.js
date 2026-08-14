@@ -29,6 +29,17 @@ function authPayload(result) {
 export async function register(req, res) {
   const context = getRequestContext(req);
   const result = await authService.register({ ...req.body, context });
+  if (result.activationPending) {
+    res.status(202).json({
+      success: true,
+      data: {
+        user: result.user,
+        activationPending: true,
+        message: 'Your account is awaiting application-owner activation.',
+      },
+    });
+    return;
+  }
   setRefreshCookie(res, result.refreshToken);
   res.status(201).json({ success: true, data: authPayload(result) });
 }

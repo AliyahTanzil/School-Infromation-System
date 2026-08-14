@@ -35,9 +35,9 @@ export function findPublicById(id, tx) {
   });
 }
 
-export function create({ email, passwordHash, status }, tx) {
+export function create({ email, passwordHash, status, accountType = 'TENANT_ADMIN' }, tx) {
   return db(tx).user.create({
-    data: { email: email.toLowerCase(), passwordHash, status },
+    data: { email: email.toLowerCase(), passwordHash, status, accountType },
   });
 }
 

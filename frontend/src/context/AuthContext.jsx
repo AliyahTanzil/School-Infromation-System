@@ -3,6 +3,8 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../api/auth.js';
 
 const AuthContext = createContext(null);
+// Temporary development access: restore production CTA/auth behavior when development is finished.
+const adminDemoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -21,6 +23,18 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       loading,
+      adminDemoEnabled,
+      enterAdminDemo() {
+        if (!adminDemoEnabled) return null;
+        const demoUser = {
+          id: 'demo-admin',
+          email: 'admin-demo@localhost.test',
+          roles: ['PLATFORM_ADMIN'],
+          displayName: 'Development Admin',
+        };
+        setUser(demoUser);
+        return demoUser;
+      },
       async login(values) {
         const result = await authApi.login(values);
         setUser(result.user);
@@ -32,8 +46,17 @@ export function AuthProvider({ children }) {
         return result;
       },
       async logout() {
-        await authApi.logout();
-        setUser(null);
+        // Demo users have no server session; do not call the protected logout API.
+        if (user?.id === 'demo-admin') {
+          setUser(null);
+          return;
+        }
+        try {
+          await authApi.logout();
+        } finally {
+          // Clear local auth state even if the server session already expired.
+          setUser(null);
+        }
       },
       async forgotPassword(email) {
         return authApi.forgotPassword(email);
