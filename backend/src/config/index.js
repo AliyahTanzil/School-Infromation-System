@@ -56,6 +56,7 @@ const config = {
 
     // Refresh token cookie (httpOnly). Access token stays in memory on the client.
     refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? 'sais_refresh_token',
+    refreshCookieSameSite: process.env.REFRESH_COOKIE_SAMESITE ?? 'strict',
   },
 
   email: {

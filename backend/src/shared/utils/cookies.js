@@ -14,9 +14,7 @@ function baseCookieOptions() {
   return {
     httpOnly: true,
     secure: isProduction,
-    // v0 previews and separately hosted frontends are cross-site contexts.
-    // SameSite=None is required there so refresh can reach the API function.
-    sameSite: isProduction ? 'none' : 'lax',
+    sameSite: config.auth.refreshCookieSameSite,
     path: '/api/auth',
   };
 }

@@ -56,3 +56,13 @@ export const findGuardian = (tenantId, guardianId) =>
 
 export const linkExistingGuardian = (studentId, guardianId, relationship, isPrimary) =>
   prisma.studentGuardian.create({ data: { studentId, guardianId, relationship, isPrimary } });
+
+export default {
+  listStudents,
+  findStudent,
+  createStudent,
+  updateStudent,
+  createGuardianLink,
+  findGuardian,
+  linkExistingGuardian,
+};

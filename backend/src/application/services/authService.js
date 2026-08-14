@@ -86,6 +86,8 @@ export async function register({
     passwordHash,
     status: 'PENDING_VERIFICATION',
     accountType,
+    firstName,
+    lastName,
   });
 
   const verificationToken = await issueSingleUseToken(emailVerificationTokenRepository, {

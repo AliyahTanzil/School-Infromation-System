@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate } from '../../../middleware/auth/authenticate.js';
+import authenticate from '../../../middleware/auth/authenticate.js';
 import { requirePermission } from '../../../middleware/auth/authorization.js';
 import * as controller from '../controllers/studentDomainController.js';
 
