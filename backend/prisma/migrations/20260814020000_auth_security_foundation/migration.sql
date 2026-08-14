@@ -16,8 +16,12 @@ ALTER TYPE "UserStatus" ADD VALUE 'PENDING_VERIFICATION';
 ALTER TYPE "UserStatus" ADD VALUE 'LOCKED';
 
 -- AlterTable
-ALTER TABLE "Role" ADD COLUMN     "code" TEXT NOT NULL,
+ALTER TABLE "Role" ADD COLUMN     "code" TEXT,
 ADD COLUMN     "deletedAt" TIMESTAMP(3);
+
+UPDATE "Role" SET "code" = UPPER(REGEXP_REPLACE("name", '[^a-zA-Z0-9]+', '_', 'g')) WHERE "code" IS NULL;
+UPDATE "Role" SET "code" = 'ROLE_' || "id"::text WHERE "code" IS NULL OR "code" = '';
+ALTER TABLE "Role" ALTER COLUMN "code" SET NOT NULL;
 
 -- AlterTable
 ALTER TABLE "User" ADD COLUMN     "accountType" "AccountType" NOT NULL DEFAULT 'TENANT_ADMIN',
