@@ -17,6 +17,7 @@ export const registerSchema = z.object({
     deviceName: z.string().trim().max(255).optional(),
     firstName: z.string().trim().min(1).max(100).optional(),
     lastName: z.string().trim().min(1).max(100).optional(),
+    designation: z.string().trim().max(120).optional(),
     schoolName: z.string().trim().max(200).optional(),
     schoolMotto: z.string().trim().max(300).optional(),
     schoolCity: z.string().trim().max(100).optional(),

@@ -71,6 +71,14 @@ export async function register({
   if (existing) {
     throw new ConflictError('An account with this email already exists');
   }
+  if (accountType === 'APPLICATION_MANAGER') {
+    const existingOwner = await prisma.user.findFirst({
+      where: { accountType: 'APPLICATION_MANAGER', deletedAt: null },
+    });
+    if (existingOwner) {
+      throw new ConflictError('Application owner creation is restricted to the existing owner');
+    }
+  }
 
   const passwordHash = await passwordService.hashPassword(password);
   const user = await userRepository.create({
