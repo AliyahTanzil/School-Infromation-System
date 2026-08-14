@@ -1,6 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import morgan from 'morgan';
 import logger from '../../infrastructure/logger/index.js';
+import config from '../../config/index.js';
+import { recordRequest } from '../../foundation/metrics.js';
+
+const REDACTED = '[REDACTED]';
+const sensitiveKeys = /password|token|secret|authorization|cookie|api[-_]?key/i;
+
+export function redact(value) {
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.entries(value).map(([key, entry]) => [key, sensitiveKeys.test(key) ? REDACTED : entry])
+  );
+}
 
 // Attach/propagate a request ID so logs across middleware/controllers are traceable.
 function requestContext(req, res, next) {
@@ -46,6 +58,20 @@ const errorLogger = morgan(morganJsonFormat, {
 });
 
 export default function requestLogger(req, res, next) {
+  const startedAt = process.hrtime.bigint();
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+    recordRequest({ status: res.statusCode, durationMs });
+    if (durationMs >= config.log.slowRequestMs) {
+      logger.warn('slow request', {
+        requestId: req.requestId,
+        method: req.method,
+        url: req.originalUrl,
+        status: res.statusCode,
+        durationMs: Math.round(durationMs * 100) / 100,
+      });
+    }
+  });
   requestContext(req, res, () => {
     successLogger(req, res, () => {
       errorLogger(req, res, next);

@@ -77,6 +77,10 @@ const config = {
     maxSize: process.env.LOG_MAX_SIZE ?? '20m',
     maxFiles: process.env.LOG_MAX_FILES ?? '30d',
     zippedArchive: (process.env.LOG_ZIPPED_ARCHIVE ?? 'true').toLowerCase() === 'true',
+    slowRequestMs: toInt(process.env.SLOW_REQUEST_MS, 1000),
+  },
+  observability: {
+    metricsEnabled: toBool(process.env.METRICS_ENABLED, true),
   },
 };
 

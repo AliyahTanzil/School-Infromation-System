@@ -13,6 +13,7 @@
 
 import { checkDatabaseConnection } from '../../../infrastructure/orm/database.js';
 import logger from '../../../infrastructure/logger/index.js';
+import { snapshotMetrics } from '../../../foundation/metrics.js';
 
 // Captured once when the module first loads — used to compute uptime.
 const SERVER_START_TIME = Date.now();
@@ -102,6 +103,7 @@ export async function getHealth(req, res) {
     dependencies: {
       database,
     },
+    metrics: snapshotMetrics(),
   };
 
   logger.info('Health check performed', { status: overallStatus, dbStatus: database.status });
