@@ -1,8 +1,11 @@
 import { prisma } from '../src/foundation/prisma.js';
 
 async function main(): Promise<void> {
-  await prisma.databaseSentinel.create({ data: {} });
-  console.info('[sais-backend] database foundation seed completed');
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Development seed cannot run in production');
+  }
+  await prisma.databaseSentinel.upsert({ where: { id: 1 }, update: {}, create: { id: 1 } });
+  console.info('[sais-backend] database foundation seed completed without business records');
 }
 
 main()
