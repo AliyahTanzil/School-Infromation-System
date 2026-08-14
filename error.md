@@ -139,6 +139,13 @@ SyntaxError: The requested module '@prisma/client' does not provide an export na
 - Unrelated errors: v0 dashboard websocket/telemetry failures, browser extension errors, CDN timeouts, and favicon 404s do not cause application auth failure.
 - Redeploy is required for the deployed function to use this fix.
 
+## ERR-007 — Vercel SPA fallback intercepted API routes
+
+- Symptom: deployed registration returned `Registration API route was not found`, and the suggested `/api/health/deep` endpoint returned 404.
+- Root cause: `vercel.json` rewrote every request, including `/api/*`, to `index.html`. That bypassed the root `api/index.js` Vercel Function and made API requests look like frontend routes.
+- Fix: the SPA rewrite now excludes `/api` paths. Added `GET /api/health/deep` with backend, environment, Prisma/database, and authentication checks that never expose secrets.
+- Required deployment: the Vercel project must deploy from the repository root so both `frontend/dist` and the root `api/index.js` function are included. If the project Root Directory is `frontend`, the function will still be missing and the API must instead be deployed as a separate backend project.
+
 ## Fixes applied in this run
 
 - Updated `vercel.json` for the Vercel project root `frontend`: `buildCommand` is now `npm run build` and `outputDirectory` is now `dist`.

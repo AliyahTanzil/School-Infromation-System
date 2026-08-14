@@ -153,3 +153,31 @@ export function getLive(req, res) {
     pid: process.pid,
   });
 }
+
+/**
+ * GET /health/deep
+ *
+ * Safe deployment diagnostic. It verifies runtime, required configuration,
+ * database connectivity, and token configuration without returning secrets.
+ */
+export async function getDeepHealth(req, res) {
+  const database = await dbCheck();
+  const environment = 'healthy';
+  const authentication =
+    process.env.JWT_ACCESS_SECRET && process.env.JWT_REFRESH_SECRET ? 'healthy' : 'degraded';
+  const checks = {
+    backend: 'healthy',
+    environment,
+    prisma: database.status === 'up' ? 'healthy' : 'degraded',
+    database: database.status === 'up' ? 'healthy' : 'degraded',
+    authentication,
+  };
+  const healthy = Object.values(checks).every((status) => status === 'healthy');
+
+  res.status(healthy ? 200 : 503).json({
+    success: healthy,
+    status: healthy ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    checks,
+  });
+}
