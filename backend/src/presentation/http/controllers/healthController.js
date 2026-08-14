@@ -52,11 +52,16 @@ function memoryStats() {
 async function dbCheck() {
   const start = Date.now();
   try {
-    await checkDatabaseConnection();
+    await Promise.race([
+      checkDatabaseConnection(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('database health check timed out')), 2000)
+      ),
+    ]);
     return { status: 'up', latencyMs: Date.now() - start };
   } catch (err) {
     logger.warn('Health check — database unreachable', { error: err.message });
-    return { status: 'down', latencyMs: Date.now() - start, error: err.message };
+    return { status: 'down', latencyMs: Date.now() - start };
   }
 }
 
@@ -160,6 +165,16 @@ export function getLive(req, res) {
  * Safe deployment diagnostic. It verifies runtime, required configuration,
  * database connectivity, and token configuration without returning secrets.
  */
+export async function getDatabaseHealth(req, res) {
+  const database = await dbCheck();
+  res.status(database.status === 'up' ? 200 : 503).json({
+    success: database.status === 'up',
+    status: database.status === 'up' ? 'connected' : 'unavailable',
+    timestamp: new Date().toISOString(),
+    database: { status: database.status, latencyMs: database.latencyMs },
+  });
+}
+
 export async function getDeepHealth(req, res) {
   const database = await dbCheck();
   const environment = 'healthy';
