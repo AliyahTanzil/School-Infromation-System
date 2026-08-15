@@ -21,7 +21,7 @@ test('sets a secure same-site refresh cookie in production', async () => {
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /Secure/);
   assert.match(cookie, /SameSite=Strict/);
-  assert.match(cookie, /Path=\/api\/auth/);
+  assert.match(cookie, /Path=\/api(?:;|\/)/);
 
   if (previousEnv === undefined) delete globalThis.process.env.NODE_ENV;
   else globalThis.process.env.NODE_ENV = previousEnv;

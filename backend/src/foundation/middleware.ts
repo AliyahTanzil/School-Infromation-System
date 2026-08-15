@@ -38,13 +38,24 @@ export const notFound: RequestHandler = (request, response) => {
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, next) => {
   void next;
+  const legacyError = error as {
+    statusCode?: number;
+    code?: string;
+    message?: string;
+    details?: unknown;
+  };
+  const normalizedError = isAppError(error)
+    ? error
+    : legacyError.statusCode && legacyError.code
+      ? legacyError
+      : undefined;
   logger.error('request failed', {
     requestId: response.locals.requestId,
-    code: isAppError(error) ? error.code : 'INTERNAL_ERROR',
-    status: isAppError(error) ? error.statusCode : 500,
-    message: isAppError(error) ? error.message : 'Internal server error',
+    code: normalizedError?.code ?? 'INTERNAL_ERROR',
+    status: normalizedError?.statusCode ?? 500,
+    message: normalizedError?.message ?? 'Internal server error',
   });
-  const appError = isAppError(error) ? error : undefined;
+  const appError = normalizedError;
   const statusCode = appError?.statusCode ?? 500;
   response.status(statusCode).json({
     success: false,

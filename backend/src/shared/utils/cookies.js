@@ -15,7 +15,8 @@ function baseCookieOptions() {
     httpOnly: true,
     secure: isProduction,
     sameSite: config.auth.refreshCookieSameSite,
-    path: '/api/auth',
+    // Supports both the legacy /api/auth and versioned /api/v1/auth mounts.
+    path: '/api',
   };
 }
 
