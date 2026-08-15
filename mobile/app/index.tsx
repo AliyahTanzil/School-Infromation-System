@@ -3,8 +3,18 @@ import { StyleSheet, Text, View } from 'react-native';
 import { RoleCard } from '../components/ui/RoleCard';
 import { Screen } from '../components/ui/Screen';
 import { colors, spacing } from '../constants/theme';
+import { useAuth } from '../providers/AuthProvider';
 
 export default function MobileHome() {
+  const { state } = useAuth();
+  if (state.status === 'application-token-required') {
+    router.replace('/application-token');
+    return null;
+  }
+  if (state.status === 'unauthenticated') {
+    router.replace('/auth');
+    return null;
+  }
   return (
     <Screen eyebrow="SAIS mobile" title="School operations, ready for the day." description="Mobile Step 1 establishes the secure, tenant-aware navigation foundation for the existing SAIS platform.">
       <View style={styles.notice}><Text style={styles.noticeTitle}>Architecture preview</Text><Text style={styles.noticeText}>These workspaces are placeholders. Authentication and live data will consume the existing SAIS API in a later mobile step.</Text></View>
