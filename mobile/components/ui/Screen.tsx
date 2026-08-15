@@ -7,7 +7,7 @@ export function Screen({ children, eyebrow, title, description }: PropsWithChild
     <SafeAreaView style={styles.safe}>
       <View style={styles.content}>
         {eyebrow ? <Text style={styles.eyebrow}>{eyebrow.toUpperCase()}</Text> : null}
-        <Text style={styles.title}>{title}</Text>
+        <Text accessibilityRole="header" style={styles.title}>{title}</Text>
         {description ? <Text style={styles.description}>{description}</Text> : null}
         {children}
       </View>
