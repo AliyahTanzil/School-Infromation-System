@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { config } from './config.js';
 import { errorHandler, notFound, requestId, requestLogger } from './middleware.js';
 import { healthRouter } from './health.js';
+// @ts-expect-error Legacy JavaScript router is mounted during the TypeScript migration.
 import authRouter from '../presentation/http/routes/authRoutes.js';
 
 export const createApp = () => {

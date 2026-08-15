@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+
+/* global fetch */
 import { createApp } from '../../src/app.ts';
 
 test('active server exposes versioned and legacy auth mounts', async () => {
