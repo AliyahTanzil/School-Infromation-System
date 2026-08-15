@@ -1,4 +1,5 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { Text } from 'react-native'
 import { Screen } from '../components/ui/Screen'
 import { FinanceDashboard } from '../components/finance/FinanceDashboard'
 import type { FinanceSummary, Invoice } from '../services/finance/contracts'
@@ -8,5 +9,6 @@ const invoices: Invoice[] = [{ id: 'demo-1', invoiceNumber: 'INV-2026-001', tena
 
 export default function FinanceRoute() {
   const data = useMemo(() => ({ summary, invoices }), [])
-  return <Screen title="Finance"><FinanceDashboard summary={data.summary} invoices={data.invoices} /></Screen>
+  const [message, setMessage] = useState('')
+  return <Screen title="Finance"><FinanceDashboard summary={data.summary} invoices={data.invoices} onPay={(invoice) => setMessage(`Payment for ${invoice.invoiceNumber} is ready for secure server checkout.`)} />{message ? <Text accessible accessibilityLiveRegion="polite">{message}</Text> : null}</Screen>
 }

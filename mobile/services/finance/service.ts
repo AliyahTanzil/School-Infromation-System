@@ -17,6 +17,7 @@ export function createFinanceService(api: FinanceApi) {
     async payInvoice(input: { invoiceId: string; amount: number; idempotencyKey: string }) {
       if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error('Payment amount must be positive')
       if (!input.idempotencyKey.trim()) throw new Error('Payment idempotency key is required')
+      if (!input.invoiceId.trim()) throw new Error('Invoice id is required')
       if (!api.createPayment) throw new Error('Payment API is not available')
       return api.createPayment(input)
     },
