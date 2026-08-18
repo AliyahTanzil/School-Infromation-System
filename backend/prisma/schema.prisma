@@ -249,7 +249,6 @@ model UserDevice {
 model UserSession {
   id            String         @id @default(uuid()) @db.Uuid
   userId        String         @db.Uuid
-  tokenHash     String         @unique
   deviceName    String?
   deviceType    String?
   deviceHash    String?
