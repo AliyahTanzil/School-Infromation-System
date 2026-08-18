@@ -16,13 +16,14 @@ import {
   loginLimiter,
   registerLimiter,
   passwordResetLimiter,
+  loginLimiter as refreshLimiter,
 } from '../../../middleware/auth/rateLimiters.js';
 
 const router = Router();
 
 router.post('/register', registerLimiter, validate(registerSchema), authController.register);
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
-router.post('/refresh', validate(refreshSchema), authController.refresh);
+router.post('/refresh', refreshLimiter, validate(refreshSchema), authController.refresh);
 router.post('/logout', authenticate, authController.logout);
 router.post('/logout-all', authenticate, authController.logoutAll);
 router.post(

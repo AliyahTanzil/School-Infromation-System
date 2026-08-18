@@ -26,6 +26,10 @@ const config = {
     origin: process.env.CORS_ORIGIN ?? 'http://localhost:4000',
     credentials: true,
   },
+  http: {
+    bodyLimit: process.env.HTTP_BODY_LIMIT ?? '2mb',
+    trustProxy: toBool(process.env.TRUST_PROXY, false),
+  },
 
   auth: {
     // Access token — short-lived JWT sent on every request.
@@ -52,6 +56,7 @@ const config = {
 
     // Refresh token cookie (httpOnly). Access token stays in memory on the client.
     refreshCookieName: process.env.REFRESH_COOKIE_NAME ?? 'sais_refresh_token',
+    refreshCookieSameSite: process.env.REFRESH_COOKIE_SAMESITE ?? 'strict',
   },
 
   email: {
@@ -72,6 +77,10 @@ const config = {
     maxSize: process.env.LOG_MAX_SIZE ?? '20m',
     maxFiles: process.env.LOG_MAX_FILES ?? '30d',
     zippedArchive: (process.env.LOG_ZIPPED_ARCHIVE ?? 'true').toLowerCase() === 'true',
+    slowRequestMs: toInt(process.env.SLOW_REQUEST_MS, 1000),
+  },
+  observability: {
+    metricsEnabled: toBool(process.env.METRICS_ENABLED, true),
   },
 };
 

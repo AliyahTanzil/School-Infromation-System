@@ -109,7 +109,12 @@ export async function rotate({ refreshToken, context }) {
   }
 
   const user = await userRepository.findById(stored.userId);
-  if (!user || user.status === 'SUSPENDED') {
+  if (
+    !user ||
+    user.status !== 'ACTIVE' ||
+    user.lockedUntil?.getTime() > Date.now() ||
+    user.deletedAt
+  ) {
     throw new AuthenticationError('Account is not able to authenticate');
   }
 

@@ -8,14 +8,14 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(`/api/students?search=${encodeURIComponent(query)}`, {
+    fetch(`/api/v1/students?search=${encodeURIComponent(query)}`, {
       credentials: 'include',
       signal: controller.signal,
     })
       .then((response) =>
         response.ok ? response.json() : Promise.reject(new Error('Unable to load students'))
       )
-      .then((payload) => setStudents(payload.data?.items ?? []))
+      .then((payload) => setStudents(payload.data?.items ?? payload.data ?? []))
       .catch((reason) => {
         if (reason.name !== 'AbortError') setError(reason.message);
       })

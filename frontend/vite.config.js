@@ -17,6 +17,13 @@ function resolveBackendTarget() {
 
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
+    alias: {
+      react: resolve(process.cwd(), '../node_modules/react'),
+      'react-dom': resolve(process.cwd(), '../node_modules/react-dom'),
+    },
+  },
   server: {
     host: '0.0.0.0',
     allowedHosts: true,

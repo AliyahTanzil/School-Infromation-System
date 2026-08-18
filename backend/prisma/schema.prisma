@@ -7,121 +7,444 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum AccountType {
-  TENANT_ADMIN
-  APPLICATION_MANAGER
+enum PlatformRole {
+  OWNER
+  SUPPORT
+  AUDITOR
+}
+
+enum TenantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
 }
 
 enum UserStatus {
+  INVITED
   PENDING_VERIFICATION
   ACTIVE
-  LOCKED
   SUSPENDED
+  LOCKED
+  DISABLED
+}
+
+enum AccountType {
+  APPLICATION_MANAGER
+  TENANT_ADMIN
+  STAFF
+  TEACHER
+  PARENT
+  STUDENT
 }
 
 enum LoginEventType {
   REGISTERED
   LOGIN_SUCCEEDED
   LOGIN_FAILED
-  LOGGED_OUT
-  LOGGED_OUT_ALL
-  TOKEN_REFRESHED
+  ACCOUNT_LOCKED
   PASSWORD_RESET_REQUESTED
   PASSWORD_RESET_COMPLETED
-  EMAIL_VERIFIED
+  TOKEN_REFRESHED
   SESSION_REVOKED
-  ACCOUNT_LOCKED
+  LOGGED_OUT
+  LOGGED_OUT_ALL
+  EMAIL_VERIFIED
 }
 
-enum PermissionEffect {
-  ALLOW
-  DENY
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNSPECIFIED
 }
 
-enum ProfileImageStatus {
-  PENDING
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum EnrollmentStatus {
   ACTIVE
-  REPLACED
-  DELETED
-  REJECTED
+  WITHDRAWN
+  COMPLETED
+  TRANSFERRED
 }
 
-enum UserAuditEventType {
-  CREATED
-  UPDATED
-  STATUS_CHANGED
-  DELETED
-  RESTORED
-  PROFILE_UPDATED
-  PREFERENCE_UPDATED
-  IMAGE_UPLOADED
-  IMAGE_REPLACED
-  IMAGE_DELETED
-  IMAGE_REJECTED
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  DELIVERED
+  FAILED
+  READ
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+}
+
+model Tenant {
+  id                String             @id @default(uuid()) @db.Uuid
+  name              String
+  code              String             @unique
+  status            TenantStatus       @default(PENDING)
+  timezone          String             @default("UTC")
+  currency          String             @default("USD")
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  deletedAt         DateTime?
+  users             User[]
+  schools           School[]
+  roles             Role[]
+  academicYears     AcademicYear[]
+  students          Student[]
+  guardians         Guardian[]
+  staff             Staff[]
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  settings          TenantSetting[]
+
+  @@index([status])
 }
 
 model User {
-  id               String     @id @default(uuid()) @db.Uuid
-  email            String     @unique @db.VarChar(320)
-  passwordHash     String
-  status           UserStatus  @default(PENDING_VERIFICATION)
-  accountType      AccountType @default(TENANT_ADMIN)
-  emailVerifiedAt  DateTime?
-  failedLoginCount Int        @default(0)
-  lockedUntil      DateTime?
-  lastLoginAt      DateTime?
-  deletedAt        DateTime?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tenantId           String?                  @db.Uuid
+  email              String                   @unique
+  firstName          String
+  lastName           String
+  phone              String?
+  passwordHash       String?
+  accountType        AccountType              @default(TENANT_ADMIN)
+  status             UserStatus               @default(INVITED)
+  platformRole       PlatformRole?
+  emailVerifiedAt    DateTime?
+  failedLoginCount   Int                      @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  tenant             Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  roles              UserRole[]
+  devices            UserDevice[]
+  sessions           UserSession[]
+  staff              Staff?
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  loginAttempts      LoginAttempt[]
+  auditLogins        AuditLogin[]
+  refreshTokens      RefreshToken[]
+  passwordResets     PasswordResetToken[]
+  emailVerifications EmailVerificationToken[]
+  trustedDevices     TrustedDevice[]
+  activationRequests ActivationRequest[]      @relation("ActivationApplicant")
+  ownedActivations   ActivationRequest[]      @relation("ActivationOwner")
+  profile            UserProfile?
+  preference         UserPreference?
+  userAudits         UserAudit[]              @relation("UserAuditSubject")
+  actedUserAudits    UserAudit[]              @relation("UserAuditActor")
 
-  refreshTokens           RefreshToken[]
-  passwordResetTokens     PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
-  loginAttempts           LoginAttempt[]
-  sessions                UserSession[]
-  trustedDevices          TrustedDevice[]
-  auditLogins             AuditLogin[]
-  profile                 UserProfile?
-  preference              UserPreference?
-  profileImages           ProfileImage[]
-  userAudits              UserAudit[]              @relation("UserAuditSubject")
-  actorAudits             UserAudit[]              @relation("UserAuditActor")
-  schoolAdministrators    SchoolAdministrator[]
-  studentHistoryActors    StudentHistory[]         @relation("StudentHistoryActor")
-  parent                  Parent?
-  teacher                 Teacher?
-  notificationsReceived  NotificationRecipient[]
-  announcementsAuthored   Announcement[]
-  messageParticipations   MessageParticipant[]
-  messagesSent            Message[]
+  @@index([tenantId, status])
+}
 
-  userRoles              UserRole[]       @relation("UserRoleSubject")
-  assignedUserRoles      UserRole[]       @relation("UserRoleGrantedBy")
-  grantedRolePermissions RolePermission[] @relation("RolePermissionGrantedBy")
+model School {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  code      String
+  address   String?
+  city      String?
+  country   String?
+  phone     String?
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  campuses  Campus[]
 
-  @@index([status])
-  @@index([deletedAt])
+  @@unique([tenantId, code])
+}
+
+model Campus {
+  id       String @id @default(uuid()) @db.Uuid
+  schoolId String @db.Uuid
+  name     String
+  code     String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, code])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  name        String
+  code        String
+  description String?
+  deletedAt   DateTime?
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users       UserRole[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, name])
+  @@unique([tenantId, code])
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId    String    @db.Uuid
+  roleId    String    @db.Uuid
+  revokedAt DateTime?
+  expiresAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserDevice {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid
+  deviceFingerprint String
+  platform          String?
+  lastSeenAt        DateTime?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceFingerprint])
+}
+
+model UserSession {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  tokenHash     String         @unique
+  deviceName    String?
+  deviceType    String?
+  deviceHash    String?
+  ipAddress     String?
+  userAgent     String?
+  lastActiveAt  DateTime       @default(now())
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  revokeReason  String?
+  createdAt     DateTime       @default(now())
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokens RefreshToken[]
+  auditLogins   AuditLogin[]
+
+  @@index([userId, expiresAt])
+}
+
+model AcademicYear {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @db.Uuid
+  name        String
+  startsOn    DateTime
+  endsOn      DateTime
+  isCurrent   Boolean        @default(false)
+  tenant      Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  terms       AcademicTerm[]
+  enrollments Enrollment[]
+
+  @@unique([tenantId, name])
+}
+
+model AcademicTerm {
+  id             String       @id @default(uuid()) @db.Uuid
+  academicYearId String       @db.Uuid
+  name           String
+  startsOn       DateTime
+  endsOn         DateTime
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+
+  @@unique([academicYearId, name])
+}
+
+model Student {
+  id                String             @id @default(uuid()) @db.Uuid
+  tenantId          String             @db.Uuid
+  admissionNumber   String
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime?
+  gender            Gender             @default(UNSPECIFIED)
+  email             String?
+  phone             String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  tenant            Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  guardians         StudentGuardian[]
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+
+  @@unique([tenantId, admissionNumber])
+  @@index([tenantId, lastName, firstName])
+}
+
+model Guardian {
+  id        String            @id @default(uuid()) @db.Uuid
+  tenantId  String            @db.Uuid
+  firstName String
+  lastName  String
+  email     String?
+  phone     String?
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students  StudentGuardian[]
+
+  @@index([tenantId, lastName])
+}
+
+model StudentGuardian {
+  studentId    String   @db.Uuid
+  guardianId   String   @db.Uuid
+  relationship String
+  isPrimary    Boolean  @default(false)
+  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian     Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, guardianId])
+}
+
+model Staff {
+  id             String  @id @default(uuid()) @db.Uuid
+  tenantId       String  @db.Uuid
+  userId         String? @unique @db.Uuid
+  employeeNumber String
+  firstName      String
+  lastName       String
+  department     String?
+  jobTitle       String?
+  tenant         Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user           User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, employeeNumber])
+}
+
+model Enrollment {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @db.Uuid
+  studentId      String           @db.Uuid
+  academicYearId String           @db.Uuid
+  gradeLevel     String
+  section        String?
+  status         EnrollmentStatus @default(ACTIVE)
+  enrolledAt     DateTime         @default(now())
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear     @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+
+  @@unique([studentId, academicYearId])
+  @@index([tenantId, gradeLevel, section])
+}
+
+model AttendanceRecord {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @db.Uuid
+  studentId      String           @db.Uuid
+  attendanceDate DateTime         @db.Date
+  status         AttendanceStatus
+  note           String?
+  recordedById   String?          @db.Uuid
+  createdAt      DateTime         @default(now())
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, attendanceDate])
+  @@index([tenantId, attendanceDate, status])
+}
+
+model Notification {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @db.Uuid
+  recipientId String?             @db.Uuid
+  channel     NotificationChannel
+  status      NotificationStatus  @default(QUEUED)
+  subject     String?
+  body        String
+  sentAt      DateTime?
+  readAt      DateTime?
+  createdAt   DateTime            @default(now())
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  recipient   User?               @relation(fields: [recipientId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status, createdAt])
+}
+
+model AuditLog {
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String?     @db.Uuid
+  actorId    String?     @db.Uuid
+  action     AuditAction
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  createdAt  DateTime    @default(now())
+  tenant     Tenant?     @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  actor      User?       @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model TenantSetting {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  key       String
+  value     Json
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, key])
 }
 
 model RefreshToken {
-  id            String    @id @default(uuid()) @db.Uuid
-  tokenHash     String    @unique
-  userId        String    @db.Uuid
-  sessionId     String    @db.Uuid
-  parentTokenId String?   @db.Uuid
+  id            String      @id @default(uuid()) @db.Uuid
+  tokenHash     String      @unique
+  userId        String      @db.Uuid
+  sessionId     String      @db.Uuid
+  parentTokenId String?     @db.Uuid
   expiresAt     DateTime
   revokedAt     DateTime?
-  revokeReason  String?   @db.VarChar(100)
-  createdAt     DateTime  @default(now())
-
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  session       UserSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  parentToken   RefreshToken?  @relation("RefreshTokenRotation", fields: [parentTokenId], references: [id], onDelete: SetNull)
-  rotatedTokens RefreshToken[] @relation("RefreshTokenRotation")
+  revokeReason  String?
+  createdAt     DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session       UserSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
-  @@index([sessionId, expiresAt])
-  @@index([expiresAt])
+  @@index([sessionId, revokedAt])
 }
 
 model PasswordResetToken {
@@ -130,14 +453,12 @@ model PasswordResetToken {
   userId      String    @db.Uuid
   expiresAt   DateTime
   usedAt      DateTime?
-  requestedIp String?   @db.VarChar(64)
-  userAgent   String?   @db.VarChar(512)
+  requestedIp String?
+  userAgent   String?
   createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, expiresAt])
-  @@index([expiresAt])
+  @@index([userId, expiresAt, usedAt])
 }
 
 model EmailVerificationToken {
@@ -146,73 +467,27 @@ model EmailVerificationToken {
   userId      String    @db.Uuid
   expiresAt   DateTime
   usedAt      DateTime?
-  requestedIp String?   @db.VarChar(64)
-  userAgent   String?   @db.VarChar(512)
+  requestedIp String?
+  userAgent   String?
   createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, expiresAt])
-  @@index([expiresAt])
+  @@index([userId, expiresAt, usedAt])
 }
 
 model LoginAttempt {
   id            String   @id @default(uuid()) @db.Uuid
   userId        String?  @db.Uuid
-  email         String   @db.VarChar(320)
-  ipAddress     String   @db.VarChar(64)
-  userAgent     String?  @db.VarChar(512)
+  email         String
+  ipAddress     String?
+  userAgent     String?
   succeeded     Boolean
-  failureReason String?  @db.VarChar(100)
+  failureReason String?
   createdAt     DateTime @default(now())
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([email, createdAt])
-  @@index([ipAddress, createdAt])
-  @@index([userId, createdAt])
-}
-
-model UserSession {
-  id           String    @id @default(uuid()) @db.Uuid
-  userId       String    @db.Uuid
-  deviceName   String?   @db.VarChar(255)
-  deviceType   String?   @db.VarChar(50)
-  deviceHash   String?   @db.VarChar(255)
-  ipAddress    String?   @db.VarChar(64)
-  userAgent    String?   @db.VarChar(512)
-  lastActiveAt DateTime  @default(now())
-  expiresAt    DateTime
-  revokedAt    DateTime?
-  revokeReason String?   @db.VarChar(100)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  refreshTokens RefreshToken[]
-  auditLogins   AuditLogin[]
-
-  @@index([userId, revokedAt, expiresAt])
-  @@index([expiresAt])
-}
-
-model TrustedDevice {
-  id          String    @id @default(uuid()) @db.Uuid
-  userId      String    @db.Uuid
-  fingerprint String    @db.VarChar(255)
-  name        String?   @db.VarChar(255)
-  userAgent   String?   @db.VarChar(512)
-  lastIp      String?   @db.VarChar(64)
-  lastSeenAt  DateTime  @default(now())
-  trustedAt   DateTime  @default(now())
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, fingerprint])
-  @@index([userId, revokedAt])
+  @@index([email, succeeded, createdAt])
+  @@index([ipAddress, succeeded, createdAt])
 }
 
 model AuditLogin {
@@ -220,4966 +495,81 @@ model AuditLogin {
   userId    String?        @db.Uuid
   sessionId String?        @db.Uuid
   event     LoginEventType
-  ipAddress String?        @db.VarChar(64)
-  userAgent String?        @db.VarChar(512)
+  ipAddress String?
+  userAgent String?
   metadata  Json?
   createdAt DateTime       @default(now())
-
-  user    User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
-  session UserSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  user      User?          @relation(fields: [userId], references: [id], onDelete: SetNull)
+  session   UserSession?   @relation(fields: [sessionId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
-  @@index([sessionId, createdAt])
   @@index([event, createdAt])
 }
 
-model PermissionGroup {
-  id          String    @id @default(uuid()) @db.Uuid
-  key         String    @unique @db.VarChar(100)
-  name        String    @db.VarChar(150)
-  description String?
-  sortOrder   Int       @default(0)
-  deletedAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  permissions Permission[]
-
-  @@index([deletedAt])
-}
-
-model Permission {
-  id                String           @id @default(uuid()) @db.Uuid
-  code              String           @unique @db.VarChar(150)
-  name              String           @db.VarChar(150)
-  description       String?
-  effect            PermissionEffect @default(ALLOW)
-  isSystem          Boolean          @default(false)
-  permissionGroupId String           @db.Uuid
-  deletedAt         DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-
-  permissionGroup PermissionGroup  @relation(fields: [permissionGroupId], references: [id], onDelete: Restrict)
-  rolePermissions RolePermission[]
-
-  @@index([permissionGroupId, deletedAt])
-  @@index([deletedAt])
-}
-
-model Role {
-  id           String    @id @default(uuid()) @db.Uuid
-  code         String    @unique @db.VarChar(100)
-  name         String    @db.VarChar(150)
-  description  String?
-  isSystem     Boolean   @default(false)
-  isAssignable Boolean   @default(true)
-  deletedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  rolePermissions     RolePermission[]
-  userRoles           UserRole[]
-  parentRelationships RoleHierarchy[]  @relation("RoleHierarchyParent")
-  childRelationships  RoleHierarchy[]  @relation("RoleHierarchyChild")
-
-  @@index([deletedAt])
-  @@index([isSystem, deletedAt])
-}
-
-model RolePermission {
-  id           String   @id @default(uuid()) @db.Uuid
-  roleId       String   @db.Uuid
-  permissionId String   @db.Uuid
-  grantedById  String?  @db.Uuid
-  createdAt    DateTime @default(now())
-
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  grantedBy  User?      @relation("RolePermissionGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
-
-  @@unique([roleId, permissionId])
-  @@index([permissionId])
-  @@index([grantedById])
-}
-
-model UserRole {
+model TrustedDevice {
   id          String    @id @default(uuid()) @db.Uuid
   userId      String    @db.Uuid
-  roleId      String    @db.Uuid
-  scopeKey    String    @default("global") @db.VarChar(255)
-  grantedById String?   @db.Uuid
-  expiresAt   DateTime?
+  fingerprint String
+  name        String?
+  userAgent   String?
+  lastIp      String?
+  lastSeenAt  DateTime  @default(now())
   revokedAt   DateTime?
   createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user      User  @relation("UserRoleSubject", fields: [userId], references: [id], onDelete: Cascade)
-  role      Role  @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  grantedBy User? @relation("UserRoleGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
-
-  @@unique([userId, roleId, scopeKey])
-  @@index([roleId, revokedAt])
-  @@index([userId, scopeKey, revokedAt, expiresAt])
-  @@index([grantedById])
+  @@unique([userId, fingerprint])
 }
 
-model RoleHierarchy {
-  id           String   @id @default(uuid()) @db.Uuid
-  parentRoleId String   @db.Uuid
-  childRoleId  String   @db.Uuid
-  createdAt    DateTime @default(now())
+model ActivationRequest {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  ownerUserId String    @db.Uuid
+  email       String
+  firstName   String?
+  lastName    String?
+  designation String?
+  status      String    @default("PENDING")
+  expiresAt   DateTime
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  applicant   User      @relation("ActivationApplicant", fields: [userId], references: [id], onDelete: Cascade)
+  owner       User      @relation("ActivationOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
 
-  parentRole Role @relation("RoleHierarchyParent", fields: [parentRoleId], references: [id], onDelete: Cascade)
-  childRole  Role @relation("RoleHierarchyChild", fields: [childRoleId], references: [id], onDelete: Cascade)
-
-  @@unique([parentRoleId, childRoleId])
-  @@index([childRoleId])
-}
-
-model UserProfile {
-  id            String    @id @default(uuid()) @db.Uuid
-  userId        String    @unique @db.Uuid
-  firstName     String    @db.VarChar(100)
-  lastName      String    @db.VarChar(100)
-  preferredName String?   @db.VarChar(100)
-  phone         String?   @db.VarChar(40)
-  dateOfBirth   DateTime?
-  address       String?   @db.VarChar(500)
-  city          String?   @db.VarChar(100)
-  country       String?   @db.VarChar(100)
-  completionPct Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model UserPreference {
-  id             String   @id @default(uuid()) @db.Uuid
-  userId         String   @unique @db.Uuid
-  locale         String   @default("en") @db.VarChar(20)
-  timezone       String   @default("UTC") @db.VarChar(80)
-  theme          String   @default("system") @db.VarChar(20)
-  emailAlerts    Boolean  @default(true)
-  smsAlerts      Boolean  @default(false)
-  profileVisible Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model ProfileImage {
-  id           String             @id @default(uuid()) @db.Uuid
-  userId       String             @db.Uuid
-  objectKey    String             @db.VarChar(500)
-  thumbnailKey String?            @db.VarChar(500)
-  mimeType     String             @db.VarChar(100)
-  byteSize     Int
-  width        Int?
-  height       Int?
-  checksum     String             @db.VarChar(128)
-  status       ProfileImageStatus @default(PENDING)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@index([ownerUserId, status, createdAt])
   @@index([userId, status])
 }
 
-model UserAudit {
-  id            String             @id @default(uuid()) @db.Uuid
-  actorId       String?            @db.Uuid
-  subjectId     String             @db.Uuid
-  eventType     UserAuditEventType
-  scopeKey      String             @default("global") @db.VarChar(255)
-  beforeJson    Json?
-  afterJson     Json?
-  changedFields Json?
-  requestId     String?            @db.VarChar(100)
-  ipAddress     String?            @db.VarChar(64)
-  userAgent     String?            @db.VarChar(512)
-  success       Boolean            @default(true)
-  reason        String?            @db.VarChar(500)
-  createdAt     DateTime           @default(now())
+model UserProfile {
+  userId      String  @id @db.Uuid
+  designation String?
+  firstName   String?
+  lastName    String?
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
 
-  actor   User? @relation("UserAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
-  subject User  @relation("UserAuditSubject", fields: [subjectId], references: [id], onDelete: Restrict)
+model UserPreference {
+  userId   String @id @db.Uuid
+  locale   String @default("en")
+  timezone String @default("UTC")
+  settings Json?
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  subjectId String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  subject   User     @relation("UserAuditSubject", fields: [subjectId], references: [id], onDelete: Cascade)
+  actor     User?    @relation("UserAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([subjectId, createdAt])
-  @@index([actorId, createdAt])
-  @@index([eventType, createdAt])
 }
 
-model Tenant {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String    @db.VarChar(200)
-  slug      String    @unique @db.VarChar(120)
-  status    String    @default("ACTIVE") @db.VarChar(30)
-  deletedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  schools School[]
-  memberships TenantMembership[]
-  configurations TenantConfiguration[]
-  featureFlags TenantFeatureFlag[]
-  quotas TenantQuota[]
-  usage TenantUsage[]
-  subscriptions TenantSubscription[]
-
-  @@index([status, deletedAt])
-}
-
-model School {
-  id             String    @id @default(uuid()) @db.Uuid
-  tenantId       String    @db.Uuid
-  name           String    @db.VarChar(200)
-  slug           String    @db.VarChar(120)
-  normalizedName String    @db.VarChar(200)
-  email          String?   @db.VarChar(320)
-  phone          String?   @db.VarChar(40)
-  website        String?   @db.VarChar(300)
-  status         String    @default("ACTIVE") @db.VarChar(30)
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  tenant               Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  profile              SchoolProfile?
-  setting              SchoolSetting?
-  configuration        SchoolConfiguration?
-  branches             SchoolBranch[]
-  departments          Department[]
-  grades               GradeLevel[]
-  administrators       SchoolAdministrator[]
-  students             Student[]
-  teachers             Teacher[]
-  classrooms           Classroom[]
-  classes              Class[]
-  feeStructures        FeeStructure[]
-  invoices             Invoice[]
-  academicPeriods      AcademicPeriod[]
-  attendanceSessions   AttendanceSession[]
-  examinations         Examination[]
-  FeeCategory          FeeCategory[]
-  FinancialTransaction FinancialTransaction[]
-
-  @@unique([tenantId, slug])
-  @@unique([tenantId, normalizedName])
-  @@index([tenantId, status, deletedAt])
-}
-
-model SchoolProfile {
-  id          String   @id @default(uuid()) @db.Uuid
-  schoolId    String   @unique @db.Uuid
-  description String?
-  address     String?  @db.VarChar(500)
-  city        String?  @db.VarChar(100)
-  country     String?  @db.VarChar(100)
-  logoUrl     String?  @db.VarChar(500)
-  motto      String?  @db.VarChar(300)
-  primaryColor String? @db.VarChar(7)
-  secondaryColor String? @db.VarChar(7)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-}
-
-model SchoolSetting {
-  id        String   @id @default(uuid()) @db.Uuid
-  schoolId  String   @unique @db.Uuid
-  settings  Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  school    School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-}
-
-model SchoolConfiguration {
-  id                String   @id @default(uuid()) @db.Uuid
-  schoolId          String   @unique @db.Uuid
-  timezone          String   @default("UTC") @db.VarChar(80)
-  locale            String   @default("en") @db.VarChar(20)
-  academicStructure String   @default("YEAR") @db.VarChar(30)
-  featureFlags      Json
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  school            School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
-}
-
-model SchoolBranch {
-  id             String    @id @default(uuid()) @db.Uuid
-  tenantId       String    @db.Uuid
-  schoolId       String    @db.Uuid
-  name           String    @db.VarChar(160)
-  code           String    @db.VarChar(40)
-  normalizedName String    @db.VarChar(160)
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  school         School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, code])
-  @@unique([schoolId, normalizedName])
-  @@index([tenantId, schoolId, deletedAt])
-}
-
-model Department {
-  id             String    @id @default(uuid()) @db.Uuid
-  tenantId       String    @db.Uuid
-  schoolId       String    @db.Uuid
-  branchId       String?   @db.Uuid
-  name           String    @db.VarChar(160)
-  code           String    @db.VarChar(40)
-  normalizedName String    @db.VarChar(160)
-  deletedAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  school         School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, code])
-  @@unique([schoolId, normalizedName])
-  @@index([tenantId, schoolId, branchId, deletedAt])
-}
-
-model GradeLevel {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  schoolId     String    @db.Uuid
-  name         String    @db.VarChar(120)
-  code         String    @db.VarChar(40)
-  displayOrder Int
-  deletedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  school       School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  classes      Class[]
-
-  @@unique([schoolId, code])
-  @@unique([schoolId, displayOrder])
-  @@index([tenantId, schoolId, deletedAt])
-}
-
-enum StudentStatus {
-  APPLICANT
-  ADMITTED
-  ACTIVE
-  TRANSFERRED
-  GRADUATED
-  WITHDRAWN
-  SUSPENDED
-}
-
-enum StudentDocumentStatus {
-  PENDING
-  ACTIVE
-  REJECTED
-  DELETED
-}
-
-model Student {
-  id                    String                      @id @default(uuid()) @db.Uuid
-  tenantId              String                      @db.Uuid
-  schoolId              String                      @db.Uuid
-  admissionNumber       String                      @db.VarChar(60)
-  status                StudentStatus               @default(APPLICANT)
-  enrolledAt            DateTime?
-  deletedAt             DateTime?
-  createdAt             DateTime                    @default(now())
-  updatedAt             DateTime                    @updatedAt
-  school                School                      @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  profile               StudentProfile?
-  admission             StudentAdmission?
-  guardians             StudentGuardian[]
-  medicalRecord         MedicalRecord?
-  previousSchools       PreviousSchool[]
-  documents             StudentDocument[]
-  history               StudentHistory[]
-  enrollments           StudentEnrollment[]
-  classAssignments      StudentClassAssignment[]
-  classEnrollments      ClassEnrollment[]
-  invoices              Invoice[]
-  feeAssignments        FeeAssignment[]
-  feeAccounts           StudentFeeAccount[]
-  attendanceRecords     AttendanceRecord[]
-  examinationCandidates ExaminationCandidate[]
-  examinationMarks      ExaminationMark[]
-  results               Result[]
-  parentRelationships   ParentStudentRelationship[]
-  FinancialTransaction  FinancialTransaction[]
-
-  @@unique([schoolId, admissionNumber])
-  @@index([tenantId, schoolId, status, deletedAt])
-}
-
-model StudentProfile {
-  id            String   @id @default(uuid()) @db.Uuid
-  studentId     String   @unique @db.Uuid
-  firstName     String   @db.VarChar(100)
-  lastName      String   @db.VarChar(100)
-  preferredName String?  @db.VarChar(100)
-  dateOfBirth   DateTime
-  gender        String?  @db.VarChar(30)
-  nationality   String?  @db.VarChar(100)
-  email         String?  @db.VarChar(320)
-  phone         String?  @db.VarChar(40)
-  address       String?  @db.VarChar(500)
-  city          String?  @db.VarChar(100)
-  country       String?  @db.VarChar(100)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-}
-
-model StudentAdmission {
-  id              String    @id @default(uuid()) @db.Uuid
-  studentId       String    @unique @db.Uuid
-  applicationDate DateTime  @default(now())
-  admissionDate   DateTime?
-  entryGrade      String?   @db.VarChar(80)
-  source          String?   @db.VarChar(120)
-  notes           String?
-  student         Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-}
-
-model Guardian {
-  id        String            @id @default(uuid()) @db.Uuid
-  tenantId  String            @db.Uuid
-  schoolId  String            @db.Uuid
-  firstName String            @db.VarChar(100)
-  lastName  String            @db.VarChar(100)
-  email     String?           @db.VarChar(320)
-  phone     String?           @db.VarChar(40)
-  address   String?           @db.VarChar(500)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  links     StudentGuardian[]
-
-  @@index([tenantId, schoolId, email])
-}
-
-model StudentGuardian {
-  id           String   @id @default(uuid()) @db.Uuid
-  studentId    String   @db.Uuid
-  guardianId   String   @db.Uuid
-  relationship String   @db.VarChar(60)
-  isPrimary    Boolean  @default(false)
-  canPickup    Boolean  @default(false)
-  canContact   Boolean  @default(true)
-  student      Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  guardian     Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
-
-  @@unique([studentId, guardianId])
-}
-
-model MedicalRecord {
-  id             String   @id @default(uuid()) @db.Uuid
-  studentId      String   @unique @db.Uuid
-  bloodType      String?  @db.VarChar(10)
-  allergies      String?
-  conditions     String?
-  medications    String?
-  emergencyNotes String?
-  updatedBy      String?  @db.Uuid
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-}
-
-model PreviousSchool {
-  id          String    @id @default(uuid()) @db.Uuid
-  studentId   String    @db.Uuid
-  name        String    @db.VarChar(200)
-  city        String?   @db.VarChar(100)
-  country     String?   @db.VarChar(100)
-  startDate   DateTime?
-  endDate     DateTime?
-  certificate String?   @db.VarChar(500)
-  student     Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
-}
-
-model StudentDocument {
-  id         String                @id @default(uuid()) @db.Uuid
-  studentId  String                @db.Uuid
-  objectKey  String                @db.VarChar(500)
-  name       String                @db.VarChar(200)
-  mimeType   String                @db.VarChar(100)
-  byteSize   Int
-  checksum   String                @db.VarChar(128)
-  status     StudentDocumentStatus @default(PENDING)
-  uploadedBy String?               @db.Uuid
-  createdAt  DateTime              @default(now())
-  updatedAt  DateTime              @updatedAt
-  student    Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
-
-  @@index([studentId, status])
-}
-
-model StudentHistory {
-  id         String         @id @default(uuid()) @db.Uuid
-  studentId  String         @db.Uuid
-  fromStatus StudentStatus?
-  toStatus   StudentStatus
-  reason     String?
-  actorId    String?        @db.Uuid
-  createdAt  DateTime       @default(now())
-  student    Student        @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  actor      User?          @relation("StudentHistoryActor", fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([studentId, createdAt])
-}
-
-model StudentEnrollment {
-  id           String    @id @default(uuid()) @db.Uuid
-  studentId    String    @db.Uuid
-  schoolId     String    @db.Uuid
-  academicYear String    @db.VarChar(40)
-  grade        String?   @db.VarChar(80)
-  startDate    DateTime
-  endDate      DateTime?
-  createdAt    DateTime  @default(now())
-  student      Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([studentId, academicYear])
-  @@index([schoolId, academicYear])
-}
-
-model StudentClassAssignment {
-  id        String    @id @default(uuid()) @db.Uuid
-  studentId String    @db.Uuid
-  schoolId  String    @db.Uuid
-  className String    @db.VarChar(100)
-  startsAt  DateTime
-  endsAt    DateTime?
-  student   Student   @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@index([schoolId, className, startsAt])
-}
-
-enum ParentVerificationStatus {
-  PENDING
-  VERIFIED
-  REJECTED
-  EXPIRED
-}
-
-enum ParentRelationshipStatus {
-  PENDING
-  ACTIVE
-  REVOKED
-}
-
-model Parent {
-  id            String                      @id @default(uuid()) @db.Uuid
-  tenantId      String                      @db.Uuid
-  schoolId      String                      @db.Uuid
-  userId        String                      @unique @db.Uuid
-  deletedAt     DateTime?
-  createdAt     DateTime                    @default(now())
-  updatedAt     DateTime                    @updatedAt
-  user          User                        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  profile       ParentProfile?
-  contacts      ParentContact[]
-  addresses     ParentAddress[]
-  preferences   ParentPreference?
-  notifications ParentNotificationSetting?
-  relationships ParentStudentRelationship[]
-  verifications ParentVerification[]
-  accessLogs    ParentAccessLog[]
-  events        ParentNotificationEvent[]
-
-  @@index([tenantId, schoolId, deletedAt])
-}
-
-model ParentProfile {
-  id                String   @id @default(uuid()) @db.Uuid
-  parentId          String   @unique @db.Uuid
-  firstName         String   @db.VarChar(100)
-  lastName          String   @db.VarChar(100)
-  occupation        String?  @db.VarChar(160)
-  preferredLanguage String?  @db.VarChar(20)
-  parent            Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-}
-
-model ParentContact {
-  id         String    @id @default(uuid()) @db.Uuid
-  parentId   String    @db.Uuid
-  type       String    @db.VarChar(20)
-  value      String    @db.VarChar(320)
-  isPrimary  Boolean   @default(false)
-  verifiedAt DateTime?
-  parent     Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@index([parentId, type])
-}
-
-model ParentAddress {
-  id       String  @id @default(uuid()) @db.Uuid
-  parentId String  @db.Uuid
-  label    String  @db.VarChar(40)
-  address  String  @db.VarChar(500)
-  city     String? @db.VarChar(100)
-  country  String? @db.VarChar(100)
-  parent   Parent  @relation(fields: [parentId], references: [id], onDelete: Cascade)
-}
-
-model ParentStudentRelationship {
-  id                String                   @id @default(uuid()) @db.Uuid
-  parentId          String                   @db.Uuid
-  studentId         String                   @db.Uuid
-  relationship      String                   @db.VarChar(60)
-  status            ParentRelationshipStatus @default(PENDING)
-  canViewAcademic   Boolean                  @default(true)
-  canViewAttendance Boolean                  @default(true)
-  canViewFees       Boolean                  @default(false)
-  verifiedAt        DateTime?
-  revokedAt         DateTime?
-  parent            Parent                   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  student           Student                  @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([parentId, studentId])
-  @@index([studentId, status])
-}
-
-model ParentVerification {
-  id         String                   @id @default(uuid()) @db.Uuid
-  parentId   String                   @db.Uuid
-  channel    String                   @db.VarChar(20)
-  tokenHash  String                   @db.VarChar(128)
-  status     ParentVerificationStatus @default(PENDING)
-  expiresAt  DateTime
-  verifiedAt DateTime?
-  createdAt  DateTime                 @default(now())
-  parent     Parent                   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@index([parentId, status, expiresAt])
-}
-
-model ParentPreference {
-  id        String   @id @default(uuid()) @db.Uuid
-  parentId  String   @unique @db.Uuid
-  locale    String   @default("en") @db.VarChar(20)
-  timezone  String   @default("UTC") @db.VarChar(80)
-  theme     String   @default("system") @db.VarChar(20)
-  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  updatedAt DateTime @updatedAt
-}
-
-model ParentNotificationSetting {
-  id            String   @id @default(uuid()) @db.Uuid
-  parentId      String   @unique @db.Uuid
-  announcements Boolean  @default(true)
-  attendance    Boolean  @default(true)
-  results       Boolean  @default(true)
-  fees          Boolean  @default(false)
-  parent        Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-  updatedAt     DateTime @updatedAt
-}
-
-model ParentAccessLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  parentId  String   @db.Uuid
-  studentId String?  @db.Uuid
-  resource  String   @db.VarChar(80)
-  action    String   @db.VarChar(40)
-  ipAddress String?  @db.VarChar(64)
-  createdAt DateTime @default(now())
-  parent    Parent   @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@index([parentId, createdAt])
-}
-
-model ParentNotificationEvent {
-  id        String    @id @default(uuid()) @db.Uuid
-  parentId  String    @db.Uuid
-  type      String    @db.VarChar(60)
-  payload   Json
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
-  parent    Parent    @relation(fields: [parentId], references: [id], onDelete: Cascade)
-
-  @@index([parentId, readAt, createdAt])
-}
-
-enum TeacherStatus {
-  APPLICANT
-  ACTIVE
-  ON_LEAVE
-  SUSPENDED
-  TERMINATED
-  RESIGNED
-  RETIRED
-}
-
-model Teacher {
-  id                     String                     @id @default(uuid()) @db.Uuid
-  tenantId               String                     @db.Uuid
-  schoolId               String                     @db.Uuid
-  userId                 String?                    @unique @db.Uuid
-  employeeNumber         String                     @db.VarChar(60)
-  status                 TeacherStatus              @default(APPLICANT)
-  deletedAt              DateTime?
-  createdAt              DateTime                   @default(now())
-  updatedAt              DateTime                   @updatedAt
-  school                 School                     @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  user                   User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
-  profile                TeacherProfile?
-  qualifications         TeacherQualification[]
-  certifications         TeacherCertification[]
-  employment             TeacherEmployment?
-  documents              TeacherDocument[]
-  departments            TeacherDepartment[]
-  subjects               TeacherSubjectAssignment[]
-  classes                TeacherClassAssignment[]
-  availability           TeacherAvailability[]
-  history                TeacherHistory[]
-  timetableEntries       ScheduleEntry[]
-  substitutionsAsTeacher ScheduleSubstitution[]     @relation("SubstitutionTeacher")
-
-  @@unique([schoolId, employeeNumber])
-  @@index([tenantId, schoolId, status, deletedAt])
-}
-
-model TeacherProfile {
-  id             String    @id @default(uuid()) @db.Uuid
-  teacherId      String    @unique @db.Uuid
-  firstName      String    @db.VarChar(100)
-  lastName       String    @db.VarChar(100)
-  email          String?   @db.VarChar(320)
-  phone          String?   @db.VarChar(40)
-  dateOfBirth    DateTime?
-  gender         String?   @db.VarChar(30)
-  nationality    String?   @db.VarChar(100)
-  address        String?   @db.VarChar(500)
-  emergencyName  String?   @db.VarChar(160)
-  emergencyPhone String?   @db.VarChar(40)
-  teacher        Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-}
-
-model TeacherQualification {
-  id          String    @id @default(uuid()) @db.Uuid
-  teacherId   String    @db.Uuid
-  institution String    @db.VarChar(200)
-  title       String    @db.VarChar(160)
-  field       String?   @db.VarChar(160)
-  awardedAt   DateTime?
-  documentKey String?   @db.VarChar(500)
-  teacher     Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@index([teacherId, awardedAt])
-}
-
-model TeacherCertification {
-  id             String    @id @default(uuid()) @db.Uuid
-  teacherId      String    @db.Uuid
-  name           String    @db.VarChar(160)
-  issuer         String?   @db.VarChar(160)
-  issuedAt       DateTime?
-  expiresAt      DateTime?
-  certificateKey String?   @db.VarChar(500)
-  teacher        Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-}
-
-model TeacherEmployment {
-  id             String    @id @default(uuid()) @db.Uuid
-  teacherId      String    @unique @db.Uuid
-  jobTitle       String    @db.VarChar(160)
-  employmentType String    @db.VarChar(40)
-  startDate      DateTime
-  endDate        DateTime?
-  salaryBand     String?   @db.VarChar(80)
-  teacher        Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-}
-
-model TeacherDocument {
-  id        String   @id @default(uuid()) @db.Uuid
-  teacherId String   @db.Uuid
-  name      String   @db.VarChar(200)
-  objectKey String   @db.VarChar(500)
-  mimeType  String   @db.VarChar(100)
-  byteSize  Int
-  checksum  String   @db.VarChar(128)
-  createdAt DateTime @default(now())
-  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@index([teacherId, createdAt])
-}
-
-model TeacherDepartment {
-  id           String    @id @default(uuid()) @db.Uuid
-  teacherId    String    @db.Uuid
-  departmentId String    @db.Uuid
-  startsAt     DateTime
-  endsAt       DateTime?
-  teacher      Teacher   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@unique([teacherId, departmentId, startsAt])
-}
-
-model TeacherSubjectAssignment {
-  id           String    @id @default(uuid()) @db.Uuid
-  teacherId    String    @db.Uuid
-  subjectId    String    @db.Uuid
-  academicYear String    @db.VarChar(40)
-  term         String?   @db.VarChar(40)
-  startsAt     DateTime
-  endsAt       DateTime?
-  teacher      Teacher   @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-
-  @@unique([teacherId, subjectId, academicYear, term])
-  @@index([subjectId, academicYear])
-}
-
-model TeacherClassAssignment {
-  id           String    @id @default(uuid()) @db.Uuid
-  teacherId    String    @db.Uuid
-  classId      String    @db.Uuid
-  role         String    @db.VarChar(60)
-  academicYear String    @db.VarChar(40)
-  term         String?   @db.VarChar(40)
-  startsAt     DateTime
-  endsAt       DateTime?
-  teacher      Teacher   @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-  class        Class     @relation(fields: [classId], references: [id], onDelete: Restrict)
-
-  @@unique([teacherId, classId, academicYear, term])
-  @@index([classId, academicYear])
-}
-
-model TeacherAvailability {
-  id        String  @id @default(uuid()) @db.Uuid
-  teacherId String  @db.Uuid
-  weekday   Int
-  startTime String  @db.VarChar(10)
-  endTime   String  @db.VarChar(10)
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-
-  @@index([teacherId, weekday])
-}
-
-model TeacherHistory {
-  id         String         @id @default(uuid()) @db.Uuid
-  teacherId  String         @db.Uuid
-  fromStatus TeacherStatus?
-  toStatus   TeacherStatus
-  reason     String?
-  actorId    String?        @db.Uuid
-  createdAt  DateTime       @default(now())
-  teacher    Teacher        @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-
-  @@index([teacherId, createdAt])
-}
-
-enum ClassStatus {
-  PLANNED
-  ACTIVE
-  ARCHIVED
-  CANCELLED
-}
-
-enum EnrollmentStatus {
-  PENDING
-  ACTIVE
-  TRANSFERRED
-  WITHDRAWN
-  COMPLETED
-}
-
-model Classroom {
-  id               String          @id @default(uuid()) @db.Uuid
-  tenantId         String          @db.Uuid
-  schoolId         String          @db.Uuid
-  name             String          @db.VarChar(120)
-  code             String          @db.VarChar(40)
-  capacity         Int
-  building         String?         @db.VarChar(120)
-  floor            String?         @db.VarChar(40)
-  deletedAt        DateTime?
-  school           School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  classes          Class[]
-  timetableEntries ScheduleEntry[]
-
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, deletedAt])
-}
-
-model Class {
-  id                   String                   @id @default(uuid()) @db.Uuid
-  tenantId             String                   @db.Uuid
-  schoolId             String                   @db.Uuid
-  gradeLevelId         String                   @db.Uuid
-  classroomId          String?                  @db.Uuid
-  name                 String                   @db.VarChar(120)
-  code                 String                   @db.VarChar(40)
-  academicYear         String                   @db.VarChar(40)
-  section              String?                  @db.VarChar(40)
-  capacity             Int
-  status               ClassStatus              @default(PLANNED)
-  startsAt             DateTime?
-  endsAt               DateTime?
-  deletedAt            DateTime?
-  createdAt            DateTime                 @default(now())
-  updatedAt            DateTime                 @updatedAt
-  school               School                   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  gradeLevel           GradeLevel               @relation(fields: [gradeLevelId], references: [id], onDelete: Restrict)
-  classroom            Classroom?               @relation(fields: [classroomId], references: [id], onDelete: SetNull)
-  enrollments          ClassEnrollment[]
-  teachers             TeacherClassAssignment[]
-  history              ClassHistory[]
-  attendanceSessions   AttendanceSession[]
-  examinationSchedules ExaminationSchedule[]
-  timetableEntries     ScheduleEntry[]
-
-  @@unique([schoolId, code, academicYear])
-  @@index([tenantId, schoolId, academicYear, status, deletedAt])
-}
-
-model ClassEnrollment {
-  id         String           @id @default(uuid()) @db.Uuid
-  tenantId   String           @db.Uuid
-  schoolId   String           @db.Uuid
-  classId    String           @db.Uuid
-  studentId  String           @db.Uuid
-  status     EnrollmentStatus @default(PENDING)
-  enrolledAt DateTime         @default(now())
-  endedAt    DateTime?
-  reason     String?          @db.VarChar(500)
-  class      Class            @relation(fields: [classId], references: [id], onDelete: Restrict)
-  student    Student          @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([classId, studentId])
-  @@index([tenantId, schoolId, studentId, status])
-}
-
-model ClassHistory {
-  id         String       @id @default(uuid()) @db.Uuid
-  classId    String       @db.Uuid
-  fromStatus ClassStatus?
-  toStatus   ClassStatus
-  reason     String?      @db.VarChar(500)
-  actorId    String?      @db.Uuid
-  createdAt  DateTime     @default(now())
-  class      Class        @relation(fields: [classId], references: [id], onDelete: Restrict)
-
-  @@index([classId, createdAt])
-}
-
-enum InvoiceStatus {
-  DRAFT
-  ISSUED
-  PARTIALLY_PAID
-  PAID
-  VOID
-  OVERDUE
-}
-
-enum PaymentStatus {
-  PENDING
-  SUCCEEDED
-  FAILED
-  REFUNDED
-}
-
-model FeeStructure {
-  id            String          @id @default(uuid()) @db.Uuid
-  tenantId      String          @db.Uuid
-  schoolId      String          @db.Uuid
-  name          String          @db.VarChar(160)
-  description   String?
-  amount        Decimal         @db.Decimal(12, 2)
-  currency      String          @default("USD") @db.VarChar(3)
-  academicYear  String          @db.VarChar(40)
-  active        Boolean         @default(true)
-  school        School          @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  invoices      Invoice[]
-  FeeCategory   FeeCategory?    @relation(fields: [feeCategoryId], references: [id])
-  feeCategoryId String?         @db.Uuid
-  FeeAssignment FeeAssignment[]
-
-  @@index([tenantId, schoolId, academicYear, active])
-}
-
-model Invoice {
-  id              String                 @id @default(uuid()) @db.Uuid
-  tenantId        String                 @db.Uuid
-  schoolId        String                 @db.Uuid
-  studentId       String                 @db.Uuid
-  feeId           String?                @db.Uuid
-  invoiceNumber   String                 @db.VarChar(60)
-  subtotal        Decimal                @db.Decimal(12, 2)
-  discount        Decimal                @default(0) @db.Decimal(12, 2)
-  total           Decimal                @db.Decimal(12, 2)
-  balance         Decimal                @db.Decimal(12, 2)
-  currency        String                 @default("USD") @db.VarChar(3)
-  status          InvoiceStatus          @default(DRAFT)
-  dueAt           DateTime?
-  issuedAt        DateTime?
-  createdAt       DateTime               @default(now())
-  updatedAt       DateTime               @updatedAt
-  school          School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  student         Student                @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  fee             FeeStructure?          @relation(fields: [feeId], references: [id], onDelete: SetNull)
-  feeAssignment   FeeAssignment?         @relation(fields: [feeAssignmentId], references: [id], onDelete: SetNull)
-  feeAssignmentId String?                @db.Uuid
-  items           InvoiceItem[]
-  allocations     PaymentAllocation[]
-  adjustments     FinancialAdjustment[]
-  transactions    FinancialTransaction[]
-  payments        Payment[]
-
-  @@unique([schoolId, invoiceNumber])
-  @@index([tenantId, schoolId, studentId, status])
-}
-
-model Payment {
-  id             String                 @id @default(uuid()) @db.Uuid
-  tenantId       String                 @db.Uuid
-  schoolId       String                 @db.Uuid
-  invoiceId      String                 @db.Uuid
-  amount         Decimal                @db.Decimal(12, 2)
-  currency       String                 @default("USD") @db.VarChar(3)
-  provider       String                 @db.VarChar(40)
-  reference      String                 @db.VarChar(120)
-  idempotencyKey String                 @unique @db.VarChar(160)
-  status         PaymentStatus          @default(PENDING)
-  paidAt         DateTime?
-  createdAt      DateTime               @default(now())
-  invoice        Invoice                @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  allocations    PaymentAllocation[]
-  receipt        Receipt?
-  refunds        Refund[]
-  transactions   FinancialTransaction[]
-
-  @@index([tenantId, schoolId, invoiceId, status])
-}
-
-enum FinancialDocumentStatus {
-  DRAFT
-  ISSUED
-  PARTIALLY_PAID
-  PAID
-  OVERDUE
-  VOID
-  REFUNDED
-}
-
-enum FinancialPaymentMethod {
-  CASH
-  BANK_TRANSFER
-  MOBILE_MONEY
-  USSD
-  CARD
-  OTHER
-}
-
-enum FinancialTransactionType {
-  INVOICE
-  PAYMENT
-  REFUND
-  DISCOUNT
-  SCHOLARSHIP
-  WAIVER
-  ADJUSTMENT
-  VOID
-}
-
-model FeeCategory {
-  id          String         @id @default(uuid()) @db.Uuid
-  tenantId    String         @db.Uuid
-  schoolId    String         @db.Uuid
-  code        String         @db.VarChar(60)
-  name        String         @db.VarChar(160)
-  description String?
-  active      Boolean        @default(true)
-  school      School         @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  structures  FeeStructure[]
-
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, active])
-}
-
-model FeeAssignment {
-  id               String       @id @default(uuid()) @db.Uuid
-  tenantId         String       @db.Uuid
-  schoolId         String       @db.Uuid
-  studentId        String       @db.Uuid
-  feeStructureId   String       @db.Uuid
-  assignedMinor    Int
-  discountMinor    Int          @default(0)
-  scholarshipMinor Int          @default(0)
-  waiverMinor      Int          @default(0)
-  assignedAt       DateTime     @default(now())
-  student          Student      @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  feeStructure     FeeStructure @relation(fields: [feeStructureId], references: [id], onDelete: Restrict)
-  invoices         Invoice[]
-
-  @@unique([studentId, feeStructureId])
-  @@index([tenantId, schoolId, studentId])
-}
-
-model StudentFeeAccount {
-  id             String   @id @default(uuid()) @db.Uuid
-  tenantId       String   @db.Uuid
-  schoolId       String   @db.Uuid
-  studentId      String   @db.Uuid
-  currency       String   @default("USD") @db.VarChar(3)
-  totalDueMinor  Int      @default(0)
-  totalPaidMinor Int      @default(0)
-  balanceMinor   Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  student        Student  @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, studentId, currency])
-  @@index([tenantId, schoolId, balanceMinor])
-}
-
-model InvoiceItem {
-  id          String  @id @default(uuid()) @db.Uuid
-  invoiceId   String  @db.Uuid
-  description String  @db.VarChar(240)
-  quantity    Int     @default(1)
-  unitMinor   Int
-  totalMinor  Int
-  invoice     Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-}
-
-model PaymentAllocation {
-  id             String   @id @default(uuid()) @db.Uuid
-  paymentId      String   @db.Uuid
-  invoiceId      String   @db.Uuid
-  allocatedMinor Int
-  createdAt      DateTime @default(now())
-  payment        Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-  invoice        Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-
-  @@unique([paymentId, invoiceId])
-  @@index([invoiceId, createdAt])
-}
-
-model Receipt {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @db.Uuid
-  schoolId      String   @db.Uuid
-  paymentId     String   @unique @db.Uuid
-  receiptNumber String   @db.VarChar(80)
-  issuedAt      DateTime @default(now())
-  payment       Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, receiptNumber])
-  @@index([tenantId, schoolId, issuedAt])
-}
-
-model Refund {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  schoolId    String   @db.Uuid
-  paymentId   String   @db.Uuid
-  amountMinor Int
-  reference   String   @db.VarChar(120)
-  reason      String   @db.VarChar(500)
-  createdAt   DateTime @default(now())
-  payment     Payment  @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, schoolId, paymentId])
-}
-
-model FinancialAdjustment {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  schoolId    String   @db.Uuid
-  invoiceId   String   @db.Uuid
-  amountMinor Int
-  reason      String   @db.VarChar(500)
-  createdAt   DateTime @default(now())
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, schoolId, invoiceId])
-}
-
-model FinancialTransaction {
-  id          String                   @id @default(uuid()) @db.Uuid
-  tenantId    String                   @db.Uuid
-  schoolId    String                   @db.Uuid
-  studentId   String?                  @db.Uuid
-  invoiceId   String?                  @db.Uuid
-  paymentId   String?                  @db.Uuid
-  type        FinancialTransactionType
-  amountMinor Int
-  currency    String                   @default("USD") @db.VarChar(3)
-  reference   String                   @db.VarChar(120)
-  metadata    Json
-  createdAt   DateTime                 @default(now())
-  school      School                   @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  student     Student?                 @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  invoice     Invoice?                 @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
-  payment     Payment?                 @relation(fields: [paymentId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, reference])
-  @@index([tenantId, schoolId, type, createdAt])
-}
-
-enum GatewayIntentStatus {
-  CREATED
-  PENDING
-  PROCESSING
-  SUCCEEDED
-  FAILED
-  EXPIRED
-  CANCELLED
-}
-
-enum GatewayAttemptStatus {
-  CREATED
-  PENDING
-  SUCCEEDED
-  FAILED
-  EXPIRED
-  CANCELLED
-}
-
-enum GatewayChannel {
-  USSD
-  MOBILE_MONEY
-  BANK_TRANSFER
-  CARD
-  OTHER
-}
-
-model PaymentProvider {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  code String @db.VarChar(60)
-  name String @db.VarChar(160)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, active])
-}
-model PaymentProviderConfiguration {
-  id String @id @default(uuid()) @db.Uuid
-  providerId String @db.Uuid
-  environment String @db.VarChar(30)
-  credentials Json
-  enabled Boolean @default(false)
-  updatedAt DateTime @updatedAt
-  @@unique([providerId, environment])
-}
-model PaymentIntent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  invoiceId String @db.Uuid
-  studentId String @db.Uuid
-  providerId String? @db.Uuid
-  internalReference String @db.VarChar(120)
-  idempotencyKey String @db.VarChar(160)
-  amountMinor Int
-  currency String @default("USD") @db.VarChar(3)
-  channel GatewayChannel
-  status GatewayIntentStatus @default(CREATED)
-  description String?
-  metadata Json
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  attempts PaymentAttempt[]
-  @@unique([schoolId, internalReference])
-  @@unique([schoolId, idempotencyKey])
-  @@index([tenantId, schoolId, invoiceId, status])
-}
-model PaymentAttempt {
-  id String @id @default(uuid()) @db.Uuid
-  intentId String @db.Uuid
-  attemptNumber Int
-  providerId String? @db.Uuid
-  externalReference String?
-  providerStatus String?
-  status GatewayAttemptStatus @default(CREATED)
-  errorCode String?
-  errorMessage String?
-  retryCount Int @default(0)
-  requestedAt DateTime @default(now())
-  respondedAt DateTime?
-  durationMs Int?
-  intent PaymentIntent @relation(fields: [intentId], references: [id], onDelete: Cascade)
-  @@unique([intentId, attemptNumber])
-  @@index([providerId, externalReference])
-}
-model ExternalTransaction {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  intentId String? @db.Uuid
-  attemptId String? @db.Uuid
-  providerId String @db.Uuid
-  externalReference String @db.VarChar(160)
-  amountMinor Int
-  currency String @db.VarChar(3)
-  status String @db.VarChar(50)
-  rawMetadata Json
-  createdAt DateTime @default(now())
-  @@unique([providerId, externalReference])
-  @@index([tenantId, schoolId, intentId])
-}
-model GatewayWebhookEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  providerId String @db.Uuid
-  eventId String @db.VarChar(180)
-  eventType String @db.VarChar(100)
-  signatureValid Boolean @default(false)
-  processedAt DateTime?
-  payload Json
-  createdAt DateTime @default(now())
-  @@unique([providerId, eventId])
-  @@index([tenantId, schoolId, processedAt])
-}
-model GatewayRefund {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  intentId String @db.Uuid
-  providerId String @db.Uuid
-  amountMinor Int
-  externalReference String?
-  status String @db.VarChar(50)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, intentId])
-}
-model ProviderHealthStatus {
-  id String @id @default(uuid()) @db.Uuid
-  providerId String @unique @db.Uuid
-  healthy Boolean
-  latencyMs Int?
-  lastCheckedAt DateTime @default(now())
-  errorMessage String?
-}
-model GatewayError {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  providerId String? @db.Uuid
-  intentId String? @db.Uuid
-  code String @db.VarChar(80)
-  message String @db.VarChar(500)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-model FinanceAudit {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid
-  schoolId  String   @db.Uuid
-  actorId   String?  @db.Uuid
-  action    String   @db.VarChar(80)
-  entityId  String   @db.Uuid
-  metadata  Json
-  createdAt DateTime @default(now())
-
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum AcademicPeriodStatus {
-  PLANNED
-  ACTIVE
-  CLOSED
-  ARCHIVED
-}
-
-enum AcademicPeriodType {
-  YEAR
-  TERM
-  SEMESTER
-  QUARTER
-  BREAK
-  HOLIDAY
-  EXAM
-  SPECIAL
-}
-
-model AcademicPeriod {
-  id                 String                  @id @default(uuid()) @db.Uuid
-  tenantId           String                  @db.Uuid
-  schoolId           String                  @db.Uuid
-  parentId           String?                 @db.Uuid
-  name               String                  @db.VarChar(160)
-  code               String                  @db.VarChar(60)
-  type               AcademicPeriodType
-  status             AcademicPeriodStatus    @default(PLANNED)
-  startsAt           DateTime
-  endsAt             DateTime
-  lockedAt           DateTime?
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
-  school             School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  parent             AcademicPeriod?         @relation("AcademicPeriodHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
-  children           AcademicPeriod[]        @relation("AcademicPeriodHierarchy")
-  history            AcademicPeriodHistory[]
-  attendanceSessions AttendanceSession[]
-  examinations       Examination[]
-  timetables         Timetable[]
-
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, type, status])
-  @@index([schoolId, startsAt, endsAt])
-}
-
-model AcademicPeriodHistory {
-  id         String                @id @default(uuid()) @db.Uuid
-  periodId   String                @db.Uuid
-  fromStatus AcademicPeriodStatus?
-  toStatus   AcademicPeriodStatus
-  reason     String?               @db.VarChar(500)
-  actorId    String?               @db.Uuid
-  createdAt  DateTime              @default(now())
-  period     AcademicPeriod        @relation(fields: [periodId], references: [id], onDelete: Restrict)
-
-  @@index([periodId, createdAt])
-}
-
-enum AttendanceSessionStatus {
-  DRAFT
-  OPEN
-  LOCKED
-  ARCHIVED
-}
-
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
-  HALF_DAY
-}
-
-enum AttendanceCaptureMethod {
-  MANUAL
-  QR
-  RFID
-  BIOMETRIC
-  FACIAL
-  IMPORT
-}
-
-model AttendanceSession {
-  id          String                  @id @default(uuid()) @db.Uuid
-  tenantId    String                  @db.Uuid
-  schoolId    String                  @db.Uuid
-  classId     String                  @db.Uuid
-  periodId    String?                 @db.Uuid
-  sessionDate DateTime                @db.Date
-  title       String                  @db.VarChar(160)
-  status      AttendanceSessionStatus @default(DRAFT)
-  openedAt    DateTime?
-  lockedAt    DateTime?
-  createdById String?                 @db.Uuid
-  createdAt   DateTime                @default(now())
-  updatedAt   DateTime                @updatedAt
-  school      School                  @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  class       Class                   @relation(fields: [classId], references: [id], onDelete: Restrict)
-  period      AcademicPeriod?         @relation(fields: [periodId], references: [id], onDelete: SetNull)
-  records     AttendanceRecord[]
-  audits      AttendanceAudit[]
-  qrTokens    AttendanceQrToken[]
-
-  @@unique([schoolId, classId, sessionDate])
-  @@index([tenantId, schoolId, sessionDate, status])
-}
-
-model AttendanceRecord {
-  id         String                  @id @default(uuid()) @db.Uuid
-  tenantId   String                  @db.Uuid
-  schoolId   String                  @db.Uuid
-  sessionId  String                  @db.Uuid
-  studentId  String                  @db.Uuid
-  status     AttendanceStatus        @default(ABSENT)
-  method     AttendanceCaptureMethod @default(MANUAL)
-  note       String?                 @db.VarChar(500)
-  markedAt   DateTime?
-  markedById String?                 @db.Uuid
-  createdAt  DateTime                @default(now())
-  updatedAt  DateTime                @updatedAt
-  session    AttendanceSession       @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-  student    Student                 @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([sessionId, studentId])
-  @@index([tenantId, schoolId, studentId, status])
-}
-
-model AttendanceAudit {
-  id        String            @id @default(uuid()) @db.Uuid
-  tenantId  String            @db.Uuid
-  schoolId  String            @db.Uuid
-  sessionId String            @db.Uuid
-  recordId  String?           @db.Uuid
-  actorId   String?           @db.Uuid
-  action    String            @db.VarChar(80)
-  metadata  Json
-  createdAt DateTime          @default(now())
-  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, schoolId, sessionId, createdAt])
-}
-
-model AttendanceQrToken {
-  id        String            @id @default(uuid()) @db.Uuid
-  sessionId String            @db.Uuid
-  tokenHash String            @unique @db.VarChar(128)
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime          @default(now())
-  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-
-  @@index([sessionId, expiresAt])
-}
-
-enum ExaminationStatus {
-  DRAFT
-  SCHEDULED
-  IN_PROGRESS
-  MARKING
-  MODERATION
-  APPROVAL
-  LOCKED
-  ARCHIVED
-}
-
-enum ExaminationCandidateStatus {
-  REGISTERED
-  ABSENT
-  WITHDRAWN
-  COMPLETED
-}
-
-enum MarkStatus {
-  DRAFT
-  SUBMITTED
-  MODERATED
-  APPROVED
-  LOCKED
-}
-
-model Examination {
-  id         String                 @id @default(uuid()) @db.Uuid
-  tenantId   String                 @db.Uuid
-  schoolId   String                 @db.Uuid
-  periodId   String?                @db.Uuid
-  name       String                 @db.VarChar(160)
-  code       String                 @db.VarChar(60)
-  status     ExaminationStatus      @default(DRAFT)
-  startsAt   DateTime?
-  endsAt     DateTime?
-  lockedAt   DateTime?
-  createdAt  DateTime               @default(now())
-  updatedAt  DateTime               @updatedAt
-  school     School                 @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  period     AcademicPeriod?        @relation(fields: [periodId], references: [id], onDelete: SetNull)
-  candidates ExaminationCandidate[]
-  schedules  ExaminationSchedule[]
-  marks      ExaminationMark[]
-  audits     ExaminationAudit[]
-  results    Result[]
-
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, status])
-}
-
-model ExaminationCandidate {
-  id            String                     @id @default(uuid()) @db.Uuid
-  tenantId      String                     @db.Uuid
-  schoolId      String                     @db.Uuid
-  examinationId String                     @db.Uuid
-  studentId     String                     @db.Uuid
-  status        ExaminationCandidateStatus @default(REGISTERED)
-  createdAt     DateTime                   @default(now())
-  examination   Examination                @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-  student       Student                    @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([examinationId, studentId])
-  @@index([tenantId, schoolId, studentId])
-}
-
-model ExaminationSchedule {
-  id            String      @id @default(uuid()) @db.Uuid
-  tenantId      String      @db.Uuid
-  schoolId      String      @db.Uuid
-  examinationId String      @db.Uuid
-  classId       String      @db.Uuid
-  subjectCode   String      @db.VarChar(60)
-  startsAt      DateTime
-  endsAt        DateTime
-  room          String?     @db.VarChar(80)
-  examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-  class         Class       @relation(fields: [classId], references: [id], onDelete: Restrict)
-
-  @@unique([examinationId, classId, subjectCode])
-  @@index([tenantId, schoolId, startsAt])
-}
-
-model ExaminationMark {
-  id            String      @id @default(uuid()) @db.Uuid
-  tenantId      String      @db.Uuid
-  schoolId      String      @db.Uuid
-  examinationId String      @db.Uuid
-  studentId     String      @db.Uuid
-  subjectCode   String      @db.VarChar(60)
-  score         Decimal     @db.Decimal(7, 2)
-  maxScore      Decimal     @db.Decimal(7, 2)
-  status        MarkStatus  @default(DRAFT)
-  submittedAt   DateTime?
-  approvedAt    DateTime?
-  examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-  student       Student     @relation(fields: [studentId], references: [id], onDelete: Restrict)
-
-  @@unique([examinationId, studentId, subjectCode])
-  @@index([tenantId, schoolId, status])
-}
-
-model ExaminationAudit {
-  id            String      @id @default(uuid()) @db.Uuid
-  tenantId      String      @db.Uuid
-  schoolId      String      @db.Uuid
-  examinationId String      @db.Uuid
-  actorId       String?     @db.Uuid
-  action        String      @db.VarChar(80)
-  metadata      Json
-  createdAt     DateTime    @default(now())
-  examination   Examination @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, schoolId, examinationId, createdAt])
-}
-
-enum ResultStatus {
-  DRAFT
-  PROCESSING
-  REVIEW
-  APPROVED
-  PUBLISHED
-  LOCKED
-}
-
-enum ResultStudentStatus {
-  PASS
-  FAIL
-  INCOMPLETE
-}
-
-model GradeScheme {
-  id        String      @id @default(uuid()) @db.Uuid
-  tenantId  String      @db.Uuid
-  schoolId  String      @db.Uuid
-  name      String      @db.VarChar(120)
-  passMark  Decimal     @db.Decimal(5, 2)
-  createdAt DateTime    @default(now())
-  bands     GradeBand[]
-  results   Result[]
-
-  @@unique([schoolId, name])
-  @@index([tenantId, schoolId])
-}
-
-model GradeBand {
-  id       String      @id @default(uuid()) @db.Uuid
-  schemeId String      @db.Uuid
-  label    String      @db.VarChar(20)
-  minMark  Decimal     @db.Decimal(5, 2)
-  maxMark  Decimal     @db.Decimal(5, 2)
-  point    Decimal     @db.Decimal(5, 2)
-  scheme   GradeScheme @relation(fields: [schemeId], references: [id], onDelete: Cascade)
-
-  @@unique([schemeId, label])
-}
-
-model Result {
-  id            String              @id @default(uuid()) @db.Uuid
-  tenantId      String              @db.Uuid
-  schoolId      String              @db.Uuid
-  examinationId String              @db.Uuid
-  studentId     String              @db.Uuid
-  schemeId      String              @db.Uuid
-  status        ResultStatus        @default(DRAFT)
-  studentStatus ResultStudentStatus @default(INCOMPLETE)
-  total         Decimal             @default(0) @db.Decimal(9, 2)
-  average       Decimal             @default(0) @db.Decimal(7, 2)
-  grade         String?             @db.VarChar(20)
-  gradePoint    Decimal?            @db.Decimal(5, 2)
-  position      Int?
-  processedAt   DateTime?
-  publishedAt   DateTime?
-  lockedAt      DateTime?
-  createdAt     DateTime            @default(now())
-  updatedAt     DateTime            @updatedAt
-  examination   Examination         @relation(fields: [examinationId], references: [id], onDelete: Restrict)
-  student       Student             @relation(fields: [studentId], references: [id], onDelete: Restrict)
-  scheme        GradeScheme         @relation(fields: [schemeId], references: [id], onDelete: Restrict)
-  subjects      SubjectResult[]
-  audits        ResultAudit[]
-
-  @@unique([examinationId, studentId])
-  @@index([tenantId, schoolId, status])
-}
-
-model SubjectResult {
-  id          String   @id @default(uuid()) @db.Uuid
-  resultId    String   @db.Uuid
-  subjectCode String   @db.VarChar(60)
-  total       Decimal  @db.Decimal(7, 2)
-  average     Decimal  @db.Decimal(7, 2)
-  grade       String?  @db.VarChar(20)
-  gradePoint  Decimal? @db.Decimal(5, 2)
-  passed      Boolean  @default(false)
-  result      Result   @relation(fields: [resultId], references: [id], onDelete: Cascade)
-
-  @@unique([resultId, subjectCode])
-}
-
-model ResultAudit {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid
-  schoolId  String   @db.Uuid
-  resultId  String   @db.Uuid
-  actorId   String?  @db.Uuid
-  action    String   @db.VarChar(80)
-  metadata  Json
-  createdAt DateTime @default(now())
-  result    Result   @relation(fields: [resultId], references: [id], onDelete: Restrict)
-
-  @@index([tenantId, schoolId, resultId, createdAt])
-}
-
-model SchoolAdministrator {
-  id         String    @id @default(uuid()) @db.Uuid
-  tenantId   String    @db.Uuid
-  schoolId   String    @db.Uuid
-  userId     String    @db.Uuid
-  assignedBy String?   @db.Uuid
-  isPrimary  Boolean   @default(false)
-  startsAt   DateTime  @default(now())
-  endsAt     DateTime?
-  revokedAt  DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  school     School    @relation(fields: [schoolId], references: [id], onDelete: Restrict)
-  user       User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-
-  @@unique([schoolId, userId])
-  @@index([tenantId, schoolId, revokedAt])
-  @@index([userId, revokedAt])
-}
-
-enum NotificationStatus {
-  CREATED
-  QUEUED
-  PROCESSING
-  SENT
-  DELIVERED
-  FAILED
-  READ
-  CANCELLED
-}
-enum NotificationPriority {
-  LOW
-  NORMAL
-  HIGH
-  URGENT
-}
-enum NotificationChannelType {
-  IN_APP
-  EMAIL
-  SMS
-  PUSH
-  WHATSAPP
-}
-enum DeliveryStatus {
-  PENDING
-  SENT
-  DELIVERED
-  FAILED
-}
-
-model NotificationTemplate {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  code String @db.VarChar(100)
-  name String @db.VarChar(160)
-  subject String? @db.VarChar(300)
-  body String @db.Text
-  channels Json
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  notifications Notification[]
-  @@unique([schoolId, code])
-}
-model Notification {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  title String @db.VarChar(240)
-  body String @db.Text
-  type String @db.VarChar(80)
-  priority NotificationPriority @default(NORMAL)
-  status NotificationStatus @default(CREATED)
-  sourceModule String? @db.VarChar(80)
-  sourceEntity String? @db.VarChar(80)
-  sourceEntityId String? @db.Uuid
-  templateId String? @db.Uuid
-  data Json
-  scheduledAt DateTime?
-  expiresAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  recipients NotificationRecipient[]
-  deliveries NotificationDelivery[]
-  template NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  @@index([tenantId, schoolId, status, createdAt])
-}
-model NotificationRecipient {
-  id String @id @default(uuid()) @db.Uuid
-  notificationId String @db.Uuid
-  userId String @db.Uuid
-  readAt DateTime?
-  createdAt DateTime @default(now())
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
-  @@unique([notificationId, userId])
-  @@index([userId, readAt, createdAt])
-}
-model NotificationDelivery {
-  id String @id @default(uuid()) @db.Uuid
-  notificationId String @db.Uuid
-  recipientId String @db.Uuid
-  channel NotificationChannelType
-  status DeliveryStatus @default(PENDING)
-  provider String? @db.VarChar(80)
-  externalReference String? @db.VarChar(160)
-  attempts Int @default(0)
-  lastError String? @db.Text
-  sentAt DateTime?
-  deliveredAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
-  @@index([notificationId, channel, status])
-  @@index([recipientId, createdAt])
-}
-model NotificationPreference {
-  id String @id @default(uuid()) @db.Uuid
-  userId String @db.Uuid
-  schoolId String @db.Uuid
-  email Boolean @default(true)
-  sms Boolean @default(false)
-  push Boolean @default(true)
-  whatsapp Boolean @default(false)
-  inApp Boolean @default(true)
-  quietHours Json
-  updatedAt DateTime @updatedAt
-  @@unique([userId, schoolId])
-}
-model Announcement {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  authorId String @db.Uuid
-  title String @db.VarChar(240)
-  body String @db.Text
-  audience String @db.VarChar(80)
-  priority NotificationPriority @default(NORMAL)
-  publishAt DateTime @default(now())
-  expiresAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  author User @relation(fields: [authorId], references: [id], onDelete: Restrict)
-  @@index([schoolId, publishAt])
-}
-model MessageThread {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  subject String? @db.VarChar(240)
-  createdById String @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  participants MessageParticipant[]
-  messages Message[]
-  @@index([schoolId, updatedAt])
-}
-model MessageParticipant {
-  id String @id @default(uuid()) @db.Uuid
-  threadId String @db.Uuid
-  userId String @db.Uuid
-  joinedAt DateTime @default(now())
-  lastReadAt DateTime?
-  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
-  @@unique([threadId, userId])
-}
-model Message {
-  id String @id @default(uuid()) @db.Uuid
-  threadId String @db.Uuid
-  senderId String @db.Uuid
-  body String @db.Text
-  createdAt DateTime @default(now())
-  thread MessageThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  sender User @relation(fields: [senderId], references: [id], onDelete: Restrict)
-  @@index([threadId, createdAt])
-}
-model CommunicationAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum EmployeeStatus {
-  APPLICANT
-  ACTIVE
-  ON_LEAVE
-  SUSPENDED
-  TERMINATED
-  RESIGNED
-  RETIRED
-}
-enum EmploymentTypeCode {
-  FULL_TIME
-  PART_TIME
-  CONTRACT
-  TEMPORARY
-  INTERN
-  VOLUNTEER
-}
-enum LeaveRequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-enum PayrollRunStatus {
-  DRAFT
-  CALCULATING
-  PENDING_APPROVAL
-  APPROVED
-  PAID
-  VOID
-}
-enum PayrollItemType {
-  EARNING
-  DEDUCTION
-  BENEFIT
-  TAX
-  PENSION
-}
-
-model HRDepartment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(30)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employees Employee[]
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, active])
-}
-model HRPosition {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  departmentId String? @db.Uuid
-  title String @db.VarChar(160)
-  code String @db.VarChar(40)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employees Employee[]
-  @@unique([schoolId, code])
-  @@index([schoolId, departmentId])
-}
-model Employee {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  userId String? @db.Uuid
-  employeeNumber String @db.VarChar(60)
-  firstName String @db.VarChar(100)
-  lastName String @db.VarChar(100)
-  email String? @db.VarChar(320)
-  phone String? @db.VarChar(40)
-  dateOfBirth DateTime?
-  gender String? @db.VarChar(30)
-  address String? @db.VarChar(500)
-  emergencyContact Json
-  status EmployeeStatus @default(APPLICANT)
-  hireDate DateTime?
-  terminationDate DateTime?
-  departmentId String? @db.Uuid
-  positionId String? @db.Uuid
-  photoUrl String? @db.VarChar(500)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  department HRDepartment? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  position HRPosition? @relation(fields: [positionId], references: [id], onDelete: SetNull)
-  contracts EmploymentContract[]
-  leaveRequests LeaveRequest[]
-  attendance StaffAttendance[]
-  salary EmployeeSalary?
-  @@unique([schoolId, employeeNumber])
-  @@index([tenantId, schoolId, status])
-}
-model EmploymentContract {
-  id String @id @default(uuid()) @db.Uuid
-  employeeId String @db.Uuid
-  employmentType EmploymentTypeCode
-  title String @db.VarChar(160)
-  startDate DateTime
-  endDate DateTime?
-  baseSalary Decimal @db.Decimal(14, 2)
-  currency String @default("USD") @db.VarChar(3)
-  status String @default("ACTIVE") @db.VarChar(30)
-  documentUrl String? @db.VarChar(500)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  @@index([employeeId, startDate])
-}
-model LeaveType {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(100)
-  annualDays Decimal @db.Decimal(6, 2)
-  paid Boolean @default(true)
-  active Boolean @default(true)
-  requests LeaveRequest[]
-  @@unique([schoolId, name])
-}
-model LeaveRequest {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  employeeId String @db.Uuid
-  leaveTypeId String @db.Uuid
-  startDate DateTime
-  endDate DateTime
-  reason String? @db.Text
-  status LeaveRequestStatus @default(PENDING)
-  approvedById String? @db.Uuid
-  approvedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Restrict)
-  leaveType LeaveType @relation(fields: [leaveTypeId], references: [id], onDelete: Restrict)
-  @@index([schoolId, status, startDate])
-}
-model StaffAttendance {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  employeeId String @db.Uuid
-  workDate DateTime @db.Date
-  checkIn DateTime?
-  checkOut DateTime?
-  status String @default("PRESENT") @db.VarChar(30)
-  notes String? @db.VarChar(300)
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  @@unique([employeeId, workDate])
-}
-model EmployeeSalary {
-  id String @id @default(uuid()) @db.Uuid
-  employeeId String @unique @db.Uuid
-  effectiveFrom DateTime
-  baseSalary Decimal @db.Decimal(14, 2)
-  allowances Json
-  deductions Json
-  currency String @default("USD") @db.VarChar(3)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-}
-model PayrollPeriod {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(100)
-  startDate DateTime
-  endDate DateTime
-  status String @default("OPEN") @db.VarChar(30)
-  @@unique([schoolId, startDate, endDate])
-}
-model PayrollRun {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  periodId String @db.Uuid
-  status PayrollRunStatus @default(DRAFT)
-  grossTotal Decimal @default(0) @db.Decimal(16, 2)
-  deductionTotal Decimal @default(0) @db.Decimal(16, 2)
-  netTotal Decimal @default(0) @db.Decimal(16, 2)
-  finalizedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  employees PayrollEmployee[]
-  @@index([schoolId, status, createdAt])
-}
-model PayrollEmployee {
-  id String @id @default(uuid()) @db.Uuid
-  payrollRunId String @db.Uuid
-  employeeId String @db.Uuid
-  grossSalary Decimal @db.Decimal(14, 2)
-  deductions Decimal @default(0) @db.Decimal(14, 2)
-  netSalary Decimal @db.Decimal(14, 2)
-  payslipNumber String? @db.VarChar(80)
-  items PayrollItem[]
-  payrollRun PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
-  @@unique([payrollRunId, employeeId])
-}
-model PayrollItem {
-  id String @id @default(uuid()) @db.Uuid
-  payrollEmployeeId String @db.Uuid
-  type PayrollItemType
-  label String @db.VarChar(160)
-  amount Decimal @db.Decimal(14, 2)
-  payrollEmployee PayrollEmployee @relation(fields: [payrollEmployeeId], references: [id], onDelete: Cascade)
-}
-model HRAction {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  employeeId String? @db.Uuid
-  action String @db.VarChar(80)
-  details Json
-  actorId String? @db.Uuid
-  createdAt DateTime @default(now())
-  @@index([schoolId, createdAt])
-}
-
-// Payroll totals are snapshots: finalized runs are never mutated in place.
-enum LibraryStatus {
-  ACTIVE
-  INACTIVE
-}
-enum BookCopyStatus {
-  AVAILABLE
-  BORROWED
-  RESERVED
-  LOST
-  DAMAGED
-  REPAIR
-  RETIRED
-}
-enum BorrowStatus {
-  BORROWED
-  RETURNED
-  OVERDUE
-  LOST
-}
-enum ReservationStatus {
-  ACTIVE
-  FULFILLED
-  CANCELLED
-  EXPIRED
-}
-enum FineStatus {
-  OPEN
-  PAID
-  WAIVED
-}
-enum LibraryMemberType {
-  STUDENT
-  TEACHER
-  STAFF
-}
-enum DigitalResourceType {
-  EBOOK
-  AUDIO
-  VIDEO
-  DOCUMENT
-  LINK
-}
-
-model Library {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  status LibraryStatus @default(ACTIVE)
-  address String? @db.VarChar(400)
-  email String? @db.VarChar(320)
-  phone String? @db.VarChar(40)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  locations LibraryLocation[]
-  books Book[]
-  members LibraryMember[]
-  policies LibraryPolicy[]
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, status])
-}
-model LibraryLocation {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  description String? @db.VarChar(300)
-  active Boolean @default(true)
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  shelves LibraryShelf[]
-  copies BookCopy[]
-  @@unique([libraryId, code])
-}
-model LibraryShelf {
-  id String @id @default(uuid()) @db.Uuid
-  locationId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  active Boolean @default(true)
-  location LibraryLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  copies BookCopy[]
-  @@unique([locationId, code])
-}
-model Author {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(180)
-  biography String? @db.Text
-  nationality String? @db.VarChar(80)
-  website String? @db.VarChar(400)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  books BookAuthor[]
-  @@unique([schoolId, name])
-  @@index([schoolId, active])
-}
-model Publisher {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(180)
-  address String? @db.VarChar(400)
-  contact String? @db.VarChar(180)
-  website String? @db.VarChar(400)
-  country String? @db.VarChar(80)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  editions BookEdition[]
-  @@unique([schoolId, name])
-}
-model Category {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  parentId String? @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  description String? @db.VarChar(300)
-  active Boolean @default(true)
-  parent Category? @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children Category[] @relation("CategoryTree")
-  books BookCategory[]
-  @@unique([schoolId, code])
-}
-model Subject {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  description String? @db.VarChar(300)
-  active Boolean @default(true)
-  books BookSubject[]
-  @@unique([schoolId, code])
-}
-model Book {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  title String @db.VarChar(300)
-  subtitle String? @db.VarChar(300)
-  isbn10 String? @db.VarChar(20)
-  isbn13 String? @db.VarChar(20)
-  description String? @db.Text
-  language String? @db.VarChar(60)
-  pages Int?
-  publicationYear Int?
-  coverImageUrl String? @db.VarChar(500)
-  keywords Json
-  status LibraryStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  editions BookEdition[]
-  authors BookAuthor[]
-  categories BookCategory[]
-  subjects BookSubject[]
-  copies BookCopy[]
-  digitalResources DigitalResource[]
-  @@unique([libraryId, isbn13])
-  @@unique([libraryId, isbn10])
-  @@index([libraryId, title])
-}
-model BookEdition {
-  id String @id @default(uuid()) @db.Uuid
-  bookId String @db.Uuid
-  publisherId String? @db.Uuid
-  edition String? @db.VarChar(80)
-  isbn10 String? @db.VarChar(20)
-  isbn13 String? @db.VarChar(20)
-  publicationYear Int?
-  pages Int?
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  publisher Publisher? @relation(fields: [publisherId], references: [id], onDelete: SetNull)
-  copies BookCopy[]
-  @@index([bookId, publicationYear])
-}
-model BookAuthor {
-  bookId String @db.Uuid
-  authorId String @db.Uuid
-  sortOrder Int @default(0)
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  author Author @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  @@id([bookId, authorId])
-}
-model BookCategory {
-  bookId String @db.Uuid
-  categoryId String @db.Uuid
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  @@id([bookId, categoryId])
-}
-model BookSubject {
-  bookId String @db.Uuid
-  subjectId String @db.Uuid
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
-  @@id([bookId, subjectId])
-}
-model BookCopy {
-  id String @id @default(uuid()) @db.Uuid
-  bookId String @db.Uuid
-  editionId String? @db.Uuid
-  locationId String? @db.Uuid
-  shelfId String? @db.Uuid
-  barcode String @db.VarChar(80)
-  acquiredAt DateTime?
-  price Decimal? @db.Decimal(12, 2)
-  condition String? @db.VarChar(40)
-  status BookCopyStatus @default(AVAILABLE)
-  notes String? @db.VarChar(500)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  edition BookEdition? @relation(fields: [editionId], references: [id], onDelete: SetNull)
-  location LibraryLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  shelf LibraryShelf? @relation(fields: [shelfId], references: [id], onDelete: SetNull)
-  borrows BorrowTransaction[]
-  reservations Reservation[]
-  damages BookDamage[]
-  lostRecords LostBook[]
-  auditItems InventoryAuditItem[]
-  @@unique([barcode])
-  @@index([bookId, status])
-}
-model LibraryMember {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  userId String @db.Uuid
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  memberNumber String @db.VarChar(80)
-  type LibraryMemberType
-  active Boolean @default(true)
-  joinedAt DateTime @default(now())
-  maxBooks Int @default(3)
-  borrows BorrowTransaction[]
-  reservations Reservation[]
-  fines Fine[]
-  @@unique([libraryId, memberNumber])
-  @@unique([libraryId, userId])
-}
-model BorrowTransaction {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  memberId String @db.Uuid
-  copyId String @db.Uuid
-  issuedById String? @db.Uuid
-  borrowedAt DateTime @default(now())
-  dueAt DateTime
-  returnedAt DateTime?
-  status BorrowStatus @default(BORROWED)
-  notes String? @db.VarChar(500)
-  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Restrict)
-  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
-  returns ReturnTransaction[]
-  renewals RenewalTransaction[]
-  fines Fine[]
-  @@index([libraryId, status, dueAt])
-  @@index([memberId, status])
-}
-model ReturnTransaction {
-  id String @id @default(uuid()) @db.Uuid
-  borrowId String @db.Uuid
-  processedById String? @db.Uuid
-  returnedAt DateTime @default(now())
-  condition String? @db.VarChar(40)
-  notes String? @db.VarChar(500)
-  borrow BorrowTransaction @relation(fields: [borrowId], references: [id], onDelete: Cascade)
-}
-model RenewalTransaction {
-  id String @id @default(uuid()) @db.Uuid
-  borrowId String @db.Uuid
-  processedById String? @db.Uuid
-  previousDueAt DateTime
-  newDueAt DateTime
-  createdAt DateTime @default(now())
-  borrow BorrowTransaction @relation(fields: [borrowId], references: [id], onDelete: Cascade)
-}
-model Reservation {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  memberId String @db.Uuid
-  bookId String @db.Uuid
-  copyId String? @db.Uuid
-  status ReservationStatus @default(ACTIVE)
-  reservedAt DateTime @default(now())
-  expiresAt DateTime?
-  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
-  copy BookCopy? @relation(fields: [copyId], references: [id], onDelete: SetNull)
-  @@index([libraryId, status, reservedAt])
-}
-model Fine {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  memberId String @db.Uuid
-  borrowId String? @db.Uuid
-  amount Decimal @db.Decimal(12, 2)
-  reason String @db.VarChar(180)
-  status FineStatus @default(OPEN)
-  assessedAt DateTime @default(now())
-  paidAt DateTime?
-  member LibraryMember @relation(fields: [memberId], references: [id], onDelete: Restrict)
-  borrow BorrowTransaction? @relation(fields: [borrowId], references: [id], onDelete: SetNull)
-  payments FinePayment[]
-  @@index([libraryId, status, assessedAt])
-}
-model FinePayment {
-  id String @id @default(uuid()) @db.Uuid
-  fineId String @db.Uuid
-  amount Decimal @db.Decimal(12, 2)
-  paidById String? @db.Uuid
-  paidAt DateTime @default(now())
-  reference String? @db.VarChar(120)
-  fine Fine @relation(fields: [fineId], references: [id], onDelete: Cascade)
-}
-model BookDamage {
-  id String @id @default(uuid()) @db.Uuid
-  copyId String @db.Uuid
-  reportedById String? @db.Uuid
-  description String @db.Text
-  repairCost Decimal? @db.Decimal(12, 2)
-  resolvedAt DateTime?
-  createdAt DateTime @default(now())
-  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
-}
-model LostBook {
-  id String @id @default(uuid()) @db.Uuid
-  copyId String @db.Uuid
-  reportedById String? @db.Uuid
-  replacementCost Decimal? @db.Decimal(12, 2)
-  recoveredAt DateTime?
-  notes String? @db.VarChar(500)
-  createdAt DateTime @default(now())
-  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Cascade)
-}
-model InventoryAudit {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  performedById String? @db.Uuid
-  startedAt DateTime @default(now())
-  completedAt DateTime?
-  notes String? @db.VarChar(500)
-  items InventoryAuditItem[]
-}
-model InventoryAuditItem {
-  id String @id @default(uuid()) @db.Uuid
-  auditId String @db.Uuid
-  copyId String @db.Uuid
-  expectedStatus BookCopyStatus
-  observedStatus BookCopyStatus?
-  found Boolean @default(false)
-  notes String? @db.VarChar(300)
-  audit InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  copy BookCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
-  @@unique([auditId, copyId])
-}
-model DigitalResource {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  bookId String? @db.Uuid
-  title String @db.VarChar(300)
-  type DigitalResourceType
-  url String @db.VarChar(800)
-  accessRule String? @db.VarChar(120)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  book Book? @relation(fields: [bookId], references: [id], onDelete: SetNull)
-  accesses DigitalResourceAccess[]
-  @@index([libraryId, type, active])
-}
-model DigitalResourceAccess {
-  id String @id @default(uuid()) @db.Uuid
-  resourceId String @db.Uuid
-  userId String @db.Uuid
-  accessedAt DateTime @default(now())
-  resource DigitalResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  @@index([userId, accessedAt])
-}
-model LibraryPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  libraryId String @db.Uuid
-  loanDays Int @default(14)
-  maxBooks Int @default(3)
-  dailyFine Decimal @default(0) @db.Decimal(8, 2)
-  renewalLimit Int @default(2)
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  @@unique([libraryId])
-}
-model LibraryAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum AssetStatus {
-  ACTIVE
-  ASSIGNED
-  MAINTENANCE
-  TRANSFERRED
-  DISPOSED
-  LOST
-}
-enum AssetCondition {
-  NEW
-  GOOD
-  FAIR
-  POOR
-  DAMAGED
-}
-enum AssetIdentifierType {
-  TAG
-  BARCODE
-  QR
-  SERIAL
-}
-enum MaintenanceStatus {
-  OPEN
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-enum DisposalStatus {
-  PENDING
-  APPROVED
-  DISPOSED
-  REJECTED
-}
-enum StockMovementType {
-  RECEIPT
-  ISSUE
-  RETURN
-  TRANSFER_IN
-  TRANSFER_OUT
-  ADJUSTMENT
-}
-enum PurchaseOrderStatus {
-  DRAFT
-  SUBMITTED
-  APPROVED
-  PARTIAL
-  RECEIVED
-  CANCELLED
-}
-enum ReconciliationStatus {
-  OPEN
-  IN_PROGRESS
-  COMPLETED
-}
-
-model AssetCategory {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  parentId String? @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  description String? @db.VarChar(500)
-  active Boolean @default(true)
-  parent AssetCategory? @relation("AssetCategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
-  children AssetCategory[] @relation("AssetCategoryTree")
-  types AssetType[]
-  assets Asset[]
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, active])
-}
-model AssetType {
-  id String @id @default(uuid()) @db.Uuid
-  categoryId String @db.Uuid
-  name String @db.VarChar(140)
-  code String @db.VarChar(40)
-  usefulLifeMonths Int?
-  depreciationMethod String? @db.VarChar(40)
-  category AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  assets Asset[]
-  @@unique([categoryId, code])
-}
-model AssetLocation {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  building String? @db.VarChar(120)
-  room String? @db.VarChar(80)
-  active Boolean @default(true)
-  assets Asset[]
-  assignments AssetAssignment[]
-  transfersFrom AssetTransfer[] @relation("TransferFrom")
-  transfersTo AssetTransfer[] @relation("TransferTo")
-  @@unique([schoolId, code])
-}
-model Asset {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  categoryId String @db.Uuid
-  typeId String? @db.Uuid
-  locationId String? @db.Uuid
-  assetNumber String @db.VarChar(80)
-  name String @db.VarChar(180)
-  description String? @db.Text
-  serialNumber String? @db.VarChar(120)
-  acquiredAt DateTime?
-  acquisitionCost Decimal? @db.Decimal(14,2)
-  currentValue Decimal? @db.Decimal(14,2)
-  status AssetStatus @default(ACTIVE)
-  condition AssetCondition @default(GOOD)
-  category AssetCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  type AssetType? @relation(fields: [typeId], references: [id], onDelete: SetNull)
-  location AssetLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  identifiers AssetIdentifier[]
-  assignments AssetAssignment[]
-  transfers AssetTransfer[]
-  maintenance AssetMaintenance[]
-  valuations AssetValuation[]
-  depreciation AssetDepreciation[]
-  disposal AssetDisposal?
-  audits AssetAudit[]
-  @@unique([schoolId, assetNumber])
-  @@unique([schoolId, serialNumber])
-  @@index([tenantId, schoolId, status])
-}
-model AssetIdentifier {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  type AssetIdentifierType
-  value String @db.VarChar(160)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  @@unique([type, value])
-}
-model AssetAssignment {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  assignedToId String? @db.Uuid
-  locationId String? @db.Uuid
-  assignedAt DateTime @default(now())
-  returnedAt DateTime?
-  notes String? @db.VarChar(500)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  location AssetLocation? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  @@index([assetId, returnedAt])
-}
-model AssetTransfer {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  fromLocationId String? @db.Uuid
-  toLocationId String? @db.Uuid
-  requestedById String? @db.Uuid
-  approvedById String? @db.Uuid
-  transferredAt DateTime?
-  reason String? @db.VarChar(500)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  fromLocation AssetLocation? @relation("TransferFrom", fields: [fromLocationId], references: [id], onDelete: SetNull)
-  toLocation AssetLocation? @relation("TransferTo", fields: [toLocationId], references: [id], onDelete: SetNull)
-}
-model AssetMaintenance {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  vendor String? @db.VarChar(180)
-  status MaintenanceStatus @default(OPEN)
-  scheduledAt DateTime?
-  completedAt DateTime?
-  estimatedCost Decimal? @db.Decimal(14,2)
-  actualCost Decimal? @db.Decimal(14,2)
-  notes String? @db.Text
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  records AssetMaintenanceRecord[]
-  @@index([assetId, status])
-}
-model AssetMaintenanceRecord {
-  id String @id @default(uuid()) @db.Uuid
-  maintenanceId String @db.Uuid
-  action String @db.VarChar(180)
-  cost Decimal? @db.Decimal(14,2)
-  performedAt DateTime @default(now())
-  notes String? @db.VarChar(500)
-  maintenance AssetMaintenance @relation(fields: [maintenanceId], references: [id], onDelete: Cascade)
-}
-model AssetValuation {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  value Decimal @db.Decimal(14,2)
-  valuedAt DateTime @default(now())
-  reason String? @db.VarChar(180)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-}
-model AssetDepreciation {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  periodStart DateTime
-  periodEnd DateTime
-  amount Decimal @db.Decimal(14,2)
-  bookValue Decimal @db.Decimal(14,2)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  @@unique([assetId, periodStart, periodEnd])
-}
-model AssetDisposal {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @unique @db.Uuid
-  status DisposalStatus @default(PENDING)
-  reason String @db.VarChar(500)
-  approvedById String? @db.Uuid
-  disposedAt DateTime?
-  proceeds Decimal? @db.Decimal(14,2)
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-}
-model AssetAudit {
-  id String @id @default(uuid()) @db.Uuid
-  assetId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  metadata Json
-  createdAt DateTime @default(now())
-  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  @@index([assetId, createdAt])
-}
-model InventoryCategory {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  items InventoryItem[]
-  @@unique([schoolId, code])
-}
-model UnitOfMeasure {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(80)
-  code String @db.VarChar(20)
-  items InventoryItem[]
-  @@unique([schoolId, code])
-}
-model InventoryItem {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  categoryId String @db.Uuid
-  unitId String @db.Uuid
-  sku String @db.VarChar(80)
-  name String @db.VarChar(180)
-  description String? @db.VarChar(500)
-  reorderLevel Decimal @default(0) @db.Decimal(14,3)
-  reorderQuantity Decimal @default(0) @db.Decimal(14,3)
-  active Boolean @default(true)
-  category InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  unit UnitOfMeasure @relation(fields: [unitId], references: [id], onDelete: Restrict)
-  batches InventoryBatch[]
-  movements StockMovement[]
-  issueItems StockIssueItem[]
-  returnItems StockReturnItem[]
-  transferItems StockTransferItem[]
-  adjustments StockAdjustmentItem[]
-  auditItems AssetInventoryAuditItem[]
-  @@unique([schoolId, sku])
-  @@index([tenantId, schoolId, active])
-}
-model Warehouse {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  active Boolean @default(true)
-  locations WarehouseLocation[]
-  purchaseOrders PurchaseOrder[]
-  receipts GoodsReceipt[]
-  @@unique([schoolId, code])
-}
-model WarehouseLocation {
-  id String @id @default(uuid()) @db.Uuid
-  warehouseId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  batches InventoryBatch[]
-  @@unique([warehouseId, code])
-}
-model Supplier {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(180)
-  code String @db.VarChar(40)
-  email String? @db.VarChar(320)
-  phone String? @db.VarChar(40)
-  active Boolean @default(true)
-  purchaseOrders PurchaseOrder[]
-  @@unique([schoolId, code])
-}
-model PurchaseOrder {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  supplierId String @db.Uuid
-  warehouseId String @db.Uuid
-  orderNumber String @db.VarChar(80)
-  status PurchaseOrderStatus @default(DRAFT)
-  orderedAt DateTime @default(now())
-  total Decimal @default(0) @db.Decimal(14,2)
-  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  items PurchaseOrderItem[]
-  receipts GoodsReceipt[]
-  @@unique([schoolId, orderNumber])
-}
-model PurchaseOrderItem {
-  id String @id @default(uuid()) @db.Uuid
-  purchaseOrderId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  unitPrice Decimal @db.Decimal(14,2)
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-}
-model GoodsReceipt {
-  id String @id @default(uuid()) @db.Uuid
-  purchaseOrderId String @db.Uuid
-  warehouseId String @db.Uuid
-  receiptNumber String @db.VarChar(80)
-  receivedAt DateTime @default(now())
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
-  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  items GoodsReceiptItem[]
-  @@unique([warehouseId, receiptNumber])
-}
-model GoodsReceiptItem {
-  id String @id @default(uuid()) @db.Uuid
-  receiptId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  batchId String? @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  receipt GoodsReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
-  batch InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
-}
-model InventoryBatch {
-  id String @id @default(uuid()) @db.Uuid
-  inventoryItemId String @db.Uuid
-  locationId String @db.Uuid
-  batchNumber String @db.VarChar(80)
-  quantity Decimal @default(0) @db.Decimal(14,3)
-  unitCost Decimal? @db.Decimal(14,2)
-  expiryDate DateTime?
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  location WarehouseLocation @relation(fields: [locationId], references: [id], onDelete: Restrict)
-  movements StockMovement[]
-  receipts GoodsReceiptItem[]
-  @@unique([locationId, batchNumber])
-}
-model StockMovement {
-  id String @id @default(uuid()) @db.Uuid
-  inventoryItemId String @db.Uuid
-  batchId String? @db.Uuid
-  type StockMovementType
-  quantity Decimal @db.Decimal(14,3)
-  referenceType String? @db.VarChar(60)
-  referenceId String? @db.Uuid
-  createdById String? @db.Uuid
-  createdAt DateTime @default(now())
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  batch InventoryBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
-  @@index([inventoryItemId, createdAt])
-}
-model StockIssue {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  issueNumber String @db.VarChar(80)
-  issuedToId String? @db.Uuid
-  issuedAt DateTime @default(now())
-  items StockIssueItem[]
-  @@unique([schoolId, issueNumber])
-}
-model StockIssueItem {
-  id String @id @default(uuid()) @db.Uuid
-  issueId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  issue StockIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-}
-model StockReturn {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  returnNumber String @db.VarChar(80)
-  returnedAt DateTime @default(now())
-  items StockReturnItem[]
-  @@unique([schoolId, returnNumber])
-}
-model StockReturnItem {
-  id String @id @default(uuid()) @db.Uuid
-  returnId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  return StockReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-}
-model StockTransfer {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  transferNumber String @db.VarChar(80)
-  fromWarehouseId String @db.Uuid
-  toWarehouseId String @db.Uuid
-  transferredAt DateTime @default(now())
-  items StockTransferItem[]
-  @@unique([schoolId, transferNumber])
-}
-model StockTransferItem {
-  id String @id @default(uuid()) @db.Uuid
-  transferId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-}
-model StockAdjustment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  adjustmentNumber String @db.VarChar(80)
-  reason String @db.VarChar(300)
-  createdAt DateTime @default(now())
-  items StockAdjustmentItem[]
-  @@unique([schoolId, adjustmentNumber])
-}
-model StockAdjustmentItem {
-  id String @id @default(uuid()) @db.Uuid
-  adjustmentId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  quantity Decimal @db.Decimal(14,3)
-  adjustment StockAdjustment @relation(fields: [adjustmentId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-}
-model AssetInventoryAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  warehouseId String @db.Uuid
-  status ReconciliationStatus @default(OPEN)
-  startedAt DateTime @default(now())
-  completedAt DateTime?
-  items AssetInventoryAuditItem[]
-}
-model AssetInventoryAuditItem {
-  id String @id @default(uuid()) @db.Uuid
-  auditId String @db.Uuid
-  inventoryItemId String @db.Uuid
-  expectedQuantity Decimal @db.Decimal(14,3)
-  actualQuantity Decimal? @db.Decimal(14,3)
-  notes String? @db.VarChar(300)
-  audit AssetInventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  @@unique([auditId, inventoryItemId])
-}
-model InventoryPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  schoolId String @unique @db.Uuid
-  allowNegativeStock Boolean @default(false)
-  autoReorder Boolean @default(true)
-  updatedAt DateTime @updatedAt
-}
-model InventoryEventAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum TransportStatus {
-  ACTIVE
-  INACTIVE
-  RETIRED
-}
-enum VehicleCondition {
-  NEW
-  GOOD
-  FAIR
-  POOR
-  DAMAGED
-}
-enum TransportTripStatus {
-  SCHEDULED
-  BOARDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
-}
-
-model VehicleType {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  passengerCapacity Int
-  status TransportStatus @default(ACTIVE)
-  vehicles Vehicle[]
-  @@unique([schoolId, code])
-}
-model Vehicle {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  typeId String @db.Uuid
-  vehicleNumber String @db.VarChar(60)
-  registrationNumber String @db.VarChar(80)
-  make String? @db.VarChar(80)
-  model String? @db.VarChar(80)
-  passengerCapacity Int
-  condition VehicleCondition @default(GOOD)
-  status TransportStatus @default(ACTIVE)
-  type VehicleType @relation(fields: [typeId], references: [id], onDelete: Restrict)
-  trips TransportTrip[]
-  fuelRecords FuelRecord[]
-  maintenanceRecords VehicleMaintenance[]
-  inspectionRecords VehicleInspection[]
-  @@unique([schoolId, registrationNumber])
-}
-model TransportRoute {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  status TransportStatus @default(ACTIVE)
-  stops RouteStop[]
-  trips TransportTrip[]
-  studentAssignments StudentTransportAssignment[]
-  @@unique([schoolId, code])
-}
-model RouteStop {
-  id String @id @default(uuid()) @db.Uuid
-  routeId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  sequence Int
-  assignments StudentTransportAssignment[]
-  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
-  @@unique([routeId, code])
-}
-model TransportDriver {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  licenseNumber String @db.VarChar(100)
-  licenseExpiry DateTime?
-  phone String? @db.VarChar(40)
-  status TransportStatus @default(ACTIVE)
-  trips TransportTrip[]
-  @@unique([schoolId, licenseNumber])
-}
-model TransportTrip {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  routeId String @db.Uuid
-  vehicleId String @db.Uuid
-  driverId String? @db.Uuid
-  scheduledAt DateTime
-  direction String @db.VarChar(20)
-  status TransportTripStatus @default(SCHEDULED)
-  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-  driver TransportDriver? @relation(fields: [driverId], references: [id], onDelete: SetNull)
-  @@index([schoolId, scheduledAt, status])
-}
-model StudentTransportAssignment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  studentId String @db.Uuid
-  routeId String @db.Uuid
-  stopId String @db.Uuid
-  active Boolean @default(true)
-  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Restrict)
-  stop RouteStop @relation(fields: [stopId], references: [id], onDelete: Restrict)
-  @@index([schoolId, studentId, active])
-}
-model FuelRecord {
-  id String @id @default(uuid()) @db.Uuid
-  vehicleId String @db.Uuid
-  quantity Decimal @db.Decimal(12,3)
-  unitCost Decimal? @db.Decimal(12,2)
-  fuelledAt DateTime @default(now())
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
-}
-model VehicleMaintenance {
-  id String @id @default(uuid()) @db.Uuid
-  vehicleId String @db.Uuid
-  type String @db.VarChar(100)
-  status String @db.VarChar(40)
-  scheduledAt DateTime?
-  completedAt DateTime?
-  cost Decimal? @db.Decimal(12,2)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-}
-model VehicleInspection {
-  id String @id @default(uuid()) @db.Uuid
-  vehicleId String @db.Uuid
-  inspectedAt DateTime @default(now())
-  expiresAt DateTime?
-  passed Boolean
-  notes String? @db.VarChar(500)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-}
-model GpsProvider {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(120)
-  providerKey String @db.VarChar(80)
-  active Boolean @default(false)
-}
-model GpsDevice {
-  id String @id @default(uuid()) @db.Uuid
-  providerId String @db.Uuid
-  vehicleId String @unique @db.Uuid
-  deviceKey String @db.VarChar(120)
-  active Boolean @default(true)
-}
-model TransportNotification {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  recipientId String @db.Uuid
-  type String @db.VarChar(80)
-  message String @db.VarChar(500)
-  createdAt DateTime @default(now())
-}
-model TransportAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-}
-
-enum BoardingStatus {
-  ACTIVE
-  INACTIVE
-  CLOSED
-}
-enum BedStatus {
-  AVAILABLE
-  OCCUPIED
-  RESERVED
-  OUT_OF_SERVICE
-}
-enum BoardingAllocationStatus {
-  ACTIVE
-  TRANSFERRED
-  CHECKED_OUT
-  CANCELLED
-}
-enum BoardingApplicationStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  WITHDRAWN
-}
-enum BoardingAttendanceStatus {
-  PRESENT
-  ABSENT
-  EXCUSED
-}
-model Dormitory {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String @db.VarChar(160)
-  code String @db.VarChar(40)
-  gender String @db.VarChar(30)
-  status BoardingStatus @default(ACTIVE)
-  buildings DormitoryBuilding[]
-  applications BoardingApplication[]
-  allocations BoardingAllocation[]
-  inspections HostelInspection[]
-  @@unique([schoolId, code])
-  @@index([tenantId, schoolId, status])
-}
-model DormitoryBuilding {
-  id String @id @default(uuid()) @db.Uuid
-  dormitoryId String @db.Uuid
-  name String @db.VarChar(120)
-  code String @db.VarChar(40)
-  floors DormitoryFloor[]
-  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
-  @@unique([dormitoryId, code])
-}
-model DormitoryFloor {
-  id String @id @default(uuid()) @db.Uuid
-  buildingId String @db.Uuid
-  name String @db.VarChar(80)
-  code String @db.VarChar(40)
-  floorNumber Int
-  rooms DormitoryRoom[]
-  building DormitoryBuilding @relation(fields: [buildingId], references: [id], onDelete: Cascade)
-  @@unique([buildingId, code])
-}
-model DormitoryRoom {
-  id String @id @default(uuid()) @db.Uuid
-  floorId String @db.Uuid
-  name String @db.VarChar(100)
-  code String @db.VarChar(40)
-  capacity Int
-  status BoardingStatus @default(ACTIVE)
-  beds DormitoryBed[]
-  floor DormitoryFloor @relation(fields: [floorId], references: [id], onDelete: Cascade)
-  @@unique([floorId, code])
-}
-model DormitoryBed {
-  id String @id @default(uuid()) @db.Uuid
-  roomId String @db.Uuid
-  name String @db.VarChar(80)
-  code String @db.VarChar(40)
-  status BedStatus @default(AVAILABLE)
-  room DormitoryRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  allocations BoardingAllocation[]
-  @@unique([roomId, code])
-}
-model BoardingApplication {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  dormitoryId String @db.Uuid
-  studentId String @db.Uuid
-  status BoardingApplicationStatus @default(PENDING)
-  appliedAt DateTime @default(now())
-  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Restrict)
-  @@index([schoolId, status, appliedAt])
-}
-model BoardingAllocation {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  dormitoryId String @db.Uuid
-  bedId String @db.Uuid
-  studentId String @db.Uuid
-  status BoardingAllocationStatus @default(ACTIVE)
-  startsAt DateTime @default(now())
-  endsAt DateTime?
-  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Restrict)
-  bed DormitoryBed @relation(fields: [bedId], references: [id], onDelete: Restrict)
-  attendance BoardingAttendance[]
-  @@index([schoolId, studentId, status])
-  @@index([bedId, status])
-}
-model BoardingAttendance {
-  id String @id @default(uuid()) @db.Uuid
-  allocationId String @db.Uuid
-  attendanceDate DateTime
-  status BoardingAttendanceStatus
-  allocation BoardingAllocation @relation(fields: [allocationId], references: [id], onDelete: Cascade)
-  @@unique([allocationId, attendanceDate])
-}
-model HostelInspection {
-  id String @id @default(uuid()) @db.Uuid
-  dormitoryId String @db.Uuid
-  inspectedAt DateTime @default(now())
-  score Int?
-  notes String? @db.VarChar(500)
-  dormitory Dormitory @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
-}
-model BoardingAudit {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum SecuritySeverity {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-enum SecurityEventStatus {
-  OPEN
-  ACKNOWLEDGED
-  RESOLVED
-  DISMISSED
-}
-enum SecurityJobStatus {
-  QUEUED
-  RUNNING
-  COMPLETED
-  FAILED
-  CANCELLED
-}
-model SecurityAuditLog {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  actorUserId String? @db.Uuid
-  action String @db.VarChar(100)
-  resourceType String @db.VarChar(100)
-  resourceId String? @db.Uuid
-  correlationId String? @db.VarChar(120)
-  requestId String? @db.VarChar(120)
-  ipHash String? @db.VarChar(128)
-  userAgentHash String? @db.VarChar(128)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-  @@index([actorUserId, createdAt])
-}
-model SecurityLoginAttempt {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  schoolId String? @db.Uuid
-  userId String? @db.Uuid
-  success Boolean
-  method String @db.VarChar(60)
-  failureCategory String? @db.VarChar(80)
-  ipHash String? @db.VarChar(128)
-  userAgentHash String? @db.VarChar(128)
-  deviceId String? @db.Uuid
-  createdAt DateTime @default(now())
-  @@index([userId, createdAt])
-  @@index([tenantId, createdAt])
-}
-model LoginSession {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  userId String @db.Uuid
-  deviceId String? @db.Uuid
-  startedAt DateTime @default(now())
-  lastSeenAt DateTime @default(now())
-  endedAt DateTime?
-  revokedAt DateTime?
-  @@index([userId, revokedAt])
-}
-model UserDevice {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  fingerprintHash String @db.VarChar(128)
-  label String? @db.VarChar(120)
-  lastSeenAt DateTime @default(now())
-  trusted Boolean @default(false)
-  createdAt DateTime @default(now())
-  @@unique([userId, fingerprintHash])
-}
-model SecurityEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  type String @db.VarChar(100)
-  severity SecuritySeverity
-  status SecurityEventStatus @default(OPEN)
-  source String @db.VarChar(80)
-  correlationId String? @db.VarChar(120)
-  metadata Json
-  createdAt DateTime @default(now())
-  resolvedAt DateTime?
-  @@index([tenantId, severity, status])
-}
-model SecurityAlert {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  eventId String? @db.Uuid
-  severity SecuritySeverity
-  title String @db.VarChar(180)
-  message String @db.VarChar(500)
-  acknowledgedAt DateTime?
-  resolvedAt DateTime?
-  createdAt DateTime @default(now())
-  @@index([tenantId, severity, createdAt])
-}
-model AccessEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  userId String? @db.Uuid
-  resourceType String @db.VarChar(100)
-  action String @db.VarChar(80)
-  allowed Boolean
-  reason String? @db.VarChar(180)
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-model DataChangeRecord {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  actorUserId String? @db.Uuid
-  entityType String @db.VarChar(100)
-  entityId String @db.Uuid
-  operation String @db.VarChar(30)
-  changedFields Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, entityType, entityId])
-}
-model BackupJob {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  status SecurityJobStatus @default(QUEUED)
-  startedAt DateTime?
-  completedAt DateTime?
-  errorCategory String? @db.VarChar(120)
-  createdAt DateTime @default(now())
-  artifacts BackupArtifact[]
-}
-model BackupArtifact {
-  id String @id @default(uuid()) @db.Uuid
-  backupJobId String @db.Uuid
-  storageKey String @db.VarChar(300)
-  checksum String? @db.VarChar(128)
-  sizeBytes BigInt?
-  createdAt DateTime @default(now())
-  backupJob BackupJob @relation(fields: [backupJobId], references: [id], onDelete: Cascade)
-  verifications BackupVerification[]
-}
-model BackupVerification {
-  id String @id @default(uuid()) @db.Uuid
-  artifactId String @db.Uuid
-  status SecurityJobStatus
-  verifiedAt DateTime @default(now())
-  notes String? @db.VarChar(300)
-  artifact BackupArtifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
-}
-model RestoreJob {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  artifactId String @db.Uuid
-  status SecurityJobStatus @default(QUEUED)
-  requestedById String? @db.Uuid
-  startedAt DateTime?
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-}
-model RetentionPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  entityType String @db.VarChar(100)
-  retentionDays Int
-  active Boolean @default(true)
-  updatedAt DateTime @updatedAt
-  @@unique([tenantId, entityType])
-}
-model PrivacyPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  name String @db.VarChar(160)
-  version String @db.VarChar(40)
-  active Boolean @default(true)
-  publishedAt DateTime?
-  @@unique([tenantId, version])
-}
-model SecurityIncident {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  title String @db.VarChar(180)
-  severity SecuritySeverity
-  status SecurityEventStatus @default(OPEN)
-  ownerId String? @db.Uuid
-  createdAt DateTime @default(now())
-  events SecurityIncidentEvent[]
-}
-model SecurityIncidentEvent {
-  id String @id @default(uuid()) @db.Uuid
-  incidentId String @db.Uuid
-  eventId String @db.Uuid
-  createdAt DateTime @default(now())
-  incident SecurityIncident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  @@unique([incidentId, eventId])
-}
-model SecurityConfiguration {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @unique @db.Uuid
-  mfaRequired Boolean @default(false)
-  sessionTimeoutMinutes Int @default(480)
-  maxFailedLogins Int @default(5)
-  updatedAt DateTime @updatedAt
-}
-model SecurityReport {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  requestedById String? @db.Uuid
-  reportType String @db.VarChar(100)
-  periodStart DateTime
-  periodEnd DateTime
-  generatedAt DateTime @default(now())
-  storageKey String? @db.VarChar(300)
-}
-
-enum AnalyticsFrequency {
-  DAILY
-  WEEKLY
-  MONTHLY
-  TERMLY
-  SEMESTER
-  ACADEMIC_YEAR
-  CUSTOM
-}
-enum AnalyticsStatus {
-  ACTIVE
-  INACTIVE
-  ARCHIVED
-}
-enum AnalyticsExecutionStatus {
-  QUEUED
-  RUNNING
-  COMPLETED
-  FAILED
-}
-model AnalyticsMetric {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  key String @db.VarChar(100)
-  name String @db.VarChar(160)
-  category String @db.VarChar(80)
-  unit String @db.VarChar(40)
-  source String @db.VarChar(120)
-  status AnalyticsStatus @default(ACTIVE)
-  @@unique([tenantId, schoolId, key])
-  @@index([tenantId, category])
-}
-model KPIDefinition {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  metricId String @db.Uuid
-  name String @db.VarChar(160)
-  description String? @db.VarChar(500)
-  formulaKey String @db.VarChar(120)
-  target Decimal? @db.Decimal(14,4)
-  frequency AnalyticsFrequency @default(MONTHLY)
-  effectiveFrom DateTime @default(now())
-  status AnalyticsStatus @default(ACTIVE)
-  @@unique([tenantId, schoolId, name])
-  @@index([metricId])
-}
-model KPIValue {
-  id String @id @default(uuid()) @db.Uuid
-  kpiId String @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  periodStart DateTime
-  periodEnd DateTime
-  value Decimal @db.Decimal(18,6)
-  comparisonValue Decimal? @db.Decimal(18,6)
-  calculatedAt DateTime @default(now())
-  @@unique([kpiId, periodStart, periodEnd])
-  @@index([tenantId, schoolId, periodEnd])
-}
-model AnalyticsDashboard {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  name String @db.VarChar(160)
-  description String? @db.VarChar(500)
-  status AnalyticsStatus @default(ACTIVE)
-  @@unique([tenantId, schoolId, name])
-}
-model DashboardWidget {
-  id String @id @default(uuid()) @db.Uuid
-  dashboardId String @db.Uuid
-  title String @db.VarChar(160)
-  widgetType String @db.VarChar(50)
-  metricKey String? @db.VarChar(100)
-  position Json
-  config Json
-}
-model AnalyticsSnapshot {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  snapshotDate DateTime
-  dimension String @db.VarChar(80)
-  payload Json
-  createdAt DateTime @default(now())
-  @@unique([tenantId, schoolId, snapshotDate, dimension])
-}
-model AnalyticsCache {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  cacheKey String @db.VarChar(180)
-  payload Json
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  @@unique([tenantId, schoolId, cacheKey])
-}
-model AnalyticsExport {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  format String @db.VarChar(20)
-  queryDefinition Json
-  status AnalyticsExecutionStatus @default(QUEUED)
-  storageKey String? @db.VarChar(300)
-  requestedById String? @db.Uuid
-  createdAt DateTime @default(now())
-}
-model AnalyticsPermission {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  roleId String @db.Uuid
-  scope String @db.VarChar(80)
-  metricKey String? @db.VarChar(100)
-  canView Boolean @default(true)
-  canExport Boolean @default(false)
-  @@unique([tenantId, roleId, scope, metricKey])
-}
-
-enum IdentityStatus {
-  ACTIVE
-  SUSPENDED
-  REVOKED
-  EXPIRED
-}
-enum IdentityProviderKind {
-  QR
-  BARCODE
-  RFID
-  BIOMETRIC
-  DEVICE
-}
-enum IdentityVerificationStatus {
-  SUCCESS
-  FAILURE
-  LOCKED
-  EXPIRED
-}
-enum IdentityConsentStatus {
-  REQUESTED
-  GRANTED
-  DENIED
-  WITHDRAWN
-}
-model SmartIdentity {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  subjectType String @db.VarChar(40)
-  subjectId String @db.Uuid
-  displayName String @db.VarChar(180)
-  status IdentityStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  identifiers SmartIdentityIdentifier[]
-  devices SmartIdentityDevice[]
-  consents SmartIdentityConsent[]
-  verifications SmartIdentityVerification[]
-  @@index([tenantId, schoolId, subjectType, subjectId])
-}
-model SmartIdentityIdentifier {
-  id String @id @default(uuid()) @db.Uuid
-  identityId String @db.Uuid
-  provider IdentityProviderKind
-  valueHash String @db.VarChar(128)
-  label String? @db.VarChar(100)
-  status IdentityStatus @default(ACTIVE)
-  issuedAt DateTime @default(now())
-  expiresAt DateTime?
-  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
-  @@unique([identityId, provider, valueHash])
-  @@index([provider, valueHash])
-}
-model SmartIdentityDevice {
-  id String @id @default(uuid()) @db.Uuid
-  identityId String @db.Uuid
-  deviceHash String @db.VarChar(128)
-  label String? @db.VarChar(120)
-  trusted Boolean @default(false)
-  lastSeenAt DateTime @default(now())
-  revokedAt DateTime?
-  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
-  @@unique([identityId, deviceHash])
-}
-model SmartIdentityVerification {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  identityId String? @db.Uuid
-  provider IdentityProviderKind
-  status IdentityVerificationStatus
-  reasonCode String? @db.VarChar(80)
-  challengeHash String? @db.VarChar(128)
-  deviceHash String? @db.VarChar(128)
-  occurredAt DateTime @default(now())
-  identity SmartIdentity? @relation(fields: [identityId], references: [id], onDelete: SetNull)
-  @@index([tenantId, schoolId, occurredAt])
-}
-model SmartIdentityConsent {
-  id String @id @default(uuid()) @db.Uuid
-  identityId String @db.Uuid
-  policyKey String @db.VarChar(100)
-  status IdentityConsentStatus @default(REQUESTED)
-  grantedAt DateTime?
-  withdrawnAt DateTime?
-  version String @db.VarChar(40)
-  identity SmartIdentity @relation(fields: [identityId], references: [id], onDelete: Cascade)
-  @@unique([identityId, policyKey, version])
-}
-model SmartIdentityPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  key String @db.VarChar(100)
-  version String @db.VarChar(40)
-  rules Json
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  @@unique([tenantId, schoolId, key, version])
-}
-model SmartIdentityOfflineEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  deviceHash String @db.VarChar(128)
-  eventKey String @db.VarChar(120)
-  payload Json
-  occurredAt DateTime
-  receivedAt DateTime @default(now())
-  processedAt DateTime?
-  @@unique([tenantId, deviceHash, eventKey])
-}
-model SmartIdentityAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum IoTDeviceStatus {
-  ONLINE
-  OFFLINE
-  DEGRADED
-  RETIRED
-}
-enum IoTCommandStatus {
-  QUEUED
-  SENT
-  ACKNOWLEDGED
-  FAILED
-  EXPIRED
-}
-enum IoTAlertSeverity {
-  INFO
-  WARNING
-  CRITICAL
-}
-model IoTGateway {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  name String @db.VarChar(160)
-  gatewayKeyHash String @db.VarChar(128)
-  status IoTDeviceStatus @default(OFFLINE)
-  lastSeenAt DateTime?
-  firmwareVersion String? @db.VarChar(60)
-  createdAt DateTime @default(now())
-  devices IoTDevice[]
-  @@unique([tenantId, gatewayKeyHash])
-  @@index([tenantId, schoolId, status])
-}
-model IoTDevice {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  gatewayId String? @db.Uuid
-  name String @db.VarChar(160)
-  deviceType String @db.VarChar(80)
-  deviceKeyHash String @db.VarChar(128)
-  status IoTDeviceStatus @default(OFFLINE)
-  location String? @db.VarChar(180)
-  capabilities Json
-  lastSeenAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  gateway IoTGateway? @relation(fields: [gatewayId], references: [id], onDelete: SetNull)
-  telemetry IoTTelemetry[]
-  commands IoTCommand[]
-  @@unique([tenantId, deviceKeyHash])
-  @@index([tenantId, schoolId, deviceType, status])
-}
-model IoTTelemetry {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  deviceId String @db.Uuid
-  metricKey String @db.VarChar(100)
-  value Decimal @db.Decimal(18,6)
-  unit String @db.VarChar(30)
-  recordedAt DateTime
-  receivedAt DateTime @default(now())
-  device IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  @@index([tenantId, schoolId, metricKey, recordedAt])
-}
-model IoTCommand {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  deviceId String @db.Uuid
-  commandKey String @db.VarChar(100)
-  payload Json
-  idempotencyKey String @db.VarChar(120)
-  status IoTCommandStatus @default(QUEUED)
-  requestedById String? @db.Uuid
-  requestedAt DateTime @default(now())
-  acknowledgedAt DateTime?
-  device IoTDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, idempotencyKey])
-  @@index([tenantId, schoolId, status, requestedAt])
-}
-model IoTDeviceRule {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  name String @db.VarChar(160)
-  metricKey String @db.VarChar(100)
-  condition Json
-  action Json
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, active])
-}
-model IoTAlert {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  deviceId String? @db.Uuid
-  title String @db.VarChar(180)
-  message String @db.VarChar(500)
-  severity IoTAlertSeverity
-  acknowledgedAt DateTime?
-  resolvedAt DateTime?
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, severity, createdAt])
-}
-model IoTFirmwareRelease {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  deviceType String @db.VarChar(80)
-  version String @db.VarChar(60)
-  checksum String @db.VarChar(128)
-  artifactKey String @db.VarChar(300)
-  releasedAt DateTime @default(now())
-  @@unique([tenantId, deviceType, version])
-}
-model IoTDevicePermission {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  roleId String @db.Uuid
-  scope String @db.VarChar(80)
-  canView Boolean @default(true)
-  canCommand Boolean @default(false)
-  @@unique([tenantId, roleId, scope])
-}
-model IoTOfflineEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  deviceKeyHash String @db.VarChar(128)
-  eventKey String @db.VarChar(120)
-  payload Json
-  occurredAt DateTime
-  receivedAt DateTime @default(now())
-  processedAt DateTime?
-  @@unique([tenantId, deviceKeyHash, eventKey])
-}
-model IoTAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String? @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, schoolId, createdAt])
-}
-
-enum TenantLifecycleStatus {
-  ACTIVE
-  SUSPENDED
-  PROVISIONING
-  DEACTIVATED
-}
-enum TenantMemberStatus {
-  INVITED
-  ACTIVE
-  SUSPENDED
-  REMOVED
-}
-model TenantMembership {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  roleId String @db.Uuid
-  status TenantMemberStatus @default(INVITED)
-  joinedAt DateTime?
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, userId])
-  @@index([tenantId, status])
-}
-model TenantConfiguration {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  key String @db.VarChar(120)
-  value Json
-  updatedAt DateTime @updatedAt
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, key])
-}
-model TenantFeatureFlag {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  key String @db.VarChar(120)
-  enabled Boolean @default(false)
-  config Json?
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, key])
-}
-model TenantQuota {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  key String @db.VarChar(100)
-  limitValue Int
-  usedValue Int @default(0)
-  resetAt DateTime?
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, key])
-}
-model TenantUsage {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  metricKey String @db.VarChar(100)
-  periodStart DateTime
-  periodEnd DateTime
-  value Int @default(0)
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, metricKey, periodStart])
-}
-model TenantSubscription {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  planKey String @db.VarChar(60)
-  status String @db.VarChar(40)
-  renewsAt DateTime?
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  @@index([tenantId, status])
-}
-model TenantAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum BillingSubscriptionStatus {
-  TRIALING
-  ACTIVE
-  PAST_DUE
-  CANCELED
-  INCOMPLETE
-}
-enum BillingInvoiceStatus {
-  DRAFT
-  OPEN
-  PAID
-  VOID
-  UNCOLLECTIBLE
-}
-model BillingPlan {
-  id String @id @default(uuid()) @db.Uuid
-  key String @unique @db.VarChar(60)
-  name String @db.VarChar(120)
-  description String? @db.VarChar(300)
-  currency String @db.Char(3)
-  amountMinor Int
-  interval String @db.VarChar(20)
-  entitlements Json
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  subscriptions BillingSubscription[]
-}
-model BillingSubscription {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  planId String @db.Uuid
-  status BillingSubscriptionStatus @default(TRIALING)
-  provider String @db.VarChar(40)
-  providerRefHash String? @db.VarChar(128)
-  currentPeriodStart DateTime
-  currentPeriodEnd DateTime
-  cancelAtPeriodEnd Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  plan BillingPlan @relation(fields: [planId], references: [id])
-  invoices BillingInvoice[]
-  @@index([tenantId, status])
-}
-model BillingInvoice {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  subscriptionId String? @db.Uuid
-  number String @db.VarChar(60)
-  status BillingInvoiceStatus @default(DRAFT)
-  currency String @db.Char(3)
-  subtotalMinor Int
-  taxMinor Int @default(0)
-  totalMinor Int
-  dueAt DateTime?
-  paidAt DateTime?
-  issuedAt DateTime @default(now())
-  subscription BillingSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
-  payments BillingPayment[]
-  @@unique([tenantId, number])
-  @@index([tenantId, status, issuedAt])
-}
-model BillingPayment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  invoiceId String @db.Uuid
-  amountMinor Int
-  currency String @db.Char(3)
-  status String @db.VarChar(30)
-  provider String @db.VarChar(40)
-  providerRefHash String? @db.VarChar(128)
-  paidAt DateTime?
-  createdAt DateTime @default(now())
-  invoice BillingInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  @@index([tenantId, createdAt])
-}
-model BillingUsage {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  metricKey String @db.VarChar(100)
-  periodStart DateTime
-  periodEnd DateTime
-  quantity Int @default(0)
-  includedQuantity Int @default(0)
-  @@unique([tenantId, metricKey, periodStart])
-}
-model BillingWebhookEvent {
-  id String @id @default(uuid()) @db.Uuid
-  provider String @db.VarChar(40)
-  eventKey String @db.VarChar(160)
-  payloadHash String @db.VarChar(128)
-  processedAt DateTime?
-  receivedAt DateTime @default(now())
-  @@unique([provider, eventKey])
-}
-model BillingAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
- enum PlatformServiceStatus {
-  OPERATIONAL
-  DEGRADED
-  OUTAGE
-  MAINTENANCE
-}
-enum PlatformIncidentStatus {
-  OPEN
-  INVESTIGATING
-  MITIGATED
-  RESOLVED
-}
-model PlatformService {
-  id String @id @default(uuid()) @db.Uuid
-  key String @unique @db.VarChar(80)
-  name String @db.VarChar(140)
-  status PlatformServiceStatus @default(OPERATIONAL)
-  latencyMs Int @default(0)
-  uptimePercent Decimal @db.Decimal(5,2)
-  checkedAt DateTime @default(now())
-  incidents PlatformIncident[]
-}
-model PlatformIncident {
-  id String @id @default(uuid()) @db.Uuid
-  serviceId String @db.Uuid
-  title String @db.VarChar(180)
-  status PlatformIncidentStatus @default(OPEN)
-  severity String @db.VarChar(30)
-  summary String @db.VarChar(500)
-  startedAt DateTime @default(now())
-  resolvedAt DateTime?
-  service PlatformService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
-  @@index([status, startedAt])
-}
-model PlatformMaintenanceWindow {
-  id String @id @default(uuid()) @db.Uuid
-  title String @db.VarChar(180)
-  scope String @db.VarChar(120)
-  startsAt DateTime
-  endsAt DateTime
-  status String @db.VarChar(30)
-  createdAt DateTime @default(now())
-}
-model PlatformBackup {
-  id String @id @default(uuid()) @db.Uuid
-  scope String @db.VarChar(120)
-  status String @db.VarChar(30)
-  sizeBytes BigInt
-  checksum String @db.VarChar(128)
-  completedAt DateTime?
-  createdAt DateTime @default(now())
-}
-model PlatformIntegration {
-  id String @id @default(uuid()) @db.Uuid
-  providerKey String @db.VarChar(80)
-  name String @db.VarChar(140)
-  status String @db.VarChar(30)
-  secretRefHash String? @db.VarChar(128)
-  lastCheckedAt DateTime @default(now())
-  @@unique([providerKey, name])
-}
-model PlatformSecurityEvent {
-  id String @id @default(uuid()) @db.Uuid
-  actorId String? @db.Uuid
-  eventType String @db.VarChar(100)
-  severity String @db.VarChar(30)
-  ipHash String? @db.VarChar(128)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([severity, createdAt])
-}
-model PlatformAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([createdAt])
-}
-
-enum SecurityPolicyStatus {
-  DRAFT
-  ACTIVE
-  RETIRED
-}
-enum SecurityRiskLevel {
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-model SecurityPolicy {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  key String @db.VarChar(100)
-  version String @db.VarChar(40)
-  status SecurityPolicyStatus @default(DRAFT)
-  rules Json
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  @@unique([tenantId, key, version])
-  @@index([tenantId, status])
-}
-model SecuritySession {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  userId String @db.Uuid
-  sessionHash String @unique @db.VarChar(128)
-  deviceHash String? @db.VarChar(128)
-  ipHash String? @db.VarChar(128)
-  lastSeenAt DateTime @default(now())
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime @default(now())
-  @@index([tenantId, userId, revokedAt])
-}
-model SecurityRiskEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  userId String? @db.Uuid
-  eventType String @db.VarChar(100)
-  level SecurityRiskLevel
-  score Int
-  ipHash String? @db.VarChar(128)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, level, createdAt])
-}
-model AdvancedSecurityAlert {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  riskEventId String? @db.Uuid
-  title String @db.VarChar(180)
-  severity SecurityRiskLevel
-  status String @db.VarChar(30)
-  summary String @db.VarChar(500)
-  acknowledgedAt DateTime?
-  resolvedAt DateTime?
-  createdAt DateTime @default(now())
-  @@index([tenantId, severity, status, createdAt])
-}
-model SecurityComplianceControl {
-  id String @id @default(uuid()) @db.Uuid
-  framework String @db.VarChar(80)
-  controlKey String @db.VarChar(100)
-  title String @db.VarChar(180)
-  status String @db.VarChar(30)
-  ownerRole String @db.VarChar(100)
-  evidenceRef String? @db.VarChar(300)
-  reviewedAt DateTime?
-  @@unique([framework, controlKey])
-}
-model SecurityPrivacyRequest {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  subjectId String @db.Uuid
-  requestType String @db.VarChar(40)
-  status String @db.VarChar(30)
-  requestedAt DateTime @default(now())
-  completedAt DateTime?
-  @@index([tenantId, status, requestedAt])
-}
-model SecurityAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum AnalyticsEventType {
-  PAGE_VIEW
-  DOMAIN_EVENT
-  USAGE
-  SYSTEM
-}
-enum AnalyticsWidgetType {
-  KPI
-  LINE
-  BAR
-  TABLE
-  FUNNEL
-}
-model AnalyticsEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  actorId String? @db.Uuid
-  eventType AnalyticsEventType
-  metricKey String @db.VarChar(120)
-  value Decimal? @db.Decimal(18,6)
-  dimensions Json
-  occurredAt DateTime
-  receivedAt DateTime @default(now())
-  idempotencyKey String? @db.VarChar(160)
-  @@unique([tenantId, idempotencyKey])
-  @@index([tenantId, metricKey, occurredAt])
-}
-model AnalyticsMetricSnapshot {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  metricKey String @db.VarChar(120)
-  periodStart DateTime
-  periodEnd DateTime
-  value Decimal @db.Decimal(18,6)
-  dimensions Json
-  createdAt DateTime @default(now())
-  @@unique([tenantId, metricKey, periodStart, periodEnd])
-}
-model AnalyticsKpiDefinition {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  key String @db.VarChar(100)
-  label String @db.VarChar(160)
-  formula Json
-  target Decimal? @db.Decimal(18,6)
-  unit String? @db.VarChar(40)
-  active Boolean @default(true)
-  @@unique([tenantId, key])
-}
-model AdvancedAnalyticsDashboard {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  name String @db.VarChar(160)
-  description String? @db.VarChar(300)
-  visibility String @db.VarChar(30)
-  createdById String? @db.Uuid
-  createdAt DateTime @default(now())
-  widgets AdvancedAnalyticsWidget[]
-  @@index([tenantId, visibility])
-  }
-  model AdvancedAnalyticsWidget {
-  id String @id @default(uuid()) @db.Uuid
-  dashboardId String @db.Uuid
-  title String @db.VarChar(160)
-  widgetType AnalyticsWidgetType
-  queryKey String @db.VarChar(120)
-  position Json
-  config Json
-  dashboard AdvancedAnalyticsDashboard @relation(fields: [dashboardId], references: [id], onDelete: Cascade)
-}
-model AnalyticsReport {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  name String @db.VarChar(180)
-  queryKey String @db.VarChar(120)
-  filters Json
-  status String @db.VarChar(30)
-  lastRunAt DateTime?
-  createdAt DateTime @default(now())
-  @@index([tenantId, status])
-}
-model AdvancedAnalyticsExport {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  reportId String? @db.Uuid
-  format String @db.VarChar(20)
-  status String @db.VarChar(30)
-  artifactRef String? @db.VarChar(300)
-  requestedById String? @db.Uuid
-  createdAt DateTime @default(now())
-}
-model AnalyticsAlert {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  metricKey String @db.VarChar(120)
-  threshold Json
-  severity String @db.VarChar(30)
-  status String @db.VarChar(30)
-  triggeredAt DateTime?
-  acknowledgedAt DateTime?
-  @@index([tenantId, status])
-}
-model AnalyticsAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String? @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum AiAcademicRequestStatus {
-  QUEUED
-  COMPLETED
-  REFUSED
-  FAILED
-}
-model AiAcademicPromptVersion {
-  id String @id @default(uuid()) @db.Uuid
-  key String @db.VarChar(100)
-  version String @db.VarChar(40)
-  systemPromptHash String @db.VarChar(128)
-  active Boolean @default(false)
-  createdAt DateTime @default(now())
-  @@unique([key, version])
-}
-model AiAcademicConversation {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  roleKey String @db.VarChar(40)
-  title String? @db.VarChar(180)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  requests AiAcademicRequest[]
-  @@index([tenantId, userId, updatedAt])
-}
-model AiAcademicRequest {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  conversationId String? @db.Uuid
-  userId String @db.Uuid
-  mode String @db.VarChar(60)
-  inputRedacted String @db.VarChar(4000)
-  responseRedacted String? @db.VarChar(8000)
-  evidence Json
-  status AiAcademicRequestStatus @default(QUEUED)
-  riskFlags Json
-  promptVersion String @db.VarChar(40)
-  inputTokens Int @default(0)
-  outputTokens Int @default(0)
-  createdAt DateTime @default(now())
-  completedAt DateTime?
-  conversation AiAcademicConversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
-  @@index([tenantId, userId, createdAt])
-}
-model AiAcademicFeedback {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  requestId String @db.Uuid
-  userId String @db.Uuid
-  rating Int
-  comment String? @db.VarChar(1000)
-  createdAt DateTime @default(now())
-  @@unique([requestId, userId])
-}
-model AiAcademicUsage {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  periodStart DateTime
-  periodEnd DateTime
-  requestCount Int @default(0)
-  inputTokens Int @default(0)
-  outputTokens Int @default(0)
-  @@unique([tenantId, userId, periodStart])
-}
-model AiAcademicSafetyEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String?
-  eventType String @db.VarChar(100)
-  severity String @db.VarChar(30)
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum AiReportStatus {
-  DRAFT
-  GENERATING
-  READY
-  NEEDS_REVIEW
-  APPROVED
-  PUBLISHED
-  FAILED
-}
-model AiReportTemplate {
-  id String @id @default(uuid()) @db.Uuid
-  key String @unique @db.VarChar(100)
-  name String @db.VarChar(180)
-  version String @db.VarChar(40)
-  sections Json
-  active Boolean @default(false)
-  createdAt DateTime @default(now())
-  reports AiReport[]
-}
-model AiReport {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  templateId String @db.Uuid
-  title String @db.VarChar(220)
-  periodStart DateTime
-  periodEnd DateTime
-  status AiReportStatus @default(DRAFT)
-  createdById String? @db.Uuid
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  template AiReportTemplate @relation(fields: [templateId], references: [id])
-  sections AiReportSection[]
-  evidence AiReportEvidence[]
-  versions AiReportVersion[]
-  reviews AiReportReview[]
-  exports AiReportExport[]
-  @@index([tenantId, status, updatedAt])
-}
-model AiReportSection {
-  id String @id @default(uuid()) @db.Uuid
-  reportId String @db.Uuid
-  key String @db.VarChar(100)
-  title String @db.VarChar(180)
-  narrative String @db.VarChar(6000)
-  confidence Decimal? @db.Decimal(5,2)
-  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  @@unique([reportId, key])
-}
-model AiReportEvidence {
-  id String @id @default(uuid()) @db.Uuid
-  reportId String @db.Uuid
-  sourceType String @db.VarChar(80)
-  sourceRef String @db.VarChar(180)
-  label String @db.VarChar(220)
-  value Json
-  capturedAt DateTime @default(now())
-  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  @@index([reportId, sourceType])
-}
-model AiReportVersion {
-  id String @id @default(uuid()) @db.Uuid
-  reportId String @db.Uuid
-  version Int
-  snapshot Json
-  approvedAt DateTime?
-  approvedById String? @db.Uuid
+model DatabaseSentinel {
+  id        Int      @id @default(1)
   createdAt DateTime @default(now())
-  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  @@unique([reportId, version])
-}
-model AiReportReview {
-  id String @id @default(uuid()) @db.Uuid
-  reportId String @db.Uuid
-  reviewerId String @db.Uuid
-  decision String @db.VarChar(30)
-  comments String? @db.VarChar(2000)
-  createdAt DateTime @default(now())
-  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-  @@index([reportId, createdAt])
-}
-model AiReportExport {
-  id String @id @default(uuid()) @db.Uuid
-  reportId String @db.Uuid
-  format String @db.VarChar(20)
-  status String @db.VarChar(30)
-  artifactRef String? @db.VarChar(300)
-  requestedById String? @db.Uuid
-  createdAt DateTime @default(now())
-  report AiReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
-}
-model AiReportAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum AiChatMessageRole {
-  USER
-  ASSISTANT
-  TOOL
-  SYSTEM
-}
-model AiChatConversation {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  ownerId String @db.Uuid
-  title String? @db.VarChar(180)
-  roleKey String @db.VarChar(40)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  messages AiChatMessage[]
-  @@index([tenantId, ownerId, updatedAt])
-}
-model AiChatMessage {
-  id String @id @default(uuid()) @db.Uuid
-  conversationId String @db.Uuid
-  tenantId String @db.Uuid
-  role AiChatMessageRole
-  contentRedacted String @db.VarChar(12000)
-  intentKey String? @db.VarChar(100)
-  citations Json
-  safetyFlags Json
-  createdAt DateTime @default(now())
-  conversation AiChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  @@index([tenantId, conversationId, createdAt])
-}
-model AiChatToolCall {
-  id String @id @default(uuid()) @db.Uuid
-  messageId String @db.Uuid
-  tenantId String @db.Uuid
-  toolKey String @db.VarChar(100)
-  inputRedacted Json
-  resultRedacted Json
-  status String @db.VarChar(30)
-  createdAt DateTime @default(now())
-  @@index([tenantId, messageId])
-}
-model AiChatFeedback {
-  id String @id @default(uuid()) @db.Uuid
-  messageId String @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  rating Int
-  comment String? @db.VarChar(1000)
-  createdAt DateTime @default(now())
-  @@unique([messageId, userId])
-}
-model AiChatUsage {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  userId String @db.Uuid
-  periodStart DateTime
-  periodEnd DateTime
-  messageCount Int @default(0)
-  inputTokens Int @default(0)
-  outputTokens Int @default(0)
-  @@unique([tenantId, userId, periodStart])
-}
-model AiChatAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityType String @db.VarChar(80)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum IntegrationConnectionStatus {
-  DISCONNECTED
-  CONFIGURED
-  HEALTHY
-  DEGRADED
-  ERROR
-}
-model IntegrationConnection {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  providerKey String @db.VarChar(100)
-  displayName String @db.VarChar(180)
-  category String @db.VarChar(60)
-  status IntegrationConnectionStatus @default(DISCONNECTED)
-  enabled Boolean @default(false)
-  credentialRef String? @db.VarChar(240)
-  credentialLast4 String? @db.VarChar(8)
-  configRedacted Json
-  lastHealthCheckAt DateTime?
-  lastSyncAt DateTime?
-  lastErrorCode String? @db.VarChar(100)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  jobs IntegrationSyncJob[]
-  auditEvents IntegrationAuditEvent[]
-  @@unique([tenantId, providerKey])
-  @@index([tenantId, status])
-}
-model IntegrationSyncJob {
-  id String @id @default(uuid()) @db.Uuid
-  integrationId String @db.Uuid
-  tenantId String @db.Uuid
-  operation String @db.VarChar(80)
-  status String @db.VarChar(30)
-  idempotencyKey String @db.VarChar(180)
-  attemptCount Int @default(0)
-  resultRedacted Json
-  errorCode String? @db.VarChar(100)
-  createdAt DateTime @default(now())
-  completedAt DateTime?
-  integration IntegrationConnection @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, idempotencyKey])
-  @@index([tenantId, createdAt])
-}
-model IntegrationAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  integrationId String @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  metadata Json
-  createdAt DateTime @default(now())
-  integration IntegrationConnection @relation(fields: [integrationId], references: [id], onDelete: Cascade)
-  @@index([tenantId, createdAt])
-}
-
-enum BiometricDeviceStatus {
-  PENDING
-  ACTIVE
-  OFFLINE
-  DISABLED
-}
-model BiometricDevice {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  deviceKey String @db.VarChar(120)
-  displayName String @db.VarChar(180)
-  location String? @db.VarChar(180)
-  status BiometricDeviceStatus @default(PENDING)
-  capabilities Json
-  lastSeenAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  events BiometricVerificationEvent[]
-  @@unique([tenantId, deviceKey])
-  @@index([tenantId, status])
-}
-model BiometricVerificationEvent {
-  id String @id @default(uuid()) @db.Uuid
-  deviceId String @db.Uuid
-  tenantId String @db.Uuid
-  subjectRef String @db.VarChar(180)
-  method String @db.VarChar(40)
-  outcome String @db.VarChar(30)
-  occurredAt DateTime
-  idempotencyKey String @db.VarChar(180)
-  metadataRedacted Json
-  createdAt DateTime @default(now())
-  device BiometricDevice @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  @@unique([tenantId, idempotencyKey])
-  @@index([tenantId, occurredAt])
-}
-model BiometricAuditEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  actorId String? @db.Uuid
-  action String @db.VarChar(100)
-  entityId String? @db.Uuid
-  metadata Json
-  createdAt DateTime @default(now())
-  @@index([tenantId, createdAt])
-}
-
-enum TimetableStatus {
-  DRAFT
-  REVIEW
-  PUBLISHED
-  LOCKED
-  ARCHIVED
-}
-
-enum TimetableConflictSeverity {
-  HARD
-  SOFT
-}
-
-enum TimetableEntryKind {
-  LESSON
-  BREAK
-  FREE
-  DOUBLE
-  PRACTICAL
-  LABORATORY
-}
-
-model Timetable {
-  id               String                 @id @default(uuid()) @db.Uuid
-  tenantId         String                 @db.Uuid
-  schoolId         String                 @db.Uuid
-  academicPeriodId String                 @db.Uuid
-  name             String                 @db.VarChar(160)
-  academicYear     String                 @db.VarChar(40)
-  status           TimetableStatus        @default(DRAFT)
-  version          Int                    @default(1)
-  publishedAt      DateTime?
-  lockedAt         DateTime?
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-  academicPeriod   AcademicPeriod         @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
-  versions         TimetableVersion[]
-  entries          ScheduleEntry[]
-  slots            TimeSlot[]
-  constraints      SchedulingConstraint[]
-  conflicts        SchedulingConflict[]
-  substitutions    ScheduleSubstitution[]
-  audits           TimetableAudit[]
-
-  @@unique([schoolId, academicPeriodId, name])
-  @@index([tenantId, schoolId, status])
-}
-
-model TimetableVersion {
-  id          String    @id @default(uuid()) @db.Uuid
-  timetableId String    @db.Uuid
-  number      Int
-  snapshot    Json
-  createdBy   String?   @db.Uuid
-  createdAt   DateTime  @default(now())
-  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-
-  @@unique([timetableId, number])
-}
-
-model TimeSlot {
-  id          String          @id @default(uuid()) @db.Uuid
-  timetableId String          @db.Uuid
-  weekday     Int
-  startTime   String          @db.VarChar(5)
-  endTime     String          @db.VarChar(5)
-  label       String          @db.VarChar(80)
-  isBreak     Boolean         @default(false)
-  timetable   Timetable       @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-  entries     ScheduleEntry[]
-
-  @@unique([timetableId, weekday, startTime, endTime])
-  @@index([timetableId, weekday, startTime])
-}
-
-model ScheduleEntry {
-  id            String                 @id @default(uuid()) @db.Uuid
-  tenantId      String                 @db.Uuid
-  schoolId      String                 @db.Uuid
-  timetableId   String                 @db.Uuid
-  timeSlotId    String                 @db.Uuid
-  classId       String?                @db.Uuid
-  teacherId     String?                @db.Uuid
-  classroomId   String?                @db.Uuid
-  subjectCode   String                 @db.VarChar(60)
-  kind          TimetableEntryKind     @default(LESSON)
-  duration      Int                    @default(1)
-  notes         String?                @db.VarChar(500)
-  timetable     Timetable              @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-  timeSlot      TimeSlot               @relation(fields: [timeSlotId], references: [id], onDelete: Restrict)
-  class         Class?                 @relation(fields: [classId], references: [id], onDelete: Restrict)
-  teacher       Teacher?               @relation(fields: [teacherId], references: [id], onDelete: Restrict)
-  classroom     Classroom?             @relation(fields: [classroomId], references: [id], onDelete: Restrict)
-  conflicts     SchedulingConflict[]
-  substitutions ScheduleSubstitution[]
-
-  @@index([tenantId, schoolId, timetableId, timeSlotId])
-  @@index([teacherId, timeSlotId])
-  @@index([classId, timeSlotId])
-  @@index([classroomId, timeSlotId])
-}
-
-model SchedulingConstraint {
-  id            String                    @id @default(uuid()) @db.Uuid
-  tenantId      String                    @db.Uuid
-  schoolId      String                    @db.Uuid
-  timetableId   String                    @db.Uuid
-  code          String                    @db.VarChar(80)
-  severity      TimetableConflictSeverity
-  enabled       Boolean                   @default(true)
-  configuration Json
-  timetable     Timetable                 @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-
-  @@unique([timetableId, code])
-}
-
-model SchedulingConflict {
-  id          String                    @id @default(uuid()) @db.Uuid
-  tenantId    String                    @db.Uuid
-  schoolId    String                    @db.Uuid
-  timetableId String                    @db.Uuid
-  entryId     String?                   @db.Uuid
-  code        String                    @db.VarChar(80)
-  severity    TimetableConflictSeverity
-  message     String                    @db.VarChar(500)
-  resolvedAt  DateTime?
-  createdAt   DateTime                  @default(now())
-  timetable   Timetable                 @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-  entry       ScheduleEntry?            @relation(fields: [entryId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, schoolId, timetableId, severity, resolvedAt])
-}
-
-model ScheduleSubstitution {
-  id                  String        @id @default(uuid()) @db.Uuid
-  tenantId            String        @db.Uuid
-  schoolId            String        @db.Uuid
-  timetableId         String        @db.Uuid
-  entryId             String        @db.Uuid
-  originalTeacherId   String?       @db.Uuid
-  substituteTeacherId String?       @db.Uuid
-  reason              String        @db.VarChar(500)
-  startsAt            DateTime
-  endsAt              DateTime
-  createdBy           String?       @db.Uuid
-  createdAt           DateTime      @default(now())
-  timetable           Timetable     @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-  entry               ScheduleEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  originalTeacher     Teacher?      @relation("SubstitutionTeacher", fields: [originalTeacherId], references: [id], onDelete: SetNull)
-
-  @@index([tenantId, schoolId, timetableId, startsAt, endsAt])
-}
-
-model TimetableAudit {
-  id          String    @id @default(uuid()) @db.Uuid
-  tenantId    String    @db.Uuid
-  schoolId    String    @db.Uuid
-  timetableId String    @db.Uuid
-  actorId     String?   @db.Uuid
-  action      String    @db.VarChar(80)
-  metadata    Json
-  createdAt   DateTime  @default(now())
-  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
-
-  @@index([tenantId, schoolId, timetableId, createdAt])
 }

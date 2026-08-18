@@ -1,6 +1,7 @@
 import * as tokenService from '../../infrastructure/auth/tokenService.js';
 import sessionRepository from '../../infrastructure/repositories/sessionRepository.js';
 import AuthenticationError from '../../shared/errors/AuthenticationError.js';
+import accessContextService from '../../application/services/accessContextService.js';
 
 /**
  * Authentication middleware.
@@ -29,8 +30,19 @@ export default async function authenticate(req, _res, next) {
     throw new AuthenticationError('Session is no longer valid');
   }
 
-  req.user = { id: payload.sub, email: payload.email, roles: payload.roles };
-  req.auth = { sessionId: payload.sessionId, roles: payload.roles };
+  const context = await accessContextService.resolveAccessContext(
+    payload.sub,
+    req.get('x-tenant-id') || null
+  );
+  req.user = {
+    id: payload.sub,
+    email: payload.email,
+    tenantId: context.tenantId,
+    accountType: context.accountType,
+    platformRole: context.platformRole,
+    roles: context.roles,
+  };
+  req.auth = { sessionId: payload.sessionId, ...context };
 
   next();
 }

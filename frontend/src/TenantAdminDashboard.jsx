@@ -32,6 +32,8 @@ const demo = {
 
 export default function TenantAdminDashboard() {
   const [view, setView] = useState('overview');
+  const [flags, setFlags] = useState(demo.flags);
+  const [exported, setExported] = useState(false);
   const totalStudents = useMemo(
     () => demo.schools.reduce((sum, school) => sum + school.students, 0),
     []
@@ -106,10 +108,10 @@ export default function TenantAdminDashboard() {
                   <p className="tenant-eyebrow">Feature control</p>
                   <h2>Available services</h2>
                 </div>
-                <span>{demo.flags.filter((flag) => flag.enabled).length}/4 on</span>
+                <span>{flags.filter((flag) => flag.enabled).length}/4 on</span>
               </div>
               <div className="feature-list">
-                {demo.flags.map((flag) => (
+                {flags.map((flag) => (
                   <div key={flag.key}>
                     <span>{flag.key.replaceAll('_', ' ')}</span>
                     <b className={flag.enabled ? 'on' : ''}>{flag.enabled ? 'Enabled' : 'Off'}</b>
@@ -127,7 +129,14 @@ export default function TenantAdminDashboard() {
               <p className="tenant-eyebrow">Tenant directory</p>
               <h2>Schools and provisioning</h2>
             </div>
-            <button className="tenant-action">Export directory</button>
+            <button className="tenant-action" onClick={() => setExported(true)}>
+              Export directory
+            </button>
+            {exported && (
+              <span role="status" className="tenant-feedback">
+                Directory export is ready.
+              </span>
+            )}
           </div>
           <div className="school-list">
             {demo.schools.map((school) => (
@@ -149,10 +158,20 @@ export default function TenantAdminDashboard() {
           <p className="tenant-eyebrow">Feature flags</p>
           <h2>Control the tenant experience</h2>
           <div className="feature-list feature-list-large">
-            {demo.flags.map((flag) => (
+            {flags.map((flag) => (
               <div key={flag.key}>
                 <span>{flag.key.replaceAll('_', ' ')}</span>
-                <button className={flag.enabled ? 'toggle on' : 'toggle'}>
+                <button
+                  className={flag.enabled ? 'toggle on' : 'toggle'}
+                  onClick={() =>
+                    setFlags((current) =>
+                      current.map((item) =>
+                        item.key === flag.key ? { ...item, enabled: !item.enabled } : item
+                      )
+                    )
+                  }
+                  aria-pressed={flag.enabled}
+                >
                   {flag.enabled ? 'Enabled' : 'Enable'}
                 </button>
               </div>

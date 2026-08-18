@@ -19,12 +19,16 @@ import { generateOpaqueToken, hashToken } from '../../shared/utils/tokenUtils.js
  * @returns {string} signed JWT
  */
 export function signAccessToken({ sub, email, sessionId, roles = [] }) {
-  return jwt.sign({ email, sessionId, sid: sessionId, roles }, config.auth.accessTokenSecret, {
-    subject: sub,
-    expiresIn: config.auth.accessTokenTtl,
-    issuer: config.auth.issuer,
-    audience: config.auth.audience,
-  });
+  return jwt.sign(
+    { tokenType: 'access', email, sessionId, sid: sessionId, roles },
+    config.auth.accessTokenSecret,
+    {
+      subject: sub,
+      expiresIn: config.auth.accessTokenTtl,
+      issuer: config.auth.issuer,
+      audience: config.auth.audience,
+    }
+  );
 }
 
 /**
@@ -42,6 +46,13 @@ export function verifyAccessToken(token) {
     issuer: config.auth.issuer,
     audience: config.auth.audience,
   });
+  if (
+    payload.tokenType !== 'access' ||
+    typeof payload.sub !== 'string' ||
+    typeof payload.sid !== 'string'
+  ) {
+    throw new AuthenticationError('Invalid access token');
+  }
   return {
     sub: payload.sub,
     email: payload.email,

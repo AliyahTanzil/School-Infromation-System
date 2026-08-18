@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -12,58 +12,58 @@ import {
 import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import toast, { Toaster } from 'react-hot-toast';
-import SchoolAdmin from './SchoolAdmin.jsx';
-import StudentDashboard from './StudentDashboard.jsx';
-import StudentHomeDashboard from './StudentHomeDashboard.jsx';
-import ParentPortal from './ParentPortal.jsx';
-import ParentClassroomWorkspace from './ParentClassroomWorkspace.jsx';
-import LandingPage from './LandingPage.jsx';
-import TeacherDashboard from './TeacherDashboard.jsx';
-import ClassDashboard from './ClassDashboard.jsx';
-import FinanceDashboard from './FinanceDashboard.jsx';
-import AcademicCalendarDashboard from './AcademicCalendarDashboard.jsx';
-import AttendanceDashboard from './AttendanceDashboard.jsx';
-import ExaminationsDashboard from './ExaminationsDashboard.jsx';
-import ResultsDashboard from './ResultsDashboard.jsx';
-import UserManagement from './UserManagement.jsx';
-import TimetableDashboard from './TimetableDashboard.jsx';
-import AdminDemoEntry from './AdminDemoEntry.jsx';
-import RoadmapInspectionHub from './RoadmapInspectionHub.jsx';
-import OwnerActivationPanel from './OwnerActivationPanel.jsx';
-import AdminWorkspace from './AdminWorkspace.jsx';
-import ClassroomDashboard from './ClassroomDashboard.jsx';
-import LiveLearningWorkspace from './LiveLearningWorkspace.jsx';
-import StudentSubmissionCenter from './StudentSubmissionCenter.jsx';
-import AssessmentEngine from './AssessmentEngine.jsx';
-import QuizSystem from './QuizSystem.jsx';
-import Gradebook from './Gradebook.jsx';
-import FeedbackWorkspace from './FeedbackWorkspace.jsx';
-import CalendarWorkspace from './CalendarWorkspace.jsx';
-import NotificationCenter from './NotificationCenter.jsx';
-import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
-import CommunicationDashboard from './CommunicationDashboard.jsx';
-import HRDashboard from './HRDashboard.jsx';
-import LibraryDashboard from './LibraryDashboard.jsx';
-import AssetInventoryDashboard from './AssetInventoryDashboard.jsx';
-import TransportDashboard from './TransportDashboard.jsx';
-import BoardingDashboard from './BoardingDashboard.jsx';
-import SecurityDashboard from './SecurityDashboard.jsx';
-import AnalyticsDashboard from './AnalyticsDashboard.jsx';
-import LearningAnalyticsWorkspace from './LearningAnalyticsWorkspace.jsx';
-import AIIntelligenceDashboard from './AIIntelligenceDashboard.jsx';
-import SmartIdentityDashboard from './SmartIdentityDashboard.jsx';
-import IoTDashboard from './IoTDashboard.jsx';
-import TenantAdminDashboard from './TenantAdminDashboard.jsx';
-import BillingDashboard from './BillingDashboard.jsx';
-import PlatformAdminDashboard from './PlatformAdminDashboard.jsx';
-import SecurityAdminDashboard from './SecurityAdminDashboard.jsx';
-import AIAcademicDashboard from './AIAcademicDashboard.jsx';
-import AILearningWorkspace from './AILearningWorkspace.jsx';
-import AcademicIntegrityWorkspace from './AcademicIntegrityWorkspace.jsx';
-import AIReportsDashboard from './AIReportsDashboard.jsx';
-import AIChatDashboard from './AIChatDashboard.jsx';
-import IntegrationsDashboard from './IntegrationsDashboard.jsx';
-import BiometricManagementDashboard from './BiometricManagementDashboard.jsx';
+const SchoolAdmin = lazy(() => import('./SchoolAdmin.jsx'));
+const StudentDashboard = lazy(() => import('./StudentDashboard.jsx'));
+const StudentHomeDashboard = lazy(() => import('./StudentHomeDashboard.jsx'));
+const ParentPortal = lazy(() => import('./ParentPortal.jsx'));
+const ParentClassroomWorkspace = lazy(() => import('./ParentClassroomWorkspace.jsx'));
+const LandingPage = lazy(() => import('./LandingPage.jsx'));
+const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
+const ClassDashboard = lazy(() => import('./ClassDashboard.jsx'));
+const FinanceDashboard = lazy(() => import('./FinanceDashboard.jsx'));
+const AcademicCalendarDashboard = lazy(() => import('./AcademicCalendarDashboard.jsx'));
+const AttendanceDashboard = lazy(() => import('./AttendanceDashboard.jsx'));
+const ExaminationsDashboard = lazy(() => import('./ExaminationsDashboard.jsx'));
+const ResultsDashboard = lazy(() => import('./ResultsDashboard.jsx'));
+const UserManagement = lazy(() => import('./UserManagement.jsx'));
+const TimetableDashboard = lazy(() => import('./TimetableDashboard.jsx'));
+const AdminDemoEntry = lazy(() => import('./AdminDemoEntry.jsx'));
+const RoadmapInspectionHub = lazy(() => import('./RoadmapInspectionHub.jsx'));
+const OwnerActivationPanel = lazy(() => import('./OwnerActivationPanel.jsx'));
+const AdminWorkspace = lazy(() => import('./AdminWorkspace.jsx'));
+const ClassroomDashboard = lazy(() => import('./ClassroomDashboard.jsx'));
+const LiveLearningWorkspace = lazy(() => import('./LiveLearningWorkspace.jsx'));
+const StudentSubmissionCenter = lazy(() => import('./StudentSubmissionCenter.jsx'));
+const AssessmentEngine = lazy(() => import('./AssessmentEngine.jsx'));
+const QuizSystem = lazy(() => import('./QuizSystem.jsx'));
+const Gradebook = lazy(() => import('./Gradebook.jsx'));
+const FeedbackWorkspace = lazy(() => import('./FeedbackWorkspace.jsx'));
+const CalendarWorkspace = lazy(() => import('./CalendarWorkspace.jsx'));
+const NotificationCenter = lazy(() => import('./NotificationCenter.jsx'));
+const PaymentGatewayDashboard = lazy(() => import('./PaymentGatewayDashboard.jsx'));
+const CommunicationDashboard = lazy(() => import('./CommunicationDashboard.jsx'));
+const HRDashboard = lazy(() => import('./HRDashboard.jsx'));
+const LibraryDashboard = lazy(() => import('./LibraryDashboard.jsx'));
+const AssetInventoryDashboard = lazy(() => import('./AssetInventoryDashboard.jsx'));
+const TransportDashboard = lazy(() => import('./TransportDashboard.jsx'));
+const BoardingDashboard = lazy(() => import('./BoardingDashboard.jsx'));
+const SecurityDashboard = lazy(() => import('./SecurityDashboard.jsx'));
+const AnalyticsDashboard = lazy(() => import('./AnalyticsDashboard.jsx'));
+const LearningAnalyticsWorkspace = lazy(() => import('./LearningAnalyticsWorkspace.jsx'));
+const AIIntelligenceDashboard = lazy(() => import('./AIIntelligenceDashboard.jsx'));
+const SmartIdentityDashboard = lazy(() => import('./SmartIdentityDashboard.jsx'));
+const IoTDashboard = lazy(() => import('./IoTDashboard.jsx'));
+const TenantAdminDashboard = lazy(() => import('./TenantAdminDashboard.jsx'));
+const BillingDashboard = lazy(() => import('./BillingDashboard.jsx'));
+const PlatformAdminDashboard = lazy(() => import('./PlatformAdminDashboard.jsx'));
+const SecurityAdminDashboard = lazy(() => import('./SecurityAdminDashboard.jsx'));
+const AIAcademicDashboard = lazy(() => import('./AIAcademicDashboard.jsx'));
+const AILearningWorkspace = lazy(() => import('./AILearningWorkspace.jsx'));
+const AcademicIntegrityWorkspace = lazy(() => import('./AcademicIntegrityWorkspace.jsx'));
+const AIReportsDashboard = lazy(() => import('./AIReportsDashboard.jsx'));
+const AIChatDashboard = lazy(() => import('./AIChatDashboard.jsx'));
+const IntegrationsDashboard = lazy(() => import('./IntegrationsDashboard.jsx'));
+const BiometricManagementDashboard = lazy(() => import('./BiometricManagementDashboard.jsx'));
 
 const inputClass =
   'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
@@ -522,430 +522,438 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster position="top-right" />
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/admin-demo" element={<AdminDemoEntry />} />
-          <Route
-            path="/inspection"
-            element={
-              <Protected>
-                <RoadmapInspectionHub />
-              </Protected>
-            }
-          />
-          <Route
-            path="/library"
-            element={
-              <Protected>
-                <LibraryDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/assets-inventory"
-            element={
-              <Protected>
-                <AssetInventoryDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/transport"
-            element={
-              <Protected>
-                <TransportDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/boarding"
-            element={
-              <Protected>
-                <BoardingDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/security"
-            element={
-              <Protected>
-                <SecurityDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <Protected>
-                <AnalyticsDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/learning-analytics"
-            element={
-              <Protected>
-                <LearningAnalyticsWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ai-intelligence"
-            element={
-              <Protected>
-                <AIIntelligenceDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/smart-identity"
-            element={
-              <Protected>
-                <SmartIdentityDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/iot"
-            element={
-              <Protected>
-                <IoTDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/tenant-admin"
-            element={
-              <Protected>
-                <TenantAdminDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/billing"
-            element={
-              <Protected>
-                <BillingDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/platform-admin"
-            element={
-              <Protected>
-                <PlatformAdminDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/owner/activations"
-            element={
-              <Protected>
-                <OwnerActivationPanel />
-              </Protected>
-            }
-          />
-          <Route
-            path="/security-admin"
-            element={
-              <Protected>
-                <SecurityAdminDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ai-academic"
-            element={
-              <Protected>
-                <AIAcademicDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ai-learning"
-            element={
-              <Protected>
-                <AILearningWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/academic-integrity"
-            element={
-              <Protected>
-                <AcademicIntegrityWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ai-reports"
-            element={
-              <Protected>
-                <AIReportsDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/ai-chat"
-            element={
-              <Protected>
-                <AIChatDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/communication"
-            element={
-              <Protected>
-                <CommunicationDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/hr"
-            element={
-              <Protected>
-                <HRDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <Protected>
-                <AdminWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/classroom"
-            element={
-              <Protected>
-                <ClassroomDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/live-learning"
-            element={
-              <Protected>
-                <LiveLearningWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/my-work"
-            element={
-              <Protected>
-                <StudentSubmissionCenter />
-              </Protected>
-            }
-          />
-          <Route
-            path="/assessments"
-            element={
-              <Protected>
-                <AssessmentEngine />
-              </Protected>
-            }
-          />
-          <Route
-            path="/quizzes"
-            element={
-              <Protected>
-                <QuizSystem />
-              </Protected>
-            }
-          />
-          <Route
-            path="/gradebook"
-            element={
-              <Protected>
-                <Gradebook />
-              </Protected>
-            }
-          />
-          <Route
-            path="/feedback"
-            element={
-              <Protected>
-                <FeedbackWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <Protected>
-                <CalendarWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/notifications"
-            element={
-              <Protected>
-                <NotificationCenter />
-              </Protected>
-            }
-          />
-          <Route
-            path="/payment-gateway"
-            element={
-              <Protected>
-                <PaymentGatewayDashboard />
-              </Protected>
-            }
-          />
+        <Suspense
+          fallback={
+            <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+              Loading workspace...
+            </div>
+          }
+        >
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/admin-demo" element={<AdminDemoEntry />} />
+            <Route
+              path="/inspection"
+              element={
+                <Protected>
+                  <RoadmapInspectionHub />
+                </Protected>
+              }
+            />
+            <Route
+              path="/library"
+              element={
+                <Protected>
+                  <LibraryDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/assets-inventory"
+              element={
+                <Protected>
+                  <AssetInventoryDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/transport"
+              element={
+                <Protected>
+                  <TransportDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/boarding"
+              element={
+                <Protected>
+                  <BoardingDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/security"
+              element={
+                <Protected>
+                  <SecurityDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <Protected>
+                  <AnalyticsDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/learning-analytics"
+              element={
+                <Protected>
+                  <LearningAnalyticsWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/ai-intelligence"
+              element={
+                <Protected>
+                  <AIIntelligenceDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/smart-identity"
+              element={
+                <Protected>
+                  <SmartIdentityDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/iot"
+              element={
+                <Protected>
+                  <IoTDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/tenant-admin"
+              element={
+                <Protected>
+                  <TenantAdminDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/billing"
+              element={
+                <Protected>
+                  <BillingDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/platform-admin"
+              element={
+                <Protected>
+                  <PlatformAdminDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/owner/activations"
+              element={
+                <Protected>
+                  <OwnerActivationPanel />
+                </Protected>
+              }
+            />
+            <Route
+              path="/security-admin"
+              element={
+                <Protected>
+                  <SecurityAdminDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/ai-academic"
+              element={
+                <Protected>
+                  <AIAcademicDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/ai-learning"
+              element={
+                <Protected>
+                  <AILearningWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/academic-integrity"
+              element={
+                <Protected>
+                  <AcademicIntegrityWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/ai-reports"
+              element={
+                <Protected>
+                  <AIReportsDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/ai-chat"
+              element={
+                <Protected>
+                  <AIChatDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/communication"
+              element={
+                <Protected>
+                  <CommunicationDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/hr"
+              element={
+                <Protected>
+                  <HRDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Protected>
+                  <AdminWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/classroom"
+              element={
+                <Protected>
+                  <ClassroomDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/live-learning"
+              element={
+                <Protected>
+                  <LiveLearningWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/my-work"
+              element={
+                <Protected>
+                  <StudentSubmissionCenter />
+                </Protected>
+              }
+            />
+            <Route
+              path="/assessments"
+              element={
+                <Protected>
+                  <AssessmentEngine />
+                </Protected>
+              }
+            />
+            <Route
+              path="/quizzes"
+              element={
+                <Protected>
+                  <QuizSystem />
+                </Protected>
+              }
+            />
+            <Route
+              path="/gradebook"
+              element={
+                <Protected>
+                  <Gradebook />
+                </Protected>
+              }
+            />
+            <Route
+              path="/feedback"
+              element={
+                <Protected>
+                  <FeedbackWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <Protected>
+                  <CalendarWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <Protected>
+                  <NotificationCenter />
+                </Protected>
+              }
+            />
+            <Route
+              path="/payment-gateway"
+              element={
+                <Protected>
+                  <PaymentGatewayDashboard />
+                </Protected>
+              }
+            />
 
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/owner/login" element={<Login />} />
-          <Route path="/owner/register" element={<Register />} />
-          <Route path="/tenant/login" element={<Login />} />
-          <Route path="/tenant/register" element={<Register />} />
-          <Route path="/staff/login" element={<Login />} />
-          <Route path="/manager/login" element={<Login />} />
-          <Route path="/manager/register" element={<Register />} />
-          <Route path="/forgot-password" element={<Forgot />} />
-          <Route
-            path="/dashboard"
-            element={
-              <Protected>
-                <Dashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/students"
-            element={
-              <Protected>
-                <StudentDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/student-dashboard"
-            element={
-              <Protected>
-                <StudentHomeDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/users"
-            element={
-              <Protected>
-                <UserManagement />
-              </Protected>
-            }
-          />
-          <Route
-            path="/results"
-            element={
-              <Protected>
-                <ResultsDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/timetables"
-            element={
-              <Protected>
-                <TimetableDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/examinations"
-            element={
-              <Protected>
-                <ExaminationsDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/attendance"
-            element={
-              <Protected>
-                <AttendanceDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/academic-calendar"
-            element={
-              <Protected>
-                <AcademicCalendarDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/finance"
-            element={
-              <Protected>
-                <FinanceDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/classes"
-            element={
-              <Protected>
-                <ClassDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/teachers"
-            element={
-              <Protected>
-                <TeacherDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/parent-portal"
-            element={
-              <Protected>
-                <ParentPortal />
-              </Protected>
-            }
-          />
-          <Route
-            path="/parent-classroom"
-            element={
-              <Protected>
-                <ParentClassroomWorkspace />
-              </Protected>
-            }
-          />
-          <Route
-            path="/school-setup"
-            element={
-              <Protected>
-                <SchoolAdmin />
-              </Protected>
-            }
-          />
-          <Route
-            path="/biometrics"
-            element={
-              <Protected>
-                <BiometricManagementDashboard />
-              </Protected>
-            }
-          />
-          <Route
-            path="/integrations"
-            element={
-              <Protected>
-                <IntegrationsDashboard />
-              </Protected>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/owner/login" element={<Login />} />
+            <Route path="/owner/register" element={<Register />} />
+            <Route path="/tenant/login" element={<Login />} />
+            <Route path="/tenant/register" element={<Register />} />
+            <Route path="/staff/login" element={<Login />} />
+            <Route path="/manager/login" element={<Login />} />
+            <Route path="/manager/register" element={<Register />} />
+            <Route path="/forgot-password" element={<Forgot />} />
+            <Route
+              path="/dashboard"
+              element={
+                <Protected>
+                  <Dashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/students"
+              element={
+                <Protected>
+                  <StudentDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/student-dashboard"
+              element={
+                <Protected>
+                  <StudentHomeDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/users"
+              element={
+                <Protected>
+                  <UserManagement />
+                </Protected>
+              }
+            />
+            <Route
+              path="/results"
+              element={
+                <Protected>
+                  <ResultsDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/timetables"
+              element={
+                <Protected>
+                  <TimetableDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/examinations"
+              element={
+                <Protected>
+                  <ExaminationsDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/attendance"
+              element={
+                <Protected>
+                  <AttendanceDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/academic-calendar"
+              element={
+                <Protected>
+                  <AcademicCalendarDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/finance"
+              element={
+                <Protected>
+                  <FinanceDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/classes"
+              element={
+                <Protected>
+                  <ClassDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/teachers"
+              element={
+                <Protected>
+                  <TeacherDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/parent-portal"
+              element={
+                <Protected>
+                  <ParentPortal />
+                </Protected>
+              }
+            />
+            <Route
+              path="/parent-classroom"
+              element={
+                <Protected>
+                  <ParentClassroomWorkspace />
+                </Protected>
+              }
+            />
+            <Route
+              path="/school-setup"
+              element={
+                <Protected>
+                  <SchoolAdmin />
+                </Protected>
+              }
+            />
+            <Route
+              path="/biometrics"
+              element={
+                <Protected>
+                  <BiometricManagementDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/integrations"
+              element={
+                <Protected>
+                  <IntegrationsDashboard />
+                </Protected>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

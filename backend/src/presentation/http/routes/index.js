@@ -6,6 +6,7 @@ import rbacRoutes from './rbacRoutes.js';
 import userRoutes from './userRoutes.js';
 import schoolRoutes from './schoolRoutes.js';
 import studentRoutes from './studentRoutes.js';
+import studentDomainRoutes from './studentDomainRoutes.js';
 import parentRoutes from './parentRoutes.js';
 import teacherRoutes from './teacherRoutes.js';
 import classRoutes from './classRoutes.js';
@@ -38,6 +39,8 @@ import aiChatRoutes from './aiChatRoutes.js';
 import integrationRoutes from './integrationRoutes.js';
 import biometricRoutes from './biometricRoutes.js';
 import activationRoutes from './activationRoutes.js';
+import accountRoutes from './accountRoutes.js';
+import tenantLifecycleRoutes from './tenantLifecycleRoutes.js';
 
 const router = Router();
 
@@ -48,7 +51,7 @@ router.use('/auth', authRoutes);
 router.use('/rbac', rbacRoutes);
 router.use('/users', userRoutes);
 router.use('/schools', schoolRoutes);
-router.use('/students', studentRoutes);
+router.use('/students', studentDomainRoutes);
 router.use('/parents', parentRoutes);
 router.use('/teachers', teacherRoutes);
 router.use('/classes', classRoutes);
@@ -81,5 +84,7 @@ router.use('/ai-chat', aiChatRoutes);
 router.use('/integrations', integrationRoutes);
 router.use('/biometrics', biometricRoutes);
 router.use('/activation-requests', activationRoutes);
+router.use('/account', accountRoutes);
+router.use('/tenants', tenantLifecycleRoutes);
 
 export default router;
