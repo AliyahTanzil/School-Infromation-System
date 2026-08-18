@@ -1,128 +1,62 @@
-import { useMemo, useState } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from './api/auth.js';
 
-const sampleInvoices = [
-  {
-    number: 'INV-2026-0042',
-    student: 'Amara Mensah',
-    due: 'Aug 15, 2026',
-    total: 1250,
-    balance: 250,
-    status: 'PARTIALLY_PAID',
-  },
-  {
-    number: 'INV-2026-0041',
-    student: 'Kwame Boateng',
-    due: 'Aug 12, 2026',
-    total: 980,
-    balance: 0,
-    status: 'PAID',
-  },
-  {
-    number: 'INV-2026-0040',
-    student: 'Nia Owusu',
-    due: 'Aug 10, 2026',
-    total: 1120,
-    balance: 1120,
-    status: 'ISSUED',
-  },
-];
+const formatMoney = (minor = 0, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(minor) / 100);
+
+const statusClass = { PAID: 'status-positive', PARTIALLY_PAID: 'status-warning', ISSUED: 'status-neutral', OVERDUE: 'status-danger' };
 
 export default function FinanceDashboard() {
   const [query, setQuery] = useState('');
+  const [status, setStatus] = useState('ALL');
   const [summary, setSummary] = useState(null);
+  const [invoices, setInvoices] = useState([]);
+  const [state, setState] = useState('loading');
+
   useEffect(() => {
-    fetch('/api/finance/core/summary?schoolId=00000000-0000-0000-0000-000000000000')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((payload) => setSummary(payload?.data ?? null))
-      .catch(() => setSummary(null));
+    let active = true;
+    Promise.all([
+      api.get('/finance/core/summary'),
+      api.get('/finance/invoices'),
+    ]).then(([summaryResponse, invoicesResponse]) => {
+      if (!active) return;
+      setSummary(summaryResponse.data?.data ?? null);
+      setInvoices(invoicesResponse.data?.data ?? []);
+      setState('ready');
+    }).catch(() => active && setState('error'));
+    return () => { active = false; };
   }, []);
-  const invoices = useMemo(
-    () =>
-      sampleInvoices.filter((item) =>
-        `${item.number} ${item.student}`.toLowerCase().includes(query.toLowerCase())
-      ),
-    [query]
-  );
+
+  const filteredInvoices = useMemo(() => invoices.filter((invoice) => {
+    const haystack = `${invoice.invoiceNumber} ${invoice.student?.profile?.firstName ?? ''} ${invoice.student?.profile?.lastName ?? ''}`.toLowerCase();
+    return haystack.includes(query.toLowerCase()) && (status === 'ALL' || invoice.status === status);
+  }), [invoices, query, status]);
+
+  if (state === 'loading') return <main className="finance-page"><div className="finance-loading"><span className="finance-spinner" />Loading financial workspace</div></main>;
+  if (state === 'error') return <main className="finance-page"><div className="finance-error"><strong>Finance data is unavailable.</strong><span>Check your connection or permissions and try again.</span></div></main>;
+
+  const metrics = [
+    ['Collected this term', summary?.collectedMinor ?? 0, 'Positive cash received'],
+    ['Outstanding balance', summary?.outstandingMinor ?? 0, 'Requires follow-up'],
+    ['Invoices issued', invoices.length, 'Across active learners'],
+    ['Collection rate', summary?.collectionRate ? `${summary.collectionRate}%` : '—', 'Term performance'],
+  ];
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-indigo-300">
-              Finance control center
-            </p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight">School finances, clearly.</h1>
-          </div>
-          <Link
-            to="/"
-            className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300"
-          >
-            Back to home
-          </Link>
+    <main className="finance-page">
+      <div className="finance-container">
+        <header className="finance-header">
+          <div><p className="finance-kicker">Financial operations</p><h1>Finance control center</h1><p>One reliable view of receivables, collections, and invoice health.</p></div>
+          <Link to="/billing" className="finance-secondary-action">Manage billing plan <span>→</span></Link>
         </header>
-        <section className="grid gap-4 md:grid-cols-4">
-          {[
-            [
-              'Collected this term',
-              summary ? `$${(summary.collectedMinor / 100).toLocaleString()}` : '$84,240',
-            ],
-            ['Outstanding', '$18,630'],
-            ['Invoices issued', '248'],
-            ['Collection rate', '81.9%'],
-          ].map(([label, value]) => (
-            <article key={label} className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
-              <p className="text-sm text-slate-400">{label}</p>
-              <p className="mt-3 text-2xl font-semibold">{value}</p>
-            </article>
-          ))}
+        <section className="finance-metrics" aria-label="Finance summary">
+          {metrics.map(([label, value, note]) => <article className="finance-metric" key={label}><span>{label}</span><strong>{typeof value === 'number' && label !== 'Invoices issued' ? formatMoney(value) : value}</strong><small>{note}</small></article>)}
         </section>
-        <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold">Recent invoices</h2>
-              <p className="mt-1 text-sm text-slate-400">
-                Monitor balances and payment status across the school.
-              </p>
-            </div>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search invoices"
-              className="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2 text-sm outline-none focus:border-indigo-400"
-            />
-          </div>
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full min-w-[680px] text-left text-sm">
-              <thead className="text-slate-500">
-                <tr>
-                  <th className="pb-3">Invoice</th>
-                  <th className="pb-3">Student</th>
-                  <th className="pb-3">Due</th>
-                  <th className="pb-3">Total</th>
-                  <th className="pb-3">Balance</th>
-                  <th className="pb-3">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoices.map((invoice) => (
-                  <tr key={invoice.number} className="border-t border-slate-800">
-                    <td className="py-4 font-medium">{invoice.number}</td>
-                    <td className="py-4 text-slate-300">{invoice.student}</td>
-                    <td className="py-4 text-slate-400">{invoice.due}</td>
-                    <td className="py-4">${invoice.total.toLocaleString()}</td>
-                    <td className="py-4">${invoice.balance.toLocaleString()}</td>
-                    <td className="py-4">
-                      <span className="rounded-full bg-indigo-500/15 px-3 py-1 text-xs font-semibold text-indigo-200">
-                        {invoice.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <section className="finance-panel">
+          <div className="finance-panel-heading"><div><p className="finance-kicker">Receivables ledger</p><h2>Invoices</h2></div><button className="finance-primary-action" type="button">Create invoice <span>＋</span></button></div>
+          <div className="finance-toolbar"><label className="finance-search"><span className="sr-only">Search invoices</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by invoice or learner" /></label><select value={status} onChange={(event) => setStatus(event.target.value)} aria-label="Filter invoices by status"><option value="ALL">All statuses</option><option value="ISSUED">Issued</option><option value="PARTIALLY_PAID">Partially paid</option><option value="PAID">Paid</option><option value="OVERDUE">Overdue</option></select></div>
+          <div className="finance-table-wrap"><table className="finance-table"><thead><tr><th>Invoice</th><th>Learner</th><th>Due date</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead><tbody>{filteredInvoices.map((invoice) => <tr key={invoice.id}><td><strong>{invoice.invoiceNumber}</strong><small>{invoice.issuedAt ? new Date(invoice.issuedAt).toLocaleDateString() : '—'}</small></td><td>{invoice.student?.profile ? `${invoice.student.profile.firstName} ${invoice.student.profile.lastName}` : 'Unassigned'}</td><td>{invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : '—'}</td><td>{formatMoney(invoice.total, invoice.currency)}</td><td>{formatMoney(invoice.balance, invoice.currency)}</td><td><span className={`finance-status ${statusClass[invoice.status] ?? 'status-neutral'}`}>{invoice.status.replaceAll('_', ' ')}</span></td></tr>)}</tbody></table>{filteredInvoices.length === 0 && <div className="finance-empty"><strong>No invoices match this view.</strong><span>Adjust your search or status filter.</span></div>}</div>
         </section>
       </div>
     </main>
