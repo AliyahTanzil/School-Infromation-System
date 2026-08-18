@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './index.css';
+import './global-ui.css';
 import './ai-intelligence.css';
 import './iot.css';
 import './tenant-admin.css';
