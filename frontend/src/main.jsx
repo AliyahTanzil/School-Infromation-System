@@ -6,6 +6,7 @@ import './iot.css';
 import './tenant-admin.css';
 import './billing.css';
 import './learning-analytics.css';
+import './academic-integrity.css';
 import './platform-admin.css';
 import './security-admin.css';
 import App from './App.jsx';
