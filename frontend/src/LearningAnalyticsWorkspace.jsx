@@ -74,6 +74,7 @@ export default function LearningAnalyticsWorkspace() {
   const [toast, setToast] = useState('');
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [query, setQuery] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
   const filteredGroups = useMemo(
     () => learners.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())),
     [query]
@@ -148,9 +149,9 @@ export default function LearningAnalyticsWorkspace() {
       {showFilters && (
         <div className="analytics-filter-panel">
           <strong>Report filters</strong>
-          <span>Year groups: all</span>
-          <span>Attendance: all learners</span>
-          <span>Assessment status: released only</span>
+          <label>Year groups <select aria-label="Filter by year group"><option>All year groups</option><option>Year 8</option><option>Year 9</option><option>Year 10</option></select></label>
+          <label>Attendance <select aria-label="Filter by attendance"><option>All learners</option><option>Below 90%</option><option>Below 80%</option></select></label>
+          <label>Assessment status <select aria-label="Filter by assessment status"><option>Released only</option><option>All statuses</option><option>Needs review</option></select></label>
           <button onClick={() => setShowFilters(false)} aria-label="Close filters">
             <X size={14} />
           </button>
@@ -194,10 +195,11 @@ export default function LearningAnalyticsWorkspace() {
                 <span className="analytics-kicker">Learning trend</span>
                 <h2>Progress is moving upward</h2>
               </div>
-              <button className="analytics-link" onClick={() => announce('Trend detail opened')}>
+              <button className="analytics-link" onClick={() => setShowDetails((value) => !value)}>
                 View details <TrendingUp size={13} />
               </button>
             </div>
+            {showDetails && <div className="analytics-detail-banner" role="status">Showing weekly progress and engagement detail for {period.toLowerCase()}.</div>}
             <div className="analytics-chart">
               <div className="chart-y">
                 <span>100</span>

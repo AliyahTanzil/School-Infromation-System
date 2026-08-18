@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { formatLe } from './utils/currency.js';
 
-const formatMoney = (minor = 0, currency = 'USD') =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(Number(minor) / 100);
+const formatMoney = (minor = 0) => formatLe(minor);
 
 const statusClass = { PAID: 'status-positive', PARTIALLY_PAID: 'status-warning', ISSUED: 'status-neutral', OVERDUE: 'status-danger' };
 
