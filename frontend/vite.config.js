@@ -11,7 +11,7 @@ function resolveBackendTarget() {
     const port = Number(readFileSync(backendPortFile, 'utf8').trim());
     return `http://localhost:${port}`;
   } catch {
-    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:4000';
+    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:3000';
   }
 }
 
