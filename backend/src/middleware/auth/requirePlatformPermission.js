@@ -4,7 +4,12 @@ export default function requirePlatformPermission(permission = 'PLATFORM_ADMIN_A
   return (req, _res, next) => {
     const roles = req.user?.roles ?? req.auth?.roles ?? [];
     const normalized = Array.isArray(roles) ? roles : [roles];
-    if (!normalized.includes('PLATFORM_ADMIN')) {
+    const isPlatformOwner = req.user?.platformRole === 'OWNER'
+      || req.user?.accountType === 'APPLICATION_MANAGER'
+      || req.user?.isPlatformAdmin === true
+      || req.user?.role === 'PLATFORM_ADMIN'
+      || normalized.includes('PLATFORM_ADMIN');
+    if (!isPlatformOwner) {
       throw new AuthorizationError('Platform administrator permission required');
     }
     if (req.body?.tenantId || req.query?.tenantId || req.params?.tenantId) {

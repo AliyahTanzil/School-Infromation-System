@@ -1,13 +1,21 @@
 import { getOverview, runAction } from '../../../application/services/platformAdminService.js';
 
+function canAccessPlatformAdmin(user) {
+  return user?.platformRole === 'OWNER'
+    || user?.accountType === 'APPLICATION_MANAGER'
+    || user?.isPlatformAdmin === true
+    || user?.role === 'PLATFORM_ADMIN'
+    || (Array.isArray(user?.roles) && user.roles.includes('PLATFORM_ADMIN'));
+}
+
 export async function overview(req, res) {
-  if (!req.user?.isPlatformAdmin && req.user?.role !== 'PLATFORM_ADMIN')
+  if (!canAccessPlatformAdmin(req.user))
     return res.status(403).json({ error: 'Platform administrator access required' });
   return res.json(getOverview());
 }
 
 export async function action(req, res) {
-  if (!req.user?.isPlatformAdmin && req.user?.role !== 'PLATFORM_ADMIN')
+  if (!canAccessPlatformAdmin(req.user))
     return res.status(403).json({ error: 'Platform administrator access required' });
   try {
     return res.json(await runAction(req.body, req.user.id));

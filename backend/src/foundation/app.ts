@@ -7,6 +7,8 @@ import { errorHandler, notFound, requestId, requestLogger } from './middleware.j
 import { healthRouter } from './health.js';
 // @ts-expect-error Legacy JavaScript router is mounted during the TypeScript migration.
 import authRouter from '../presentation/http/routes/authRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import platformAdminRouter from '../presentation/http/routes/platformAdminRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -23,6 +25,8 @@ export const createApp = () => {
   // the remaining domain routes are migrated to the foundation app.
   app.use('/api/auth', authRouter);
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/platform-admin', platformAdminRouter);
+  app.use('/api/v1/platform-admin', platformAdminRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

@@ -163,15 +163,6 @@ export async function login({ email, password, deviceName, context }) {
 
   const user = await userRepository.findByEmail(email);
 
-  console.log('[AUTH DEBUG]', {
-    userId: user?.id ?? null,
-    email: user?.email ?? null,
-    status: user?.status ?? null,
-    accountType: user?.accountType ?? null,
-    platformRole: user?.platformRole ?? null,
-    receivedPasswordLength: typeof password === 'string' ? password.length : null,
-  });
-
   const recordFailure = async (reason, userId = null) => {
     await loginAttemptRepository.record({
       userId,

@@ -16,6 +16,7 @@ import {
   Users,
 } from 'lucide-react';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 const navItems = [
   { key: 'overview', label: 'Overview' },
@@ -55,7 +56,7 @@ export default function PlatformAdminDashboard() {
       setOverview(data.data ?? data);
       if (isRefresh) setNotice('Operational data refreshed.');
     } catch (err) {
-      setError(err.response?.data?.error ?? 'Platform overview unavailable');
+      setError(getApiErrorMessage(err, 'Platform overview unavailable'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,7 +72,7 @@ export default function PlatformAdminDashboard() {
       const { data } = await api.post('/platform-admin/actions', { action, targetId });
       setNotice(data.message ?? `${label} recorded.`);
     } catch (err) {
-      setError(err.response?.data?.error ?? 'Platform action failed');
+      setError(getApiErrorMessage(err, 'Platform action failed'));
     } finally {
       setActionId('');
     }

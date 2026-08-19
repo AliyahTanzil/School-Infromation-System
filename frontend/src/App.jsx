@@ -11,6 +11,7 @@ import {
 /* eslint-disable react/prop-types */
 import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { getApiErrorMessage } from './api/errorMessage.js';
 import toast, { Toaster } from 'react-hot-toast';
 const SchoolAdmin = lazy(() => import('./SchoolAdmin.jsx'));
 const StudentDashboard = lazy(() => import('./StudentDashboard.jsx'));
@@ -159,7 +160,11 @@ function Login() {
       const result = await login(form);
       toast.success('Welcome back');
       const roles = result.user?.roles ?? [];
-      const destination = isManager
+      const isPlatformOwner = result.user?.platformRole === 'OWNER'
+        || result.user?.accountType === 'APPLICATION_MANAGER'
+        || result.user?.isPlatformAdmin === true
+        || roles.includes('PLATFORM_ADMIN');
+      const destination = isPlatformOwner
         ? '/platform-admin'
         : roles.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'ADMIN'].includes(role))
           ? '/school-admin'
@@ -172,7 +177,7 @@ function Login() {
                 : '/school-setup';
       nav(destination, { replace: true });
     } catch (err) {
-      toast.error(err.response?.data?.error?.message ?? 'Unable to sign in');
+      toast.error(getApiErrorMessage(err, 'Unable to sign in'));
     } finally {
       setBusy(false);
     }
