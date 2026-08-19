@@ -9,10 +9,11 @@ const backendPortFile = resolve(process.cwd(), '../backend/.sais-port');
 function resolveBackendTarget() {
   try {
     const port = Number(readFileSync(backendPortFile, 'utf8').trim());
-    return `http://localhost:${port}`;
+    if (Number.isInteger(port) && port > 0) return `http://localhost:${port}`;
   } catch {
-    return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:4000';
+    // The backend can start after Vite; use the conventional fallback below.
   }
+  return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:4000';
 }
 
 export default defineConfig({

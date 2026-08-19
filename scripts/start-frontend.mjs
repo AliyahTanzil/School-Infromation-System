@@ -29,9 +29,13 @@ if (!manifest) {
 }
 
 const frontendPort = process.env.FRONTEND_PORT || String(manifest?.frontend || 5173);
-const vite = start('npm', ['run', 'dev', '--workspace', 'frontend', '--', '--host', '0.0.0.0'], {
-  FRONTEND_PORT: frontendPort,
-});
+const vite = start(
+  'npm',
+  ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
+  {
+    FRONTEND_PORT: frontendPort,
+  }
+);
 
 function shutdown(signal) {
   for (const child of children) child.kill(signal);
