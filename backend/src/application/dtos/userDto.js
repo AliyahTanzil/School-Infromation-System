@@ -7,7 +7,12 @@
 export function toPublicUser(user, { roles = [] } = {}) {
   return {
     id: user.id,
+    tenantId: user.tenantId ?? null,
     email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    accountType: user.accountType,
+    platformRole: user.platformRole ?? null,
     status: user.status,
     emailVerified: Boolean(user.emailVerifiedAt),
     emailVerifiedAt: user.emailVerifiedAt ?? null,
