@@ -7,23 +7,29 @@ import react from '@vitejs/plugin-react';
 const backendPortFile = resolve(process.cwd(), '../backend/.sais-port');
 
 function resolveBackendTarget() {
+  const configuredUrl = globalThis.process?.env?.VITE_API_URL || globalThis.process?.env?.VITE_BACKEND_URL;
+  if (configuredUrl && !/localhost|127\.0\.0\.1/.test(configuredUrl)) {
+    return configuredUrl.replace(/\/$/, '');
+  }
+
+  // Vercel/v0 previews must never follow the local dynamic-port file.
+  if (globalThis.process?.env?.VERCEL || globalThis.process?.env?.V0_RUNTIME_URL) {
+    return 'https://saisbackend.vercel.app';
+  }
+
   try {
     const port = Number(readFileSync(backendPortFile, 'utf8').trim());
     if (Number.isInteger(port) && port > 0) return `http://localhost:${port}`;
   } catch {
     // The backend can start after Vite; use the conventional fallback below.
   }
-  return globalThis.process?.env?.VITE_BACKEND_URL || 'http://localhost:4000';
+  return 'http://localhost:4000';
 }
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
     dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
-    alias: {
-      react: resolve(process.cwd(), '../node_modules/react'),
-      'react-dom': resolve(process.cwd(), '../node_modules/react-dom'),
-    },
   },
   server: {
     host: '0.0.0.0',
