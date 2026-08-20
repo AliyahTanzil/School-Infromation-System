@@ -15,7 +15,15 @@ export function AuthProvider({ children }) {
       .refresh()
       .then(() => authApi.me())
       .then(setUser)
-      .catch(() => {})
+      .catch((error) => {
+        // A fresh browser has no refresh cookie; this is an unauthenticated state,
+        // not an application failure that should interrupt the login screen.
+        if (error.response?.status === 401) {
+          setUser(null);
+          return;
+        }
+        setUser(null);
+      })
       .finally(() => setLoading(false));
   }, []);
 

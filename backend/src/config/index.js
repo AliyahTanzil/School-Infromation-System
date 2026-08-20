@@ -23,7 +23,10 @@ const config = {
     url: process.env.REDIS_URL ?? '',
   },
   cors: {
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:4000',
+    origins: (process.env.CORS_ORIGIN ?? 'http://localhost:4000')
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
     credentials: true,
   },
   http: {
