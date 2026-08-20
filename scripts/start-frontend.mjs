@@ -42,6 +42,12 @@ if (!(await backendIsReady(backendPort))) {
   }
 }
 
+if (!(await backendIsReady(backendPort))) {
+  console.error(`[SAIS] Backend did not become ready on port ${backendPort}; frontend startup cancelled.`);
+  for (const child of children) child.kill('SIGTERM');
+  process.exit(1);
+}
+
 const frontendPort = process.env.FRONTEND_PORT || String(manifest?.frontend || 5173);
 const vite = start(
   'npm',

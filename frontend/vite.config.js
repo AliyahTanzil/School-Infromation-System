@@ -1,29 +1,29 @@
 /* global process */
 import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import react from '@vitejs/plugin-react';
 
 const backendPortFile = resolve(process.cwd(), '../backend/.sais-port');
 
+function isV0Environment() {
+  return Boolean(globalThis.process?.env?.VERCEL || globalThis.process?.env?.V0 || existsSync('/vercel/share'));
+}
+
 function resolveBackendTarget() {
   const configuredUrl = globalThis.process?.env?.VITE_API_URL || globalThis.process?.env?.VITE_BACKEND_URL;
-  if (configuredUrl && !/localhost|127\.0\.0\.1/.test(configuredUrl)) {
-    return configuredUrl.replace(/\/$/, '');
+  if (configuredUrl) return configuredUrl.replace(/\/$/, '');
+
+  if (isV0Environment()) {
+    try {
+      const port = Number(readFileSync(backendPortFile, 'utf8').trim());
+      if (Number.isFinite(port) && port > 0) return `http://127.0.0.1:${port}`;
+    } catch {
+      // Backend startup may still be creating the coordination file.
+    }
   }
 
-  // Vercel/v0 previews must never follow the local dynamic-port file.
-  if (globalThis.process?.env?.VERCEL || globalThis.process?.env?.V0_RUNTIME_URL) {
-    return 'https://saisbackend.vercel.app';
-  }
-
-  try {
-    const port = Number(readFileSync(backendPortFile, 'utf8').trim());
-    if (Number.isInteger(port) && port > 0) return `http://localhost:${port}`;
-  } catch {
-    // The backend can start after Vite; use the conventional fallback below.
-  }
-  return 'http://localhost:4000';
+  return 'http://127.0.0.1:3000';
 }
 
 export default defineConfig({
