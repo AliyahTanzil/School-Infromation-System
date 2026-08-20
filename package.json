@@ -23,7 +23,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "node .husky/prepare.mjs",
-    "postinstall": "npm run db:generate -w backend"
+    "db:generate": "prisma generate --schema backend/prisma/schema.prisma",
+    "postinstall": "npm run db:generate"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
