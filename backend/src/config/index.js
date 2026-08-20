@@ -72,7 +72,7 @@ const config = {
 
   log: {
     level: process.env.LOG_LEVEL ?? 'http',
-    dir: process.env.LOG_DIR ?? 'logs',
+    dir: process.env.LOG_DIR ?? (process.env.VERCEL ? '/tmp/sais-logs' : 'logs'),
     datePattern: process.env.LOG_DATE_PATTERN ?? 'YYYY-MM-DD',
     maxSize: process.env.LOG_MAX_SIZE ?? '20m',
     maxFiles: process.env.LOG_MAX_FILES ?? '30d',
