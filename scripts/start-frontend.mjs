@@ -49,7 +49,7 @@ if (!(await backendIsReady(backendPort))) {
   process.exit(1);
 }
 
-const frontendPort = process.env.FRONTEND_PORT || String(manifest?.frontend || 5173);
+const frontendPort = process.env.FRONTEND_PORT || String(manifest?.frontend || (isV0 ? 3000 : 5173));
 const vite = start(
   'npm',
   ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
