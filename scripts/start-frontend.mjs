@@ -48,7 +48,9 @@ const vite = start(
   ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
   {
     FRONTEND_PORT: frontendPort,
-  }
+    BACKEND_PORT: backendPort,
+    SAIS_LOCAL_DEV: 'true',
+  },
 );
 
 function shutdown(signal) {
