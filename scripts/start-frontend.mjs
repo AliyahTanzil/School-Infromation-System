@@ -59,8 +59,13 @@ const vite = start(
   },
 );
 
+let stopping = false;
 function shutdown(signal) {
-  for (const child of children) child.kill(signal);
+  if (stopping) return;
+  stopping = true;
+  for (const child of children) {
+    if (!child.killed) child.kill(signal);
+  }
 }
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
