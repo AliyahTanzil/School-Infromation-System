@@ -34,7 +34,8 @@ function start(command, args, env = {}) {
   return child;
 }
 
-const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || 4000);
+const isV0 = process.env.SAIS_RUNTIME === 'v0' || process.env.VERCEL || process.env.V0 || process.env.V0_RUNTIME_URL || process.env.V0_DEV_APP_URL;
+const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || (isV0 ? 44555 : 4000));
 if (!(await backendIsReady(backendPort))) {
   start('npm', ['run', 'dev', '-w', 'backend'], { PORT: backendPort });
   for (let attempt = 0; attempt < 40 && !(await backendIsReady(backendPort)); attempt += 1) {
