@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { colors } from '../constants/theme';
 import { AuthProvider, useAuth } from '../providers/AuthProvider';
 import { rolePath } from '../services/auth/state';
+import { startSync, stopSync } from '../services/sync';
 
 function GuardedStack() {
   const { state } = useAuth();
