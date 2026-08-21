@@ -4,12 +4,17 @@ import { colors, spacing } from '../../constants/theme';
 import { attendanceStatuses, type AttendanceRecord, type AttendanceStatus } from '../../services/attendance/contracts';
 import { enqueueAttendance } from '../../services/attendance/queue';
 
-type Props = { sessionId: string; title: string; records: AttendanceRecord[]; onSaved?: () => void };
-export function AttendanceWorkflow({ sessionId, title, records, onSaved }: Props) {
+type Props = { sessionId: string; title: string; records: AttendanceRecord[]; onSaved?: () => void; onSave?: (records: Array<{ studentId: string; status: AttendanceStatus; note?: string }>) => Promise<void> };
+export function AttendanceWorkflow({ sessionId, title, records, onSaved, onSave }: Props) {
   const [values, setValues] = useState<Record<string, AttendanceStatus>>(() => Object.fromEntries(records.map((record) => [record.studentId, record.status])));
   const pending = useMemo(() => Object.keys(values).length, [values]);
   const setAll = (status: AttendanceStatus) => setValues(Object.fromEntries(records.map((record) => [record.studentId, status])));
-  const saveLocally = () => { enqueueAttendance(sessionId, records.map((record) => ({ studentId: record.studentId, status: values[record.studentId] }))); onSaved?.(); };
+  const saveLocally = async () => {
+    const next = records.map((record) => ({ studentId: record.studentId, status: values[record.studentId] }));
+    if (onSave) { try { await onSave(next); onSaved?.(); return; } catch { /* retain the offline copy when the API is unavailable */ } }
+    enqueueAttendance(sessionId, next);
+    onSaved?.();
+  };
   return <ScrollView contentContainerStyle={styles.container}>
     <Text accessibilityRole="header" style={styles.title}>{title}</Text>
     <Text style={styles.notice}>Attendance is saved locally first and remains pending until SAIS confirms synchronization.</Text>
