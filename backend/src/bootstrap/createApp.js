@@ -30,6 +30,7 @@ export function createApp() {
   app.use(express.urlencoded({ extended: true, limit: config.http.bodyLimit }));
   app.use(cookieParser());
   app.use(requestLogger);
+  app.use('/api/v1', router);
   app.use('/api', router);
   app.use(notFoundHandler);
   app.use(errorHandler);
