@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colors, radii, spacing } from '../../constants/theme';
 import { Screen } from '../ui/Screen';
+import { useAuth } from '../../providers/AuthProvider';
+import { ProfileImagePicker } from '../profile/ProfileImagePicker';
 
 export type DashboardRole = 'owner' | 'tenant' | 'administrator' | 'staff';
 const data: Record<DashboardRole, { eyebrow: string; title: string; summary: string; cards: string[] }> = {
@@ -13,7 +15,10 @@ const data: Record<DashboardRole, { eyebrow: string; title: string; summary: str
 
 export function DashboardShell({ role }: { role: DashboardRole }) {
   const content = data[role];
+  const { state } = useAuth();
+  const userId = state.status === 'authenticated' ? state.session.userId : '';
   return <Screen eyebrow={content.eyebrow} title={content.title} description={content.summary}>
+    {userId ? <ProfileImagePicker userId={userId} /> : null}
     <View style={styles.headerRow}><Text style={styles.status}>CONNECTED</Text><Pressable accessibilityRole="button" accessibilityLabel="Sign out" onPress={() => router.replace('/')}><Text style={styles.signOut}>Sign out</Text></Pressable></View>
     <ScrollView contentContainerStyle={styles.cards} showsVerticalScrollIndicator={false}>{content.cards.map((card) => <Pressable key={card} accessibilityRole="button" style={styles.card}><Text style={styles.cardTitle}>{card}</Text><Text style={styles.cardText}>Module foundation ready for the next SAIS mobile step.</Text><Text style={styles.open}>Open module</Text></Pressable>)}</ScrollView>
   </Screen>;
