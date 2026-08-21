@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Redirect, Stack, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { colors } from '../constants/theme';
@@ -25,6 +26,7 @@ function GuardedStack() {
 }
 
 export default function RootLayout() {
+  useEffect(() => { void startSync(); return () => stopSync(); }, []);
   return (
     <>
       <StatusBar style="dark" />
