@@ -22,6 +22,7 @@ export function enqueueAttendance(sessionId: string, records: Array<{ studentId:
   void persistQueue();
   return operation;
 }
-export function pendingAttendance() { return queue.filter((item) => item.syncStatus !== 'SYNCED'); }
+export function pendingAttendance() { return queue.filter((item) => item.syncStatus !== 'SYNCED' && item.syncStatus !== 'CONFLICT'); }
+export function conflictingAttendance() { return queue.filter((item) => item.syncStatus === 'CONFLICT'); }
 export function markAttendanceSync(id: string, status: AttendanceMutation['syncStatus'], error?: string) { const item = queue.find((entry) => entry.localOperationId === id); if (item) { item.syncStatus = status; item.error = error; if (status === 'FAILED') item.retryCount += 1; void persistQueue(); } return item; }
 export function clearSyncedAttendance() { for (let index = queue.length - 1; index >= 0; index -= 1) if (queue[index].syncStatus === 'SYNCED') queue.splice(index, 1); void persistQueue(); }

@@ -29,7 +29,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "tsc --noEmit"
+    "test": "npm run typecheck && npm run config:check",
+    "config:check": "expo config --type public >/dev/null"
   },
   "private": true
 }

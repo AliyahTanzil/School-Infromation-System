@@ -9,7 +9,7 @@ async function authOptions() {
 }
 
 export async function fetchFinanceSummary() {
-  return apiRequest<FinanceSummary>(`${endpoint}/summary`, await authOptions())
+  return apiRequest<FinanceSummary>('/api/v1/finance/core/summary', await authOptions())
 }
 
 export async function fetchInvoices(status?: string) {
@@ -20,7 +20,13 @@ export async function fetchInvoices(status?: string) {
 export async function createVerifiedPayment(input: { tenantId: string; schoolId: string; invoiceId: string; amount: number; idempotencyKey: string }) {
   if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error('Payment amount must be positive')
   if (!input.invoiceId.trim() || !input.tenantId.trim() || !input.schoolId.trim()) throw new Error('Payment context is incomplete')
+  if (input.tenantId !== input.schoolId) throw new Error('A verified school context is required for payment')
   return apiRequest<Payment>(`${endpoint}/payments`, { ...await authOptions(), method: 'POST', headers: { 'Idempotency-Key': input.idempotencyKey }, body: JSON.stringify(input) })
+}
+
+export async function getPaymentStatus(paymentId: string) {
+  if (!paymentId.trim()) throw new Error('Payment id is required')
+  return apiRequest<Payment>(`${endpoint}/payments/${encodeURIComponent(paymentId)}`, await authOptions())
 }
 
 export type FinanceApi = {
