@@ -43,3 +43,6 @@ Thumbs.db
 
 # Aider Studio (auto-added)
 REPO_MAP.md
+
+# Vercel local project metadata
+.vercel/
