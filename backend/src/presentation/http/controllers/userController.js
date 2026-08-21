@@ -1,6 +1,7 @@
 import userService from '../../../application/services/userManagementService.js';
 import profileService from '../../../application/services/profileService.js';
 import imageService from '../../../application/services/imageService.js';
+import deviceService from '../../../application/services/deviceService.js';
 
 const context = (req) => ({
   scopeKey: req.query.scopeKey ?? req.body?.scopeKey ?? 'global',
@@ -36,6 +37,8 @@ export default {
     ),
   restore: async (req, res) =>
     send(res, await userService.restoreUser(req.params.id, req.user.id, context(req))),
+  registerPushToken: async (req, res) =>
+    send(res, await deviceService.registerPushToken({ userId: req.user.id, ...req.body }), 201),
   profile: async (req, res) => send(res, await profileService.getProfile(req.params.id)),
   updateProfile: async (req, res) =>
     send(

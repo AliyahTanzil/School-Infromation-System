@@ -47,7 +47,7 @@ export async function requestPushRegistration(deviceId: string): Promise<Notific
 
 export const notifications: NotificationService = {
   register: async (registration) => {
-    // The backend needs a device-token registration route before this can be persisted remotely.
     if (!registration.token.trim()) throw new Error('Push token is required');
+    await apiRequest('/api/v1/users/me/push-token', { ...(await authOptions()), method: 'POST', body: JSON.stringify({ deviceFingerprint: registration.deviceId, platform: registration.platform, pushToken: registration.token }) });
   },
 };

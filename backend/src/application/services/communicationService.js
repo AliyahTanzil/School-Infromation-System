@@ -1,4 +1,5 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
+import { sendExpoPushNotifications } from '../../infrastructure/notifications/expoPushService.js';
 
 const communicationService = {
   async listNotifications(query = {}) {
@@ -17,7 +18,7 @@ const communicationService = {
     const userIds = [...new Set(input.userIds || [])];
     if (!input.schoolId || !input.tenantId || !input.title || !input.body || userIds.length === 0)
       throw new Error('schoolId, tenantId, title, body, and userIds are required');
-    return prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         tenantId: input.tenantId,
         schoolId: input.schoolId,
@@ -34,6 +35,13 @@ const communicationService = {
       },
       include: { recipients: true, deliveries: true },
     });
+    const push = await sendExpoPushNotifications({
+      userIds,
+      title: input.title,
+      body: input.body,
+      data: input.data || {},
+    });
+    return { ...notification, pushDelivery: push };
   },
 
   async markRead(notificationId, userId) {

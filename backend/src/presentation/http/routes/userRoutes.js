@@ -37,6 +37,7 @@ router.patch(
 );
 router.delete('/:id', requirePermission('users.delete'), validate(reasonSchema), controller.remove);
 router.post('/:id/restore', requirePermission('users.restore'), controller.restore);
+router.post('/me/push-token', controller.registerPushToken);
 router.get('/:id/profile', requirePermission('users.read'), controller.profile);
 router.put(
   '/:id/profile',
