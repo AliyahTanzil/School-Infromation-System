@@ -35,6 +35,15 @@ export async function createInvoice({
   });
 }
 
+export async function getPayment({ paymentId, tenantId, schoolId }) {
+  const payment = await prisma.payment.findFirst({
+    where: { id: paymentId, tenantId, schoolId },
+    include: { invoice: true },
+  });
+  if (!payment) throw new Error('Payment not found');
+  return payment;
+}
+
 export async function recordPayment({
   tenantId,
   schoolId,
@@ -46,7 +55,11 @@ export async function recordPayment({
 }) {
   const existing = await prisma.payment.findUnique({ where: { idempotencyKey } });
   if (existing) {
-    if (existing.tenantId !== tenantId || existing.schoolId !== schoolId || existing.invoiceId !== invoiceId) {
+    if (
+      existing.tenantId !== tenantId ||
+      existing.schoolId !== schoolId ||
+      existing.invoiceId !== invoiceId
+    ) {
       throw new Error('Payment idempotency key is already used for another transaction');
     }
     return existing;
@@ -54,7 +67,8 @@ export async function recordPayment({
   return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({ where: { id: invoiceId, tenantId, schoolId } });
     if (!invoice) throw new Error('Invoice not found');
-    if (Number(amount) > Number(invoice.balance)) throw new Error('Payment exceeds the outstanding invoice balance');
+    if (Number(amount) > Number(invoice.balance))
+      throw new Error('Payment exceeds the outstanding invoice balance');
     const payment = await tx.payment.create({
       data: {
         tenantId,
@@ -77,4 +91,4 @@ export async function recordPayment({
   });
 }
 
-export default { listInvoices, createInvoice, recordPayment };
+export default { listInvoices, createInvoice, getPayment, recordPayment };

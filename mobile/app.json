@@ -4,12 +4,15 @@
     "slug": "sais-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
+    "scheme": "sais",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.sais.mobile"
     },
     "android": {
+      "package": "com.sais.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -21,6 +24,10 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-secure-store", "expo-notifications"]
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      ["expo-notifications", { "color": "#2563EB", "sounds": [] }]
+    ]
   }
 }
