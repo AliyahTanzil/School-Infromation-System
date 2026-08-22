@@ -33,7 +33,7 @@ router.post('/intents/:id/initialize', async (req, res, next) => {
 router.post('/webhooks/:provider', async (req, res, next) => {
   try {
     res.json({
-      data: await paymentGatewayService.webhook({ ...req.body, providerId: req.params.provider }),
+      data: await paymentGatewayService.webhook({ ...req.body, providerId: req.params.provider, signature: req.get('x-monime-signature') || req.get('x-webhook-signature'), rawBody: JSON.stringify(req.body) }),
     });
   } catch (error) {
     next(error);
