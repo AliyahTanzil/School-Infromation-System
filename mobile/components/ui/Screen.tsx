@@ -20,9 +20,9 @@ export function Screen({ children, eyebrow, title, description }: PropsWithChild
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.paper },
-  content: { flex: 1, padding: spacing.lg, gap: spacing.md },
-  eyebrow: { color: colors.blue, fontSize: 12, fontWeight: '700', letterSpacing: 1.2 },
-  title: { color: colors.ink, fontSize: 32, fontWeight: '800', lineHeight: 38 },
-  description: { color: colors.muted, fontSize: 16, lineHeight: 24 },
+  content: { flex: 1, paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.md },
+  eyebrow: { color: colors.blue, fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
+  title: { color: colors.ink, fontSize: 34, fontWeight: '800', letterSpacing: -0.5, lineHeight: 40 },
+  description: { color: colors.muted, fontSize: 16, lineHeight: 24, maxWidth: 520 },
   syncBanner: { color: colors.blue, fontSize: 13, fontWeight: '700', lineHeight: 18 },
 });

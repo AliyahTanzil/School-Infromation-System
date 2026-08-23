@@ -16,15 +16,15 @@ export default function MobileHome() {
     return null;
   }
   return (
-    <Screen eyebrow="SAIS mobile" title="School operations, ready for the day." description="Mobile Step 1 establishes the secure, tenant-aware navigation foundation for the existing SAIS platform.">
-      <View style={styles.notice}><Text style={styles.noticeTitle}>Architecture preview</Text><Text style={styles.noticeText}>These workspaces are placeholders. Authentication and live data will consume the existing SAIS API in a later mobile step.</Text></View>
+    <Screen eyebrow="SAIS mobile" title="Good morning. Let&apos;s make today count." description="A calm, connected workspace for the people who keep your school moving.">
+      <View style={styles.notice}><Text style={styles.noticeTitle}>Choose your workspace</Text><Text style={styles.noticeText}>Open the view that matches your role and pick up where you left off.</Text></View>
       <View style={styles.grid}>
         <RoleCard role="owner" label="Application owner" onPress={() => router.push('/owner')} />
         <RoleCard role="tenant" label="Tenant workspace" onPress={() => router.push('/tenant')} />
         <RoleCard role="administrator" label="Administrator" onPress={() => router.push('/administrator')} />
         <RoleCard role="staff" label="Staff workspace" onPress={() => router.push('/staff')} />
       </View>
-      <Text style={styles.footer}>Connected architecture: Mobile → SAIS API → PostgreSQL</Text>
+      <Text style={styles.footer}>Securely connected to your SAIS school workspace</Text>
     </Screen>
   );
 }
