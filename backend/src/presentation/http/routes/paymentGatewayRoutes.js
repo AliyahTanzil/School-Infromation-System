@@ -30,6 +30,15 @@ router.post('/intents/:id/initialize', async (req, res, next) => {
     next(error);
   }
 });
+export async function monimeWebhookHandler(req, res, next) {
+  try {
+    res.json({
+      data: await paymentGatewayService.webhook({ ...req.body, providerId: 'monime', signature: req.get('x-monime-signature') || req.get('x-webhook-signature'), rawBody: JSON.stringify(req.body) }),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 router.post('/webhooks/:provider', async (req, res, next) => {
   try {
     res.json({
