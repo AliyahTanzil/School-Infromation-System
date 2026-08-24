@@ -62,8 +62,8 @@ export async function register({
   password,
   deviceName,
   accountType = 'TENANT_ADMIN',
-  firstName,
-  lastName,
+  firstName = '',
+  lastName = '',
   designation,
   context,
 }) {

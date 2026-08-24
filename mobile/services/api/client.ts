@@ -18,7 +18,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     if (!response.ok) {
       throw new ApiError(payload?.message ?? 'The SAIS API request failed.', classifyApiError(response.status), response.status, requestId, payload);
     }
-    return payload as T;
+    return (payload?.data ?? payload) as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
     throw new ApiError(error instanceof Error && error.name === 'AbortError' ? 'The request timed out.' : 'The SAIS API is unavailable.', 'network');

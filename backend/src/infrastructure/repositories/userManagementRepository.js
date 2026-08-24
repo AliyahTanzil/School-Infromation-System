@@ -3,7 +3,7 @@ import prisma from '../orm/prismaClient.js';
 const baseInclude = {
   profile: true,
   preference: true,
-  userRoles: { where: { revokedAt: null }, include: { role: true } },
+  roles: { where: { revokedAt: null }, include: { role: true } },
 };
 
 const db = (tx) => tx ?? prisma;

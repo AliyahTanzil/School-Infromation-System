@@ -5,21 +5,32 @@ import { secureAuthStorage } from './secureStorage';
 import { sessionStore } from '../../store/session';
 
 export type LoginInput = { identifier: string; password: string };
-type AuthResponse = { accessToken?: string; token?: string; session?: MobileSessionContext };
+type AuthUser = { id: string; tenantId?: string | null; roles?: string[]; status?: string };
+type AuthResponse = { user?: AuthUser; accessToken?: string; token?: string; sessionId?: string };
+
+type MeResponse = { user: AuthUser };
+
+function toSession(user: AuthUser, sessionId?: string): MobileSessionContext {
+  const role = user.roles?.some((value) => value.toLowerCase().includes('owner')) ? 'owner' : user.roles?.some((value) => value.toLowerCase().includes('admin')) ? 'administrator' : user.roles?.some((value) => value.toLowerCase().includes('teacher') || value.toLowerCase().includes('staff')) ? 'staff' : 'tenant';
+  const accountStatus = user.status === 'SUSPENDED' ? 'suspended' : user.status === 'PENDING_VERIFICATION' ? 'pending' : 'active';
+  return { userId: user.id, tenantId: user.tenantId ?? null, role, permissions: [], accountStatus, deviceId: sessionId ?? null };
+}
 
 async function sessionFromToken(accessToken: string) {
-  return apiRequest<MobileSessionContext>('/auth/me', { accessToken });
+  const response = await apiRequest<MeResponse>('/auth/me', { accessToken });
+  return toSession(response.user);
 }
 
 let refreshInFlight: Promise<string | null> | null = null;
 
 export async function login(input: LoginInput) {
-  const response = await apiRequest<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(input) });
+  const response = await apiRequest<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email: input.identifier, password: input.password }) });
   const accessToken = response.accessToken ?? response.token;
-  if (!accessToken || !response.session) throw new ApiError('The backend returned an incomplete session.', 'server');
+  if (!accessToken || !response.user) throw new ApiError('The backend returned an incomplete session.', 'server');
+  const session = toSession(response.user, response.sessionId);
   await secureAuthStorage.setAccessToken(accessToken);
-  await sessionStore.set(response.session);
-  return response.session;
+  await sessionStore.set(session);
+  return session;
 }
 
 export async function refreshAccessToken() {

@@ -826,7 +826,7 @@ function Dashboard() {
  * AUTHENTICATED ROUTE GUARD
  * ======================================================= */
 
-function Protected({ children }) {
+function Protected({ children, allowed }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -839,6 +839,10 @@ function Protected({ children }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (allowed?.length && !allowed.some((value) => user.accountType === value || user.platformRole === value || (user.roles ?? []).includes(value))) {
+    return <Navigate to={getDestinationForUser(user)} replace />;
   }
 
   return children;
@@ -910,7 +914,7 @@ export default function App() {
             <Route
               path="/platform-admin"
               element={
-                <Protected>
+                <Protected allowed={['APPLICATION_MANAGER', 'OWNER']}>
                   <PlatformAdminDashboard />
                 </Protected>
               }
@@ -919,7 +923,7 @@ export default function App() {
             <Route
               path="/tenant-admin"
               element={
-                <Protected>
+                <Protected allowed={['TENANT_ADMIN', 'SCHOOL_ADMIN', 'ADMIN']}>
                   <TenantAdminDashboard />
                 </Protected>
               }
