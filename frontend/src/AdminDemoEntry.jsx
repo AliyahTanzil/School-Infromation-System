@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 
 export default function AdminDemoEntry() {
@@ -10,6 +10,7 @@ export default function AdminDemoEntry() {
     enterAdminDemo();
     navigate('/inspection', { replace: true });
   }, [adminDemoEnabled, enterAdminDemo, navigate]);
+  if (!adminDemoEnabled) return <Navigate to="/login" replace />;
   return (
     <main className="grid min-h-screen place-items-center bg-slate-950 px-6 text-center text-slate-100">
       <div>

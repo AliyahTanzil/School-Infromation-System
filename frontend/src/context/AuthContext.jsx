@@ -3,8 +3,11 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../api/auth.js';
 
 const AuthContext = createContext(null);
-// Temporary development access: restore production CTA/auth behavior when development is finished.
-const adminDemoEnabled = import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true';
+// Demo access is opt-in and requires an explicitly isolated development data mode.
+// Never enable this merely because the build is development or against real data.
+const adminDemoEnabled = import.meta.env.DEV
+  && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true'
+  && import.meta.env.VITE_DEMO_DATA_MODE === 'isolated';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
