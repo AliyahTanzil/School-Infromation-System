@@ -23,9 +23,24 @@ const config = {
     url: process.env.REDIS_URL ?? '',
   },
   cors: {
-    origins: (process.env.CORS_ORIGIN ?? 'http://localhost:4000')
-      .split(',')
-      .map((origin) => origin.trim())
+    origins: [
+      process.env.CORS_ORIGIN,
+      process.env.CORS_ORIGIN_2,
+      process.env.CORS_ORIGIN_2_2,
+      process.env.CORS_ORIGIN_2_3,
+      process.env.CORS_ORIGIN_3,
+      process.env.CORS_ORIGIN_4,
+      process.env.FRONTEND_URL,
+      process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+      process.env.V0_RUNTIME_URL,
+      process.env.V0_DEV_APP_URL,
+      'http://localhost:3000',
+      'http://localhost:4000',
+      'http://localhost:5173',
+    ]
+      .filter(Boolean)
+      .flatMap((value) => String(value).split(','))
+      .map((origin) => origin.trim().replace(/\/$/, ''))
       .filter(Boolean),
     credentials: true,
   },
