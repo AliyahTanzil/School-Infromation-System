@@ -14,7 +14,16 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<AuthState>({ status: 'loading' });
 
   useEffect(() => {
-    restoreSession().then((session) => setState(session ? { status: 'authenticated', session } : { status: 'application-token-required' })).catch(() => setState({ status: 'error', message: 'Unable to restore the mobile session.' }));
+    let active = true;
+    restoreSession()
+      .then((session) => {
+        if (!active) return;
+        setState(session ? { status: 'authenticated', session } : { status: 'application-token-required' });
+      })
+      .catch(() => {
+        if (active) setState({ status: 'error', message: 'Unable to restore the mobile session.' });
+      });
+    return () => { active = false; };
   }, []);
 
   const value = useMemo(() => ({

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { RoleCard } from '../components/ui/RoleCard';
 import { Screen } from '../components/ui/Screen';
@@ -8,12 +8,10 @@ import { useAuth } from '../providers/AuthProvider';
 export default function MobileHome() {
   const { state } = useAuth();
   if (state.status === 'application-token-required') {
-    router.replace('/application-token');
-    return null;
+    return <Redirect href="/application-token" />;
   }
   if (state.status === 'unauthenticated') {
-    router.replace('/auth');
-    return null;
+    return <Redirect href="/auth" />;
   }
   return (
     <Screen eyebrow="SAIS mobile" title="Good morning. Let&apos;s make today count." description="A calm, connected workspace for the people who keep your school moving.">
