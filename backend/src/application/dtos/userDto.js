@@ -9,9 +9,9 @@ export function toPublicUser(user, { roles = [] } = {}) {
     id: user.id,
     tenantId: user.tenantId ?? null,
     email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    accountType: user.accountType,
+    firstName: user.firstName ?? '',
+    lastName: user.lastName ?? '',
+    accountType: user.accountType ?? null,
     platformRole: user.platformRole ?? null,
     status: user.status,
     emailVerified: Boolean(user.emailVerifiedAt),
@@ -21,7 +21,6 @@ export function toPublicUser(user, { roles = [] } = {}) {
     roles,
   };
 }
-
 export function toUserDto(user) {
   if (!user) return null;
   return {
