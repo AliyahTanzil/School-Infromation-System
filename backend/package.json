@@ -8,7 +8,7 @@
     "node": ">=20.0.0"
   },
   "scripts": {
-    "dev": "node --env-file-if-exists=.env --env-file-if-exists=/vercel/share/.env.project --import tsx src/main.ts",
+    "dev": "PORT=3001 node --env-file-if-exists=.env --env-file-if-exists=/vercel/share/.env.project --import tsx src/main.ts",
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.json",
     "lint": "eslint src/foundation src/app.ts src/server.ts src/main.ts scripts/db-diagnose.ts scripts/db-verify.ts scripts/db-integrity-check.ts prisma/seed.ts tests/foundation.test.ts tests/database.test.ts tests/databaseSafety.test.ts tests/unit/apiContract.test.js tests/unit/healthContract.test.js tests/unit/observability.test.js tests/unit/securityHardening.test.js tests/unit/apiIntegrationContract.test.js tests/unit/recoveryReadiness.test.js tests/unit/finalRemediation.test.js tests/unit/authRouteMount.test.js tests/unit/cookies.test.js tests/unit/tokenSecurity.test.js",
