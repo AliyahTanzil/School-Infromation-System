@@ -1,16 +1,18 @@
-import { useMemo, useState } from 'react';
-import { Text } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text } from 'react-native';
 import { NotificationInbox } from '../components/communication/NotificationInbox';
 import { Screen } from '../components/ui/Screen';
+import { listNotifications, markNotificationRead } from '../services/notifications';
+import { useAuth } from '../providers/AuthProvider';
 import type { Notification } from '../services/communication/contracts';
 
-const demoNotifications: Notification[] = [
-  { id: 'notice-1', tenantId: 'tenant-demo', schoolId: 'school-demo', title: 'Welcome to SAIS Mobile', body: 'Your notification inbox is ready. Live delivery will use the configured communication API.', type: 'GENERAL', priority: 'NORMAL', status: 'SENT', createdAt: new Date().toISOString(), readAt: null },
-];
-
 export default function NotificationsScreen() {
-  const [readIds, setReadIds] = useState<string[]>([]);
-  const notifications = useMemo(() => demoNotifications.map((item) => ({ ...item, readAt: readIds.includes(item.id) ? new Date().toISOString() : item.readAt })), [readIds]);
-  const unreadCount = notifications.filter((item) => !item.readAt).length;
-  return <Screen title="Notifications"><NotificationInbox notifications={notifications} unreadCount={unreadCount} onRead={(item) => setReadIds((ids) => ids.includes(item.id) ? ids : [...ids, item.id])} /><Text accessible accessibilityLiveRegion="polite">{unreadCount} unread</Text></Screen>;
+  const { state } = useAuth();
+  const [items, setItems] = useState<Notification[] | null>(null);
+  const [message, setMessage] = useState('');
+  useEffect(() => { listNotifications().then(setItems).catch((cause) => setMessage(cause instanceof Error ? cause.message : 'Unable to load notifications.')); }, []);
+  if (message) return <Screen title="Notifications"><Text>{message}</Text></Screen>;
+  if (!items) return <Screen title="Notifications"><ActivityIndicator /></Screen>;
+  const unreadCount = items.filter((item) => !item.readAt).length;
+  return <Screen title="Notifications"><NotificationInbox notifications={items} unreadCount={unreadCount} onRead={async (item) => { if (state.status === 'authenticated') { await markNotificationRead(item.id, state.session.userId); setItems((current) => current?.map((entry) => entry.id === item.id ? { ...entry, readAt: new Date().toISOString() } : entry) ?? []); } }} /><Text accessible accessibilityLiveRegion="polite">{unreadCount} unread</Text></Screen>;
 }

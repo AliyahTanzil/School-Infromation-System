@@ -12,9 +12,9 @@ import {
 /* eslint-disable react/prop-types */
 
 import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
-import toast, { Toaster } from 'react-hot-toast';
-
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import toast, { Toaster } from 'react-hot-toast';
 
 /* =========================================================
  * LAZY LOADED APPLICATION MODULES
@@ -301,12 +301,11 @@ function Login() {
       const destination = getDestinationForUser(user);
 
       toast.success('Welcome back');
-
       nav(destination, {
         replace: true,
       });
     } catch (error) {
-      toast.error(error.response?.data?.error?.message ?? 'Unable to sign in');
+      toast.error(getApiErrorMessage(error, 'Unable to sign in'));
     } finally {
       setBusy(false);
     }

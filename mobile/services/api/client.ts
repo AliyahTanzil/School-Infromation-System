@@ -8,7 +8,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   const timeout = setTimeout(() => controller.abort(), appConfig.requestTimeoutMs);
   const headers = new Headers(options.headers);
   headers.set('Accept', 'application/json');
-  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (options.body && !(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (options.accessToken) headers.set('Authorization', `Bearer ${options.accessToken}`);
 
   try {

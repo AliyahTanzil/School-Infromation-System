@@ -13,6 +13,7 @@ const router = Router();
 const admin = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
 router.use(authenticate, admin);
 router.get('/invoices', validate(invoiceQuerySchema), controller.list);
+router.get('/payments/:paymentId', controller.status);
 router.post('/invoices', validate(createInvoiceSchema), controller.create);
 router.post('/payments', validate(paymentSchema), controller.pay);
 export default router;

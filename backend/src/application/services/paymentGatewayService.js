@@ -43,7 +43,7 @@ const paymentGatewayService = {
     const intent = await prisma.paymentIntent.findUniqueOrThrow({ where: { id } });
     if (intent.expiresAt <= new Date())
       return prisma.paymentIntent.update({ where: { id }, data: { status: 'EXPIRED' } });
-    const adapter = gatewayFor('mock');
+    const adapter = gatewayFor(intent.providerId || 'monime');
     const response = await adapter.createPaymentIntent(intent);
     await prisma.paymentAttempt.create({
       data: {
@@ -65,7 +65,8 @@ const paymentGatewayService = {
     });
   },
   async webhook(input) {
-    const verified = await gatewayFor('mock').verifyPayment(input);
+    const adapter = gatewayFor(input.providerId || 'monime');
+    const verified = await adapter.verifyPayment(input, input.signature, input.rawBody);
     if (!verified.verified) throw new Error('Invalid webhook signature');
     const existing = await prisma.gatewayWebhookEvent.findUnique({
       where: { providerId_eventId: { providerId: input.providerId, eventId: input.eventId } },
@@ -91,7 +92,7 @@ const paymentGatewayService = {
     return event;
   },
   async health() {
-    return gatewayFor('mock').healthCheck();
+    return gatewayFor(process.env.MONIME_API_BASE_URL ? 'monime' : 'mock').healthCheck();
   },
 };
 

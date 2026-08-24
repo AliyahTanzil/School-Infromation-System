@@ -1,4 +1,4 @@
-export type ApiErrorKind = 'validation' | 'authentication' | 'authorization' | 'network' | 'server' | 'unknown';
+export type ApiErrorKind = 'validation' | 'authentication' | 'authorization' | 'conflict' | 'network' | 'server' | 'unknown';
 
 export class ApiError extends Error {
   constructor(
@@ -16,6 +16,7 @@ export class ApiError extends Error {
 export function classifyApiError(status: number): ApiErrorKind {
   if (status === 401) return 'authentication';
   if (status === 403) return 'authorization';
+  if (status === 409) return 'conflict';
   if (status >= 400 && status < 500) return 'validation';
   if (status >= 500) return 'server';
   return 'unknown';

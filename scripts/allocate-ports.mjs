@@ -25,8 +25,15 @@ function findPort(start) {
 // on a higher port and never needs to be the detected preview target.
 // Port 0 asks the operating system for an available ephemeral port. Explicit
 // values remain supported for CI and deployment environments that require them.
-const frontend = await findPort(Number(process.env.FRONTEND_PORT || 0));
-const backend = await findPort(Number(process.env.BACKEND_PORT || 0));
+const isV0 =
+  process.env.SAIS_RUNTIME === 'v0' ||
+  process.env.VERCEL ||
+  process.env.V0 ||
+  process.env.V0_RUNTIME_URL ||
+  process.env.V0_DEV_APP_URL;
+const frontendStart = process.env.FRONTEND_PORT || (isV0 ? 3000 : 0);
+const frontend = await findPort(Number(frontendStart));
+const backend = await findPort(Number(process.env.BACKEND_PORT || (isV0 ? 44555 : 0)));
 const manifest = resolve(process.cwd(), '.sais-ports.json');
 try {
   unlinkSync(resolve(process.cwd(), 'backend/.sais-port'));

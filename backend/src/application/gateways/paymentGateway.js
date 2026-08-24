@@ -45,6 +45,8 @@ export class MockPaymentGateway {
   }
 }
 
+import { MonimePaymentGateway } from './monimePaymentGateway.js';
+
 export function gatewayFor(provider = 'mock') {
-  return new MockPaymentGateway(provider);
+  return provider === 'monime' ? new MonimePaymentGateway(provider) : new MockPaymentGateway(provider);
 }

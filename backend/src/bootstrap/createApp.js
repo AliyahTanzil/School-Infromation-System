@@ -14,11 +14,23 @@ export function createApp() {
   app.disable('x-powered-by');
   if (config.http.trustProxy) app.set('trust proxy', 1);
   app.use(helmet());
-  app.use(cors({ origin: config.cors.origin, credentials: config.cors.credentials }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || config.cors.origins.includes(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new Error(`Origin not allowed: ${origin}`));
+      },
+      credentials: config.cors.credentials,
+    })
+  );
   app.use(express.json({ limit: config.http.bodyLimit }));
   app.use(express.urlencoded({ extended: true, limit: config.http.bodyLimit }));
   app.use(cookieParser());
   app.use(requestLogger);
+  app.use('/api/v1', router);
   app.use('/api', router);
   app.use(notFoundHandler);
   app.use(errorHandler);

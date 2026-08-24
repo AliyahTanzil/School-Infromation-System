@@ -239,6 +239,7 @@ model UserDevice {
   userId            String    @db.Uuid
   deviceFingerprint String
   platform          String?
+  pushToken         String?
   lastSeenAt        DateTime?
   createdAt         DateTime  @default(now())
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)

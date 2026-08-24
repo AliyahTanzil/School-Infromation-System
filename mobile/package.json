@@ -3,10 +3,13 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "expo": "~57.0.13",
-    "expo-constants": "~57.0.11",
-    "expo-linking": "~57.0.6",
-    "expo-router": "~57.0.13",
+    "@react-native-community/netinfo": "^12.0.1",
+    "expo": "~57.0.15",
+    "expo-constants": "~57.0.13",
+    "expo-image-picker": "~57.0.8",
+    "expo-linking": "~57.0.7",
+    "expo-notifications": "~57.0.13",
+    "expo-router": "~57.0.15",
     "expo-secure-store": "~57.0.1",
     "expo-status-bar": "~57.0.1",
     "react": "19.2.3",
@@ -21,13 +24,15 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "dev": "expo start",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
-    "test": "tsc --noEmit"
+    "test": "npm run typecheck && npm run config:check",
+    "config:check": "expo config --type public >/dev/null"
   },
   "private": true
 }

@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
-import { Text } from 'react-native'
+import { useEffect, useState } from 'react'
+import { ActivityIndicator, Text, View } from 'react-native'
 import { Screen } from '../components/ui/Screen'
 import { FinanceDashboard } from '../components/finance/FinanceDashboard'
 import type { FinanceSummary, Invoice } from '../services/finance/contracts'
-
-const summary: FinanceSummary = { outstanding: 1250, paidThisPeriod: 4600, overdue: 250, currency: 'USD' }
-const invoices: Invoice[] = [{ id: 'demo-1', invoiceNumber: 'INV-2026-001', tenantId: 'current', description: 'Term tuition', amount: 1250, currency: 'USD', dueDate: '2026-09-01', status: 'ISSUED' }]
+import { createVerifiedPayment, fetchFinanceSummary, fetchInvoices } from '../services/finance/service'
+import { useAuth } from '../providers/AuthProvider'
 
 export default function FinanceRoute() {
-  const data = useMemo(() => ({ summary, invoices }), [])
+  const { state } = useAuth()
+  const [data, setData] = useState<{ summary: FinanceSummary; invoices: Invoice[] } | null>(null)
   const [message, setMessage] = useState('')
-  return <Screen title="Finance"><FinanceDashboard summary={data.summary} invoices={data.invoices} onPay={(invoice) => setMessage(`Payment for ${invoice.invoiceNumber} is ready for secure server checkout.`)} />{message ? <Text accessible accessibilityLiveRegion="polite">{message}</Text> : null}</Screen>
+  useEffect(() => { Promise.all([fetchFinanceSummary(), fetchInvoices()]).then(([summary, invoices]) => setData({ summary, invoices })).catch((cause) => setMessage(cause instanceof Error ? cause.message : 'Unable to load finance data.')) }, [])
+  if (message) return <Screen title="Finance"><Text>{message}</Text></Screen>
+  if (!data) return <Screen title="Finance"><View><ActivityIndicator /><Text>Loading finance data…</Text></View></Screen>
+  return <Screen title="Finance"><FinanceDashboard summary={data.summary} invoices={data.invoices} onPay={async (invoice) => { try { await createVerifiedPayment({ invoiceId: invoice.id, amount: invoice.amount, tenantId: state.status === 'authenticated' ? state.session.tenantId ?? '' : '', schoolId: state.status === 'authenticated' ? state.session.tenantId ?? '' : '', idempotencyKey: `mobile-${invoice.id}-${Date.now()}` }); setMessage(`Payment submitted for ${invoice.invoiceNumber}.`) } catch (cause) { setMessage(cause instanceof Error ? cause.message : 'Payment could not be submitted.') } }} />{message ? <Text accessible accessibilityLiveRegion="polite">{message}</Text> : null}</Screen>
 }

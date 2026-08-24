@@ -3,7 +3,6 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import type { MobileSessionContext } from '../types/auth';
 import { rolePath, type AuthState } from '../services/auth/state';
 import { login, logout, restoreSession } from '../services/auth/service';
-import { secureAuthStorage } from '../services/auth/secureStorage';
 
 const AuthContext = createContext<{
   state: AuthState;
@@ -15,7 +14,7 @@ export function AuthProvider({ children }: React.PropsWithChildren) {
   const [state, setState] = useState<AuthState>({ status: 'loading' });
 
   useEffect(() => {
-    restoreSession().then((token) => setState(token ? { status: 'unauthenticated' } : { status: 'application-token-required' })).catch(() => setState({ status: 'error', message: 'Unable to restore the mobile session.' }));
+    restoreSession().then((session) => setState(session ? { status: 'authenticated', session } : { status: 'application-token-required' })).catch(() => setState({ status: 'error', message: 'Unable to restore the mobile session.' }));
   }, []);
 
   const value = useMemo(() => ({

@@ -10,17 +10,17 @@ export async function listNotifications(accessToken: string, params: { schoolId?
   const query = new URLSearchParams();
   if (params.schoolId) query.set('schoolId', params.schoolId);
   if (params.limit) query.set('limit', String(params.limit));
-  const result = await apiRequest<NotificationListResponse>(`/communications/notifications?${query}`, { accessToken });
+  const result = await apiRequest<NotificationListResponse>(`/api/v1/communication/notifications?${query}`, { accessToken });
   return result.data;
 }
 
 export async function getUnreadCount(accessToken: string, userId: string) {
-  const result = await apiRequest<UnreadCountResponse>(`/communications/notifications/unread-count?userId=${encodeURIComponent(userId)}`, { accessToken });
+  const result = await apiRequest<UnreadCountResponse>(`/api/v1/communication/notifications/unread-count?userId=${encodeURIComponent(userId)}`, { accessToken });
   return result.data.count;
 }
 
 export async function markNotificationRead(accessToken: string, notificationId: string, userId: string) {
-  return apiRequest<{ data: unknown }>(`/communications/notifications/${encodeURIComponent(notificationId)}/read`, {
+  return apiRequest<{ data: unknown }>(`/api/v1/communication/notifications/${encodeURIComponent(notificationId)}/read`, {
     method: 'POST',
     accessToken,
     body: JSON.stringify({ userId }),

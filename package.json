@@ -13,8 +13,8 @@
   "scripts": {
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
-    "dev": "npm run dev:all",
-    "dev:all": "node scripts/allocate-ports.mjs && concurrently -k -n backend,frontend -c blue,green \"node scripts/start-backend.mjs\" \"node scripts/wait-for-backend.mjs\"",
+    "dev": "npm run dev:frontend",
+    "dev:all": "node scripts/ensure-workspaces.mjs && node scripts/allocate-ports.mjs && concurrently -k -n backend,frontend -c blue,green \"node scripts/start-backend.mjs\" \"node scripts/wait-for-backend.mjs\"",
     "build:frontend": "npm run build -w frontend",
     "lint": "eslint .",
     "test": "npm run test -w backend && npm run test -w frontend",
@@ -22,11 +22,12 @@
     "test:frontend": "npm run test -w frontend",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "node .husky/prepare.mjs"
+    "prepare": "node .husky/prepare.mjs",
+    "db:generate": "prisma generate --schema backend/prisma/schema.prisma"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.5",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-react": "^7.35.0",
@@ -45,6 +46,8 @@
   "dependencies": {
     "@ai-sdk/openai": "^4.0.37",
     "ai": "^7.0.59",
-    "npm": "^11.19.0"
+    "mammoth": "^1.12.1",
+    "npm": "^11.19.0",
+    "prisma": "5.22.0"
   }
 }

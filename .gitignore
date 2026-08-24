@@ -9,6 +9,11 @@ build/
 coverage/
 .vite/
 
+# Local runtime coordination files
+.sais-port
+.sais-ports.json
+backend/.sais-port
+
 # Environment secrets — never commit these
 .env
 .env.local
@@ -38,3 +43,6 @@ Thumbs.db
 
 # Aider Studio (auto-added)
 REPO_MAP.md
+
+# Vercel local project metadata
+.vercel/
