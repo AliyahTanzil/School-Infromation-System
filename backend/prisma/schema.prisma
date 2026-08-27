@@ -865,6 +865,85 @@ model PayrollItem {
   @@unique([payrollRunId, employeeId])
 }
 
+model Vehicle {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  vehicleNumber String
+  registrationNumber String
+  type String
+  capacity Int
+  status String @default("ACTIVE")
+  driverId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  inspections VehicleInspection[]
+  @@unique([tenantId, schoolId, vehicleNumber])
+  @@unique([tenantId, schoolId, registrationNumber])
+  @@index([tenantId, schoolId, status])
+}
+
+model TransportDriver {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String
+  phone String?
+  licenseNumber String
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, licenseNumber])
+}
+
+model TransportRoute {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  code String
+  name String
+  active Boolean @default(true)
+  stops TransportStop[]
+  trips TransportTrip[]
+  @@unique([tenantId, schoolId, code])
+}
+
+model TransportStop {
+  id String @id @default(uuid()) @db.Uuid
+  routeId String @db.Uuid
+  name String
+  sequence Int
+  pickupTime String?
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  @@unique([routeId, sequence])
+}
+
+model TransportTrip {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  routeId String @db.Uuid
+  vehicleId String?
+  driverId String?
+  scheduledAt DateTime
+  status String @default("SCHEDULED")
+  createdAt DateTime @default(now())
+  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, scheduledAt, status])
+}
+
+model VehicleInspection {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  vehicleId String @db.Uuid
+  passed Boolean @default(false)
+  inspectedAt DateTime @default(now())
+  notes String?
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, vehicleId, passed])
+}
+
 model Enrollment {
   id             String           @id @default(uuid()) @db.Uuid
   tenantId       String           @db.Uuid

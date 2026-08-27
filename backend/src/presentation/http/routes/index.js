@@ -25,6 +25,7 @@ import communicationRoutes from './communicationRoutes.js';
 import hrRoutes from './hrRoutes.js';
 import libraryRoutes from './libraryRoutes.js';
 import assetInventoryRoutes from './assetInventoryRoutes.js';
+import transportRoutes from './transportRoutes.js';
 
 const router = Router();
 
@@ -53,7 +54,7 @@ router.use('/communication', communicationRoutes);
 router.use('/hr', hrRoutes);
 router.use('/libraries', libraryRoutes);
 router.use('/assets-inventory', assetInventoryRoutes);
-router.use('/transport', featureUnavailableRoutes('Transport', 'TRN-001'));
+router.use('/transport', transportRoutes);
 router.use('/boarding', featureUnavailableRoutes('Boarding', 'BRD-001'));
 router.use('/security', featureUnavailableRoutes('Security operations', 'SEC-001'));
 router.use('/analytics', featureUnavailableRoutes('Analytics', 'ANA-001'));
