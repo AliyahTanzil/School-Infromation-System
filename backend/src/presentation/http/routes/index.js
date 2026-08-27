@@ -27,6 +27,7 @@ import libraryRoutes from './libraryRoutes.js';
 import assetInventoryRoutes from './assetInventoryRoutes.js';
 import transportRoutes from './transportRoutes.js';
 import boardingRoutes from './boardingRoutes.js';
+import classroomStreamRoutes from './classroomStreamRoutes.js';
 
 const router = Router();
 
@@ -57,6 +58,7 @@ router.use('/libraries', libraryRoutes);
 router.use('/assets-inventory', assetInventoryRoutes);
 router.use('/transport', transportRoutes);
 router.use('/boarding', boardingRoutes);
+router.use('/classroom-stream', classroomStreamRoutes);
 router.use('/security', featureUnavailableRoutes('Security operations', 'SEC-001'));
 router.use('/analytics', featureUnavailableRoutes('Analytics', 'ANA-001'));
 router.use('/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));

@@ -36,13 +36,13 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 | Total atomic tasks      |    48 |       100% |
 | Done                    |    20 |        42% |
 | In review               |     0 |         0% |
-| In progress             |     0 |         0% |
-| Ready                   |     2 |         4% |
+| In progress             |     1 |         2% |
+| Ready                   |     1 |         2% |
 | Blocked by dependencies |    26 |        54% |
 
 ## Next work
 
-LMS-001 is complete. The next implementation must follow the dependency queue; progress tracking is maintained in this file. Live LMS table migration remains a follow-up dependency.
+LMS-002 is in progress. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
 
 ## Verification baseline
 

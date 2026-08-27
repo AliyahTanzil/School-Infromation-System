@@ -944,6 +944,48 @@ model VehicleInspection {
   @@index([tenantId, schoolId, vehicleId, passed])
 }
 
+model ClassroomAnnouncement {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  classroomId String @db.Uuid
+  authorId String @db.Uuid
+  title String
+  body String
+  status String @default("PUBLISHED")
+  publishedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([tenantId, schoolId, classroomId, status, createdAt])
+}
+
+model ClassroomStreamPost {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  classroomId String @db.Uuid
+  authorId String @db.Uuid
+  body String
+  attachments Json @default("[]")
+  status String @default("PUBLISHED")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  comments ClassroomStreamComment[]
+  @@index([tenantId, schoolId, classroomId, status, createdAt])
+}
+
+model ClassroomStreamComment {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  postId String @db.Uuid
+  authorId String @db.Uuid
+  body String
+  createdAt DateTime @default(now())
+  post ClassroomStreamPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  @@index([tenantId, schoolId, postId, createdAt])
+}
+
 model Enrollment {
   id             String           @id @default(uuid()) @db.Uuid
   tenantId       String           @db.Uuid
