@@ -1,16 +1,18 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 
-export async function getOverview({ schoolId }) {
+export async function getOverview({ tenantId, schoolId }) {
   const [assets, maintenance, inventory, lowStock, warehouses, openOrders] = await Promise.all([
-    prisma.asset.count({ where: { schoolId, status: { not: 'DISPOSED' } } }),
+    prisma.asset.count({ where: { tenantId, schoolId, status: { not: 'DISPOSED' } } }),
     prisma.assetMaintenance.count({
-      where: { asset: { schoolId }, status: { in: ['OPEN', 'IN_PROGRESS'] } },
+      where: { asset: { tenantId, schoolId }, status: { in: ['OPEN', 'IN_PROGRESS'] } },
     }),
-    prisma.inventoryItem.count({ where: { schoolId, active: true } }),
-    prisma.inventoryItem.count({ where: { schoolId, active: true, reorderLevel: { gt: 0 } } }),
-    prisma.warehouse.count({ where: { schoolId, active: true } }),
+    prisma.inventoryItem.count({ where: { tenantId, schoolId, active: true } }),
+    prisma.inventoryItem.count({
+      where: { tenantId, schoolId, active: true, reorderLevel: { gt: 0 } },
+    }),
+    prisma.warehouse.count({ where: { tenantId, schoolId, active: true } }),
     prisma.purchaseOrder.count({
-      where: { schoolId, status: { in: ['SUBMITTED', 'APPROVED', 'PARTIAL'] } },
+      where: { tenantId, schoolId, status: { in: ['SUBMITTED', 'APPROVED', 'PARTIAL'] } },
     }),
   ]);
   return { assets, maintenance, inventory, lowStock, warehouses, openOrders };
