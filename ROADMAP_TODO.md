@@ -62,7 +62,7 @@ A feature task is complete only when all applicable layers exist:
 |    17 | BRD-001     | DONE    | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
 |    18 | LMS-001     | DONE    | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
 |    19 | LMS-002     | DONE    | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
-|    20 | LMS-003     | BLOCKED | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
+|    20 | LMS-003     | DONE    | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
 |    21 | LMS-004     | BLOCKED | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
 |    22 | LMS-005     | BLOCKED | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
 |    23 | LMS-006     | BLOCKED | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
@@ -162,6 +162,7 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | 2026-08-27 | BRD-001     | v0    | DONE    | Activated tenant-scoped boarding overview and dormitory routes; Prisma validation, syntax checks, backend suite (99 passed, 1 skipped), and diff checks passed                                                                                                                                                        |
 | 2026-08-27 | LMS-001     | v0    | DONE    | Confirmed tenant-scoped Classroom, Class, and ClassEnrollment models plus active class CRUD/enrollment routes; Prisma validation/generation, class route checks, backend suite, and diff checks passed. Live Neon verification found prerequisite GradeLevel/Classroom/Class/ClassEnrollment tables not yet migrated. |
 | 2026-08-27 | LMS-002     | v0    | DONE    | Added classroom announcements, stream posts, comments, tenant-scoped service/controller/routes, Neon tables, Prisma validation/generation, syntax checks, backend suite, and diff checks passed                                                                                                                       |
+| 2026-08-27 | LMS-003     | v0    | DONE    | Added tenant-scoped Assignment model, persistence table, assignment list/create/status APIs, active route mount, Prisma validation/generation, syntax checks, backend suite, and diff checks passed                                                                                                                   |
 | 2026-08-27 | LMS-001     | v0    | CLAIMED | Auditing classroom, membership, enrollment, tenant scope, tests, and frontend integration                                                                                                                                                                                                                             |
 | 2026-08-27 | COM-001     | v0    | DONE    | Notification events, deliveries, preferences, tenant-scoped communication service, active route mount, Prisma validation, and backend suite pass (99 passed, 1 skipped)                                                                                                                                               |
 
@@ -170,10 +171,10 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    19 |        40% |
+| Done                    |    20 |        42% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
 | Ready                   |     3 |         6% |
-| Blocked by dependencies |    26 |        54% |
+| Blocked by dependencies |    25 |        52% |
 
 Update this summary whenever a task status changes.

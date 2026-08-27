@@ -29,21 +29,22 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 |    17 | BRD-001     | DONE   | Activated tenant-scoped boarding overview and dormitory APIs; Prisma validation, syntax checks, backend suite (99 passed, 1 skipped), and diff checks passed.                                                                |
 |    18 | LMS-001     | DONE   | Confirmed tenant-scoped Classroom, Class, and ClassEnrollment models with active class/enrollment routes; validation and backend suite passed. Live Neon table verification is pending migration of prerequisite LMS tables. |
 |    19 | LMS-002     | DONE   | Added tenant-scoped classroom announcements, stream posts, comments, active routes, Neon tables, and validation evidence.                                                                                                    |
+|    20 | LMS-003     | DONE   | Added tenant-scoped Assignment persistence, assignment list/create/status APIs, active route mount, and validation evidence.                                                                                                 |
 
 ## Current progress
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    21 |        44% |
+| Done                    |    22 |        46% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
-| Ready                   |     1 |         2% |
+| Ready                   |     0 |         0% |
 | Blocked by dependencies |    26 |        54% |
 
 ## Next work
 
-LMS-002 is complete. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
+LMS-003 is complete. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
 
 ## Verification baseline
 
