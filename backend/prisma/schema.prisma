@@ -1051,3 +1051,98 @@ model DatabaseSentinel {
   id        Int      @id @default(1)
   createdAt DateTime @default(now())
 }
+
+model Examination {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String
+  code        String
+  status      String   @default("DRAFT")
+  createdById String?  @db.Uuid
+  lockedAt   DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@unique([tenantId, schoolId, code])
+}
+
+model ExaminationCandidate {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  examinationId String   @db.Uuid
+  studentId     String   @db.Uuid
+  classId       String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  @@unique([examinationId, studentId])
+}
+
+model ExaminationMark {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  examinationId String   @db.Uuid
+  candidateId   String   @db.Uuid
+  subjectCode   String
+  marks         Decimal  @db.Decimal(5, 2)
+  recordedById  String?  @db.Uuid
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@unique([examinationId, candidateId, subjectCode])
+}
+
+model ExaminationSchedule {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  examinationId String   @db.Uuid
+  subjectCode   String
+  classId       String?  @db.Uuid
+  scheduledAt   DateTime?
+  createdAt     DateTime @default(now())
+  @@unique([examinationId, subjectCode, classId])
+}
+
+model ExaminationAudit {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  examinationId String   @db.Uuid
+  actorId       String?  @db.Uuid
+  action        String
+  metadata      Json     @default("{}")
+  createdAt     DateTime @default(now())
+}
+
+model Result {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  examinationId String   @db.Uuid
+  studentId     String   @db.Uuid
+  schemeId      String   @db.Uuid
+  status        String   @default("REVIEW")
+  studentStatus String
+  total         Decimal  @default(0) @db.Decimal(8, 2)
+  average       Decimal  @default(0) @db.Decimal(6, 2)
+  grade         String?
+  gradePoint    Decimal? @db.Decimal(5, 2)
+  position      Int?
+  processedAt   DateTime?
+  publishedAt   DateTime?
+  lockedAt      DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@unique([examinationId, studentId])
+}
+
+model ResultAudit {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  resultId  String   @db.Uuid
+  actorId   String?  @db.Uuid
+  action    String
+  metadata  Json     @default("{}")
+  createdAt DateTime @default(now())
+}

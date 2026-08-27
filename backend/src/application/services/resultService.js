@@ -6,7 +6,6 @@ const where = ({ tenantId, schoolId, id }) => ({ id, tenantId, schoolId });
 export async function listResults({ tenantId, schoolId, examinationId }) {
   return prisma.result.findMany({
     where: { tenantId, schoolId, ...(examinationId ? { examinationId } : {}) },
-    include: { student: { include: { profile: true } }, subjects: true },
     orderBy: { position: 'asc' },
   });
 }
@@ -18,15 +17,17 @@ export async function processResults({ tenantId, schoolId, examinationId, scheme
       include: { bands: true },
     }),
     prisma.examinationMark.findMany({
-      where: { tenantId, schoolId, examinationId, status: 'APPROVED' },
+      where: { tenantId, schoolId, examinationId },
     }),
   ]);
   if (!scheme) throw new Error('Grading scheme not found');
-  const studentIds = [...new Set(marks.map((mark) => mark.studentId))];
+  const studentIds = [...new Set(marks.map((mark) => mark.candidateId))];
   const calculated = studentIds.map((studentId) => ({
     studentId,
     ...calculateResult({
-      marks: marks.filter((mark) => mark.studentId === studentId),
+      marks: marks
+        .filter((mark) => mark.candidateId === studentId)
+        .map((mark) => ({ score: mark.marks })),
       bands: scheme.bands,
       passMark: scheme.passMark,
     }),
