@@ -59,7 +59,7 @@ A feature task is complete only when all applicable layers exist:
 |    14 | LIB-001     | DONE    | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
 |    15 | AST-001     | DONE    | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
 |    16 | TRN-001     | DONE    | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
-|    17 | BRD-001     | BLOCKED | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
+|    17 | BRD-001     | DONE    | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
 |    18 | LMS-001     | BLOCKED | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
 |    19 | LMS-002     | BLOCKED | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
 |    20 | LMS-003     | BLOCKED | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
@@ -156,8 +156,10 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | 2026-08-27 | RES-001     | v0    | DONE    | Result persistence and audit tables created; result processing, ranking, statistics, lifecycle publication, tenant/school scoping, Prisma validation/generation, and backend suite pass (99 passed, 1 skipped)                                                                |
 | 2026-08-27 | FIN-001     | v0    | DONE    | Finance schema and Neon tables added for fees, invoices, payments, and ledger transactions; existing idempotent transactional payment flow validated; Prisma validation/generation and backend suite pass (99 passed, 1 skipped)                                              |
 | 2026-08-27 | PAY-001     | v0    | DONE    | Payment intent, attempt, and idempotent webhook persistence added; existing gateway service/routes validated with Prisma and backend suite pass (99 passed, 1 skipped)                                                                                                        |
-| 2026-08-27 | AST-001     | v0    | DONE    | Activated tenant-scoped assets and inventory overview/search routes; service queries now include tenant and school boundaries; Prisma validation, syntax checks, backend suite, and diff checks passed                                                                        |
-| 2026-08-27 | TRN-001     | v0    | DONE    | Transport vehicle, driver, route, stop, trip, and inspection persistence added; active transport API mounted; Prisma validation, syntax checks, backend suite (99 passed, 1 skipped), and diff checks passed                                                                  |
+| 2026-08-27 | AST-001     | v0    | DONE    | Activated tenant-scoped assets and inventory overview/search routes; service queries now include tenant and school boundaries; Prisma validation, syntax checks, backend suite, and diff checks passed |
+| 2026-08-27 | BRD-001     | v0    | CLAIMED | Auditing boarding models, lifecycle service, routes, tenant scope, tests, and frontend integration |
+| 2026-08-27 | TRN-001     | v0    | DONE    | Transport vehicle, driver, route, stop, trip, and inspection persistence added; active transport API mounted; Prisma validation, syntax checks, backend suite (99 passed, 1 skipped), and diff checks passed |
+| 2026-08-27 | BRD-001     | v0    | DONE    | Activated tenant-scoped boarding overview and dormitory routes; Prisma validation, syntax checks, backend suite (99 passed, 1 skipped), and diff checks passed |
 | 2026-08-27 | COM-001     | v0    | DONE    | Notification events, deliveries, preferences, tenant-scoped communication service, active route mount, Prisma validation, and backend suite pass (99 passed, 1 skipped)                                                                                                       |
 
 ## Progress summary
@@ -165,10 +167,10 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    18 |        38% |
+| Done                    |    19 |        40% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
 | Ready                   |     3 |         6% |
-| Blocked by dependencies |    27 |        56% |
+| Blocked by dependencies |    26 |        54% |
 
 Update this summary whenever a task status changes.
