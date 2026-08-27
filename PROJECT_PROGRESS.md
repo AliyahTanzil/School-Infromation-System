@@ -40,13 +40,13 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 | Total atomic tasks      |    48 |       100% |
 | Done                    |    24 |        50% |
 | In review               |     0 |         0% |
-| In progress             |     0 |         0% |
+| In progress             |     1 |         2% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
 
 ## Next work
 
-LMS-005 is complete. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
+LMS-006 is in progress. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
 
 ## Verification baseline
 
