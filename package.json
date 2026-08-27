@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^4.0.37",
+    "@vercel/blob": "^2.8.0",
     "ai": "^7.0.59",
     "mammoth": "^1.12.1",
     "npm": "^11.19.0",
