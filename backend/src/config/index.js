@@ -23,6 +23,9 @@ const config = {
     url: process.env.REDIS_URL ?? '',
   },
   cors: {
+    vercelPreviewProject:
+      process.env.CORS_VERCEL_PREVIEW_PROJECT ??
+      'school-administration-information-system-frontend',
     origins: [
       process.env.CORS_ORIGIN,
       process.env.CORS_ORIGIN_2,

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
+import request from 'supertest';
+import app from '../../src/app.js';
 
 const root = path.resolve(import.meta.dirname, '../../..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -14,6 +16,18 @@ test('backend exposes the frontend authentication contract under /api', () => {
   assert.match(auth, /router\.post\('\/refresh'/);
   assert.match(auth, /router\.post\('\/logout'/);
   assert.match(auth, /router\.get\('\/me'/);
+});
+
+test('active TypeScript server mounts the frontend user-management contract', () => {
+  const app = read('backend/src/foundation/app.ts');
+  assert.match(app, /app\.use\('\/api\/users', userRouter\)/);
+  assert.match(app, /app\.use\('\/api\/v1\/users', userRouter\)/);
+});
+
+test('active TypeScript server mounts the parent portal contract', () => {
+  const app = read('backend/src/foundation/app.ts');
+  assert.match(app, /app\.use\('\/api\/parents', parentRouter\)/);
+  assert.match(app, /app\.use\('\/api\/v1\/parents', parentRouter\)/);
 });
 
 test('student list contract is bounded and tenant-scoped', () => {
@@ -33,9 +47,50 @@ test('frontend API clients use the same-origin API boundary', () => {
   assert.match(vite, /proxy/);
 });
 
+test('platform owners can open the tenant administration workspace', () => {
+  const app = read('frontend/src/App.jsx');
+  assert.match(
+    app,
+    /path="\/tenant-admin"[\s\S]*?allowed=\{\[[\s\S]*?'APPLICATION_MANAGER'[\s\S]*?'OWNER'/
+  );
+});
+
 test('health contract includes live, ready, and database probes', () => {
   const routes = read('backend/src/presentation/http/routes/healthRoutes.js');
   assert.match(routes, /router\.get\('\/live'/);
   assert.match(routes, /router\.get\('\/ready'/);
   assert.match(routes, /router\.get\('\/health\/database'/);
+});
+
+test('routes without active Prisma models fail closed with a controlled contract', () => {
+  const routes = read('backend/src/presentation/http/routes/index.js');
+  const unavailable = read('backend/src/presentation/http/routes/featureUnavailableRoutes.js');
+  assert.match(unavailable, /status\(501\)/);
+  assert.match(unavailable, /FEATURE_NOT_IMPLEMENTED/);
+  assert.match(routes, /router\.use\('\/subjects', subjectRoutes\)/);
+  assert.match(routes, /router\.use\('\/classes', classRoutes\)/);
+  assert.match(routes, /featureUnavailableRoutes\('Finance'/);
+  assert.match(routes, /featureUnavailableRoutes\('Digital|featureUnavailableRoutes\('AI/);
+});
+
+test('platform actions use the active audit model', () => {
+  const service = read('backend/src/application/services/platformAdminService.js');
+  assert.match(service, /prisma\.auditLog\.create/);
+  assert.doesNotMatch(service, /prisma\.platformAuditEvent/);
+});
+
+test('deferred domains return a controlled runtime response', async () => {
+  for (const path of ['/api/finance', '/api/analytics']) {
+    const response = await request(app).get(path).expect(501);
+    assert.equal(response.body.error.code, 'FEATURE_NOT_IMPLEMENTED');
+    assert.ok(response.body.error.details.requiredTask);
+  }
+});
+
+test('operational class routes require authentication', async () => {
+  await request(app).get('/api/classes').expect(401);
+});
+
+test('operational attendance routes require authentication', async () => {
+  await request(app).get('/api/attendance').expect(401);
 });

@@ -23,3 +23,9 @@ test('invalid request IDs are replaced with a safe generated identifier', async 
   const response = await request(createApp()).get('/api/v1/health').set('x-request-id', '<unsafe>');
   assert.match(response.headers['x-request-id'], /^[a-f0-9-]{36}$/);
 });
+
+test('user-management routes are mounted on the active server', async () => {
+  const response = await request(createApp()).get('/api/users');
+  assert.equal(response.status, 401);
+  assert.notEqual(response.body.error?.code, 'NOT_FOUND');
+});

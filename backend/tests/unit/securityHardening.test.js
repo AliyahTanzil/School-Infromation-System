@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { redact } from '../../src/middleware/requestLogger/index.js';
 import { requireTenantContext } from '../../src/middleware/auth/authorization.js';
+import { isCorsOriginAllowed } from '../../src/bootstrap/createApp.js';
 
 test('redacts credential-shaped request fields', () => {
   const safe = redact({ password: 'hidden', accessToken: 'hidden', name: 'Ada' });
@@ -28,4 +29,14 @@ test('does not accept tenant context without authentication', () => {
 test('pagination clamps page size in the student service source', async () => {
   const source = await import('../../src/application/services/studentDomainService.js');
   assert.ok(source.list);
+});
+
+test('allows only this frontend project Vercel deployment origins', () => {
+  assert.equal(
+    isCorsOriginAllowed(
+      'https://school-administration-information-system-frontend-qund11kdg.vercel.app'
+    ),
+    true
+  );
+  assert.equal(isCorsOriginAllowed('https://unrelated-project.vercel.app'), false);
 });

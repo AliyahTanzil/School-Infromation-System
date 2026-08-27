@@ -1,12 +1,15 @@
 import * as service from '../../../application/services/classService.js';
 
 const context = (req) => ({
-  tenantId: req.auth?.tenantId || req.user?.tenantId,
-  schoolId: req.auth?.schoolId || req.user?.schoolId,
+  tenantId: req.schoolContext.tenantId,
+  schoolId: req.schoolContext.schoolId,
 });
 export async function list(req, res, next) {
   try {
-    res.json({ success: true, data: await service.list({ ...context(req), ...req.query }) });
+    res.json({
+      success: true,
+      data: await service.list({ ...context(req), ...(req.validatedQuery ?? req.query) }),
+    });
   } catch (error) {
     next(error);
   }

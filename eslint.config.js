@@ -23,7 +23,23 @@ export default [
     },
   },
   {
+    files: ['scripts/**/*.{js,mjs,cjs}', 'frontend/vite.config.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.node,
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     files: ['frontend/**/*.js', 'frontend/**/*.jsx'],
+    ignores: ['frontend/vite.config.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

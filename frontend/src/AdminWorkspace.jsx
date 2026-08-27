@@ -47,8 +47,19 @@ const moduleGroups = [
         GraduationCap,
       ],
       ['/teachers', 'Teachers', 'Teaching staff profiles, assignments, and workload.', Users],
+      [
+        '/subjects',
+        'Subjects',
+        'School subject codes, names, and lifecycle controls.',
+        BookOpenCheck,
+      ],
       ['/classes', 'Classes', 'Class groups, sections, and academic organization.', BookOpenCheck],
-      ['/classroom', 'Digital classroom', 'Lessons, assignments, quizzes, and learner progress.', BrainCircuit],
+      [
+        '/classroom',
+        'Digital classroom',
+        'Lessons, assignments, quizzes, and learner progress.',
+        BrainCircuit,
+      ],
       ['/users', 'User management', 'Roles, permissions, and platform accounts.', ShieldCheck],
     ],
   },
@@ -64,6 +75,12 @@ const moduleGroups = [
         CalendarDays,
       ],
       ['/attendance', 'Attendance', 'Track daily attendance and patterns.', ClipboardCheck],
+      [
+        '/academic-policies',
+        'Grading policies',
+        'Pass marks, grade bands, weighting, and policy lifecycle.',
+        BookOpenCheck,
+      ],
       [
         '/examinations',
         'Examinations',

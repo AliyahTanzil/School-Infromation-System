@@ -76,12 +76,16 @@ export function getOverview() {
 export async function runAction(input, actorId) {
   const parsed = actionSchema.safeParse(input);
   if (!parsed.success) throw new Error('Invalid platform action');
-  const audit = await prisma.platformAuditEvent.create({
+  const audit = await prisma.auditLog.create({
     data: {
       actorId,
-      action: parsed.data.action,
+      action: 'UPDATE',
       entityType: 'PLATFORM_OPERATION',
-      metadata: { targetId: parsed.data.targetId, source: 'platform-admin' },
+      metadata: {
+        operation: parsed.data.action,
+        targetId: parsed.data.targetId,
+        source: 'platform-admin',
+      },
     },
   });
   return {

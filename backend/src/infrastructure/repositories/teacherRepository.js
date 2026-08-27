@@ -6,8 +6,6 @@ const include = {
   qualifications: true,
   certifications: true,
   departments: true,
-  subjects: true,
-  classes: true,
   availability: true,
 };
 
@@ -41,6 +39,12 @@ export function findTeacher(id, context) {
     include: { ...include, history: { orderBy: { createdAt: 'desc' }, take: 20 } },
   });
 }
+export function findTeacherByUser(userId, tenantId) {
+  return prisma.teacher.findFirst({
+    where: { userId, tenantId, deletedAt: null },
+    include: { ...include, history: { orderBy: { createdAt: 'desc' }, take: 20 } },
+  });
+}
 export function updateTeacher(id, context, data) {
   return prisma.teacher.updateMany({
     where: { id, tenantId: context.tenantId, schoolId: context.schoolId, deletedAt: null },
@@ -49,4 +53,31 @@ export function updateTeacher(id, context, data) {
 }
 export function addHistory(data) {
   return prisma.teacherHistory.create({ data });
+}
+
+export function changeStatus(teacher, context, data) {
+  return prisma.$transaction(async (tx) => {
+    await tx.teacher.updateMany({
+      where: {
+        id: teacher.id,
+        tenantId: context.tenantId,
+        schoolId: context.schoolId,
+        deletedAt: null,
+      },
+      data: { status: data.status },
+    });
+    await tx.teacherHistory.create({
+      data: {
+        teacherId: teacher.id,
+        fromStatus: teacher.status,
+        toStatus: data.status,
+        reason: data.reason,
+        actorId: context.userId,
+      },
+    });
+    return tx.teacher.findFirst({
+      where: { id: teacher.id, tenantId: context.tenantId, schoolId: context.schoolId },
+      include: { ...include, history: { orderBy: { createdAt: 'desc' }, take: 20 } },
+    });
+  });
 }

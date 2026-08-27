@@ -6,12 +6,20 @@ import authorize from '../../../middleware/auth/authorize.js';
 import * as controller from '../controllers/teacherController.js';
 import {
   teacherCreateSchema,
+  teacherQuerySchema,
   teacherStatusSchema,
 } from '../../../application/validators/teacherValidators.js';
 
 const router = Router();
-router.use(authenticate, teacherContext);
-router.get('/', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), controller.list);
+router.use(authenticate);
+router.get('/me', authorize('TEACHER'), controller.me);
+router.use(teacherContext);
+router.get(
+  '/',
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'),
+  validate(teacherQuerySchema),
+  controller.list
+);
 router.get('/:id', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), controller.get);
 router.post(
   '/',

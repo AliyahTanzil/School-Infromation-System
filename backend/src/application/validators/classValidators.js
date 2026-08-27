@@ -2,7 +2,7 @@ import { z } from 'zod';
 const body = z.object({
   name: z.string().trim().min(1).max(120),
   code: z.string().trim().min(1).max(40),
-  academicYear: z.string().trim().min(1).max(40),
+  academicYearId: z.string().uuid(),
   gradeLevelId: z.string().uuid(),
   classroomId: z.string().uuid().optional(),
   section: z.string().trim().max(40).optional(),
@@ -21,7 +21,7 @@ export const classQuerySchema = z.object({
   query: z.object({
     query: z.string().trim().max(100).optional(),
     status: z.string().optional(),
-    academicYear: z.string().optional(),
+    academicYearId: z.string().uuid().optional(),
     page: z.coerce.number().int().positive().optional(),
     pageSize: z.coerce.number().int().positive().max(100).optional(),
   }),

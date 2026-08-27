@@ -1,10 +1,14 @@
 import * as service from '../../../application/services/attendanceService.js';
 
 function context(req) {
-  return { tenantId: req.auth.tenantId, schoolId: req.auth.schoolId, actorId: req.auth.userId };
+  return {
+    tenantId: req.schoolContext.tenantId,
+    schoolId: req.schoolContext.schoolId,
+    actorId: req.user.id,
+  };
 }
 export async function list(req, res) {
-  res.json(await service.listSessions({ ...context(req), ...req.query }));
+  res.json(await service.listSessions({ ...context(req), ...(req.validatedQuery ?? req.query) }));
 }
 export async function create(req, res) {
   res.status(201).json(await service.createSession({ ...context(req), ...req.body }));

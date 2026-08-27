@@ -7,6 +7,8 @@ import {
   summarizeAttendance,
 } from '../../domain/attendanceLifecycle.js';
 import prisma from '../../infrastructure/orm/prismaClient.js';
+import NotFoundError from '../../shared/errors/NotFoundError.js';
+import ValidationError from '../../shared/errors/ValidationError.js';
 
 export async function listSessions({
   tenantId,
@@ -57,7 +59,13 @@ export async function createSession({ tenantId, schoolId, createdById, ...input 
   const klass = await prisma.class.findFirst({
     where: { id: input.classId, tenantId, schoolId, deletedAt: null },
   });
-  if (!klass) throw new Error('Class not found');
+  if (!klass) throw new NotFoundError('Class not found');
+  if (input.periodId) {
+    const period = await prisma.academicTerm.findFirst({
+      where: { id: input.periodId, academicYear: { tenantId } },
+    });
+    if (!period) throw new ValidationError('Academic period is outside the authenticated tenant');
+  }
   return prisma.$transaction(async (tx) => {
     const session = await tx.attendanceSession.create({
       data: { tenantId, schoolId, createdById, ...input },
@@ -91,18 +99,18 @@ export async function getSession({ id, tenantId, schoolId }) {
       class: true,
       period: true,
       records: {
-        include: { student: { include: { profile: true } } },
+        include: { student: true },
         orderBy: { student: { admissionNumber: 'asc' } },
       },
     },
   });
-  if (!session) throw new Error('Attendance session not found');
+  if (!session) throw new NotFoundError('Attendance session not found');
   return { ...session, summary: summarizeAttendance(session.records) };
 }
 
 export async function changeStatus({ id, tenantId, schoolId, status, actorId, reason }) {
   const current = await prisma.attendanceSession.findFirst({ where: { id, tenantId, schoolId } });
-  if (!current) throw new Error('Attendance session not found');
+  if (!current) throw new NotFoundError('Attendance session not found');
   assertSessionTransition(current.status, status);
   return prisma.$transaction(async (tx) => {
     const updated = await tx.attendanceSession.update({
@@ -129,10 +137,10 @@ export async function changeStatus({ id, tenantId, schoolId, status, actorId, re
 
 export async function markBulk({ id, tenantId, schoolId, actorId, records }) {
   const session = await prisma.attendanceSession.findFirst({ where: { id, tenantId, schoolId } });
-  if (!session) throw new Error('Attendance session not found');
+  if (!session) throw new NotFoundError('Attendance session not found');
   assertWritableSession(session.status);
   records.forEach((record) => assertAttendanceStatus(record.status));
-  return prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx) => {
     await Promise.all(
       records.map((record) =>
         tx.attendanceRecord.update({
@@ -157,6 +165,6 @@ export async function markBulk({ id, tenantId, schoolId, actorId, records }) {
         metadata: { count: records.length },
       },
     });
-    return getSession({ id, tenantId, schoolId });
   });
+  return getSession({ id, tenantId, schoolId });
 }

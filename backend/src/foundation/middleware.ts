@@ -2,6 +2,8 @@ import type { ErrorRequestHandler, RequestHandler } from 'express';
 import { randomUUID } from 'node:crypto';
 import { isAppError } from './errors.js';
 import { logger } from './logger.js';
+// @ts-expect-error Legacy normalizer handles Prisma and application errors during migration.
+import normalizeError from '../shared/errors/normalizeError.js';
 
 export const requestId: RequestHandler = (request, response, next) => {
   const supplied = request.header('x-request-id');
@@ -44,11 +46,17 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
     message?: string;
     details?: unknown;
   };
+  const normalizedLegacy = normalizeError(error) as {
+    statusCode: number;
+    code: string;
+    message: string;
+    details?: unknown;
+  };
   const normalizedError = isAppError(error)
     ? error
     : legacyError.statusCode && legacyError.code
       ? legacyError
-      : undefined;
+      : normalizedLegacy;
   logger.error('request failed', {
     requestId: response.locals.requestId,
     code: normalizedError?.code ?? 'INTERNAL_ERROR',

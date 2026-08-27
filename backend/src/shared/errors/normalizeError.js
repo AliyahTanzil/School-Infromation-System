@@ -66,13 +66,20 @@ export default function normalizeError(error) {
     error instanceof Prisma.PrismaClientRustPanicError
   ) {
     return new DatabaseError('Database client error', {
-      statusCode: 500,
-      code: 'DB_CLIENT_ERROR',
+      statusCode: 503,
+      code: 'DATABASE_UNAVAILABLE',
       details: error instanceof Error ? { message: error.message } : null,
     });
   }
 
   const message = error instanceof Error ? error.message : 'Internal server error';
+
+  if (/PostgreSQL connection|connection.*closed|kind: Closed/i.test(message)) {
+    return new DatabaseError('Database is temporarily unavailable', {
+      statusCode: 503,
+      code: 'DATABASE_UNAVAILABLE',
+    });
+  }
 
   return new AppError(message, {
     statusCode: 500,

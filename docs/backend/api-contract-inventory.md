@@ -8,6 +8,13 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - `POST` '/', validate(academicPeriodCreateSchema), controller.create);
 - `PATCH` '/:id/status', validate(academicPeriodStatusSchema), controller.changeStatus);
 
+## academicPolicyRoutes
+
+- `GET` '/', validate(academicPolicyQuerySchema), controller.list);
+- `POST` '/', validate(academicPolicyCreateSchema), controller.create);
+- `GET` '/:id', controller.get);
+- `PATCH` '/:id/status', validate(academicPolicyStatusSchema), controller.changeStatus);
+
 ## accountRoutes
 
 - `GET` '/me', controller.me);
@@ -246,10 +253,21 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 - `GET` '/:id', requirePermission('students.read'), controller.get);
 
+## subjectRoutes
+
+- `GET` '/', validate(subjectQuerySchema), controller.list);
+- `POST` '/', validate(subjectCreateSchema), controller.create);
+- `GET` '/:id', controller.get);
+- `PATCH` '/:id', validate(subjectUpdateSchema), controller.update);
+- `PATCH` '/:id/status', validate(subjectStatusSchema), controller.changeStatus);
+
 ## teacherRoutes
 
+- `GET` '/me', authorize('TEACHER'), controller.me);
 - `GET` '/', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), controller.list);
 - `GET` '/:id', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), controller.get);
+- `POST` '/', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), validate(teacherCreateSchema), controller.create);
+- `PATCH` '/:id/status', authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'), validate(teacherStatusSchema), controller.changeStatus);
 
 ## tenantAdminRoutes
 

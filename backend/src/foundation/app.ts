@@ -9,6 +9,22 @@ import { healthRouter } from './health.js';
 import authRouter from '../presentation/http/routes/authRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import platformAdminRouter from '../presentation/http/routes/platformAdminRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import userRouter from '../presentation/http/routes/userRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import tenantLifecycleRouter from '../presentation/http/routes/tenantLifecycleRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import parentRouter from '../presentation/http/routes/parentRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import teacherRouter from '../presentation/http/routes/teacherRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import subjectRouter from '../presentation/http/routes/subjectRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import classRouter from '../presentation/http/routes/classRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import attendanceRouter from '../presentation/http/routes/attendanceRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import academicPolicyRouter from '../presentation/http/routes/academicPolicyRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -27,6 +43,22 @@ export const createApp = () => {
   app.use('/api/v1/auth', authRouter);
   app.use('/api/platform-admin', platformAdminRouter);
   app.use('/api/v1/platform-admin', platformAdminRouter);
+  app.use('/api/users', userRouter);
+  app.use('/api/v1/users', userRouter);
+  app.use('/api/tenants', tenantLifecycleRouter);
+  app.use('/api/v1/tenants', tenantLifecycleRouter);
+  app.use('/api/parents', parentRouter);
+  app.use('/api/v1/parents', parentRouter);
+  app.use('/api/teachers', teacherRouter);
+  app.use('/api/v1/teachers', teacherRouter);
+  app.use('/api/subjects', subjectRouter);
+  app.use('/api/v1/subjects', subjectRouter);
+  app.use('/api/classes', classRouter);
+  app.use('/api/v1/classes', classRouter);
+  app.use('/api/attendance', attendanceRouter);
+  app.use('/api/v1/attendance', attendanceRouter);
+  app.use('/api/academic-policies', academicPolicyRouter);
+  app.use('/api/v1/academic-policies', academicPolicyRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

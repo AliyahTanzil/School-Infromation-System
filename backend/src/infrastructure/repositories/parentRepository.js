@@ -2,24 +2,28 @@ import prisma from '../orm/prismaClient.js';
 
 const includePortal = {
   profile: true,
-  preferences: true,
-  notifications: true,
   relationships: {
     where: { status: 'ACTIVE', revokedAt: null },
     include: {
       student: {
-        include: { profile: true, enrollments: { orderBy: { startDate: 'desc' }, take: 1 } },
+        include: { enrollments: { orderBy: { enrolledAt: 'desc' }, take: 1 } },
       },
     },
   },
 };
 
-export async function findPortal(parentId) {
-  return prisma.parent.findUnique({ where: { id: parentId }, include: includePortal });
+export async function findPortal(parentId, tenantId) {
+  return prisma.parent.findFirst({
+    where: { id: parentId, tenantId, deletedAt: null },
+    include: includePortal,
+  });
 }
 
-export async function findByUser(userId) {
-  return prisma.parent.findFirst({ where: { userId, deletedAt: null }, include: includePortal });
+export async function findByUser(userId, tenantId) {
+  return prisma.parent.findFirst({
+    where: { userId, tenantId, deletedAt: null },
+    include: includePortal,
+  });
 }
 
 export async function createWithProfile(data, profile) {
@@ -27,8 +31,6 @@ export async function createWithProfile(data, profile) {
     data: {
       ...data,
       profile: { create: profile },
-      preferences: { create: {} },
-      notifications: { create: {} },
     },
     include: includePortal,
   });

@@ -11,7 +11,7 @@ import {
 
 /* eslint-disable react/prop-types */
 
-import { ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import toast, { Toaster } from 'react-hot-toast';
@@ -27,12 +27,14 @@ const ParentPortal = lazy(() => import('./ParentPortal.jsx'));
 const ParentClassroomWorkspace = lazy(() => import('./ParentClassroomWorkspace.jsx'));
 const LandingPage = lazy(() => import('./LandingPage.jsx'));
 const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
+const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
 const ClassDashboard = lazy(() => import('./ClassDashboard.jsx'));
 const FinanceDashboard = lazy(() => import('./FinanceDashboard.jsx'));
 const AcademicCalendarDashboard = lazy(() => import('./AcademicCalendarDashboard.jsx'));
 const AttendanceDashboard = lazy(() => import('./AttendanceDashboard.jsx'));
 const ExaminationsDashboard = lazy(() => import('./ExaminationsDashboard.jsx'));
 const ResultsDashboard = lazy(() => import('./ResultsDashboard.jsx'));
+const AcademicPolicyDashboard = lazy(() => import('./AcademicPolicyDashboard.jsx'));
 const UserManagement = lazy(() => import('./UserManagement.jsx'));
 const TimetableDashboard = lazy(() => import('./TimetableDashboard.jsx'));
 const AdminDemoEntry = lazy(() => import('./AdminDemoEntry.jsx'));
@@ -841,11 +843,65 @@ function Protected({ children, allowed }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowed?.length && !allowed.some((value) => user.accountType === value || user.platformRole === value || (user.roles ?? []).includes(value))) {
+  if (
+    allowed?.length &&
+    !allowed.some(
+      (value) =>
+        user.accountType === value ||
+        user.platformRole === value ||
+        (user.roles ?? []).includes(value)
+    )
+  ) {
     return <Navigate to={getDestinationForUser(user)} replace />;
   }
 
   return children;
+}
+
+function AppBackNavigation() {
+  const { user, loading } = useAuth();
+  const { pathname } = useLocation();
+
+  if (loading || pathname === '/') return null;
+
+  const homePath = user ? getDestinationForUser(user) : '/';
+  const isPlatformOperator =
+    user?.accountType === 'OWNER' ||
+    user?.platformRole === 'OWNER' ||
+    user?.platformRole === 'APPLICATION_MANAGER' ||
+    (user?.roles ?? []).some((role) => ['OWNER', 'APPLICATION_MANAGER'].includes(role));
+
+  const routeParents = {
+    '/owner/activations': '/platform-admin',
+    '/parent-classroom': '/parent-portal',
+    '/student-dashboard': '/students',
+    '/my-work': '/students',
+    '/tenant-admin': isPlatformOperator ? '/platform-admin' : homePath,
+  };
+  const destination = routeParents[pathname] ?? homePath;
+
+  if (pathname === destination) return null;
+
+  const destinationLabels = {
+    '/': 'Home',
+    '/dashboard': 'Dashboard',
+    '/parent-portal': 'Parent portal',
+    '/platform-admin': 'Platform admin',
+    '/students': 'Student workspace',
+    '/teachers': 'Teacher workspace',
+    '/tenant-admin': 'Tenant administration',
+  };
+
+  return (
+    <Link
+      to={destination}
+      className="fixed left-4 top-4 z-[100] inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:border-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+      aria-label={`Back to ${destinationLabels[destination] ?? 'main page'}`}
+    >
+      <ArrowLeft size={15} aria-hidden="true" />
+      Back to {destinationLabels[destination] ?? 'main page'}
+    </Link>
+  );
 }
 
 /* =========================================================
@@ -857,6 +913,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <Toaster position="top-right" />
+        <AppBackNavigation />
 
         <Suspense
           fallback={
@@ -923,7 +980,15 @@ export default function App() {
             <Route
               path="/tenant-admin"
               element={
-                <Protected allowed={['TENANT_ADMIN', 'SCHOOL_ADMIN', 'ADMIN']}>
+                <Protected
+                  allowed={[
+                    'APPLICATION_MANAGER',
+                    'OWNER',
+                    'TENANT_ADMIN',
+                    'SCHOOL_ADMIN',
+                    'ADMIN',
+                  ]}
+                >
                   <TenantAdminDashboard />
                 </Protected>
               }
@@ -1034,6 +1099,22 @@ export default function App() {
                 </Protected>
               }
             />
+            <Route
+              path="/subjects"
+              element={
+                <Protected
+                  allowed={[
+                    'APPLICATION_MANAGER',
+                    'OWNER',
+                    'TENANT_ADMIN',
+                    'SCHOOL_ADMIN',
+                    'ADMIN',
+                  ]}
+                >
+                  <SubjectManagement />
+                </Protected>
+              }
+            />
 
             {/* ===============================
                 USERS
@@ -1097,6 +1178,15 @@ export default function App() {
               element={
                 <Protected>
                   <ExaminationsDashboard />
+                </Protected>
+              }
+            />
+
+            <Route
+              path="/academic-policies"
+              element={
+                <Protected>
+                  <AcademicPolicyDashboard />
                 </Protected>
               }
             />

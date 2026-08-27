@@ -7,6 +7,25 @@ import errorHandler from '../middleware/error/errorHandler.js';
 import notFoundHandler from '../middleware/error/notFoundHandler.js';
 import requestLogger from '../middleware/requestLogger/index.js';
 import router from '../presentation/http/routes/index.js';
+import AppError from '../shared/errors/AppError.js';
+
+export function isCorsOriginAllowed(origin) {
+  const normalizedOrigin = origin.replace(/\/$/, '');
+  if (config.cors.origins.includes(normalizedOrigin)) return true;
+
+  try {
+    const url = new URL(normalizedOrigin);
+    const project = config.cors.vercelPreviewProject.toLowerCase();
+    const hostname = url.hostname.toLowerCase();
+    const belongsToFrontendProject =
+      hostname === `${project}.vercel.app` ||
+      (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app'));
+
+    return Boolean(project) && url.protocol === 'https:' && !url.port && belongsToFrontendProject;
+  } catch {
+    return false;
+  }
+}
 
 export function createApp() {
   const app = express();
@@ -17,11 +36,16 @@ export function createApp() {
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || config.cors.origins.includes(origin)) {
+        if (!origin || isCorsOriginAllowed(origin)) {
           callback(null, true);
           return;
         }
-        callback(new Error(`Origin not allowed: ${origin}`));
+        callback(
+          new AppError('Origin not allowed', {
+            statusCode: 403,
+            code: 'CORS_ORIGIN_DENIED',
+          })
+        );
       },
       credentials: config.cors.credentials,
     })
