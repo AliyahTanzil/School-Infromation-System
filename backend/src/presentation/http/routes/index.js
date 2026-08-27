@@ -20,6 +20,7 @@ import accountRoutes from './accountRoutes.js';
 import tenantLifecycleRoutes from './tenantLifecycleRoutes.js';
 import { featureUnavailableRoutes } from './featureUnavailableRoutes.js';
 import examinationRoutes from './examinationRoutes.js';
+import timetableRoutes from './timetableRoutes.js';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.use('/academic-policies', academicPolicyRoutes);
 router.use('/attendance', attendanceRoutes);
 router.use('/examinations', examinationRoutes);
 router.use('/results', featureUnavailableRoutes('Results', 'RES-001'));
-router.use('/timetables', featureUnavailableRoutes('Timetables', 'TTB-001'));
+router.use('/timetables', timetableRoutes);
 router.use('/communication', featureUnavailableRoutes('Communication', 'COM-001'));
 router.use('/hr', featureUnavailableRoutes('Human resources', 'HR-001'));
 router.use('/libraries', featureUnavailableRoutes('Library', 'LIB-001'));
