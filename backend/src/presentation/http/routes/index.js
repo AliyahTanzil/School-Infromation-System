@@ -30,6 +30,7 @@ import boardingRoutes from './boardingRoutes.js';
 import classroomStreamRoutes from './classroomStreamRoutes.js';
 import assignmentRoutes from './assignmentRoutes.js';
 import materialRoutes from './materialRoutes.js';
+import submissionRoutes from './submissionRoutes.js';
 
 const router = Router();
 
@@ -63,6 +64,7 @@ router.use('/boarding', boardingRoutes);
 router.use('/classroom-stream', classroomStreamRoutes);
 router.use('/assignments', assignmentRoutes);
 router.use('/materials', materialRoutes);
+router.use('/submissions', submissionRoutes);
 router.use('/security', featureUnavailableRoutes('Security operations', 'SEC-001'));
 router.use('/analytics', featureUnavailableRoutes('Analytics', 'ANA-001'));
 router.use('/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));
