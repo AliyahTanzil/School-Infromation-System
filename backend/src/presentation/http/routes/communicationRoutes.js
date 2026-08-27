@@ -36,7 +36,11 @@ router.post('/notifications/:notificationId/read', async (req, res, next) => {
 router.get('/notification-preferences', async (req, res, next) => {
   try {
     res.json({
-      data: await communicationService.getPreferences(req.query.userId, req.query.schoolId),
+      data: await communicationService.getPreferences(
+        req.query.userId,
+        req.query.schoolId,
+        req.query.tenantId
+      ),
     });
   } catch (error) {
     next(error);

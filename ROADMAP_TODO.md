@@ -54,7 +54,7 @@ A feature task is complete only when all applicable layers exist:
 |     9 | TTB-001     | DONE    | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
 |    10 | FIN-001     | DONE    | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
 |    11 | PAY-001     | DONE    | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
-|    12 | COM-001     | BLOCKED | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
+|    12 | COM-001     | DONE    | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
 |    13 | HR-001      | BLOCKED | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
 |    14 | LIB-001     | BLOCKED | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
 |    15 | AST-001     | BLOCKED | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
@@ -156,16 +156,17 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | 2026-08-27 | RES-001     | v0    | DONE    | Result persistence and audit tables created; result processing, ranking, statistics, lifecycle publication, tenant/school scoping, Prisma validation/generation, and backend suite pass (99 passed, 1 skipped)                                                                |
 | 2026-08-27 | FIN-001     | v0    | DONE    | Finance schema and Neon tables added for fees, invoices, payments, and ledger transactions; existing idempotent transactional payment flow validated; Prisma validation/generation and backend suite pass (99 passed, 1 skipped)                                              |
 | 2026-08-27 | PAY-001     | v0    | DONE    | Payment intent, attempt, and idempotent webhook persistence added; existing gateway service/routes validated with Prisma and backend suite pass (99 passed, 1 skipped)                                                                                                        |
+| 2026-08-27 | COM-001     | v0    | DONE    | Notification events, deliveries, preferences, tenant-scoped communication service, active route mount, Prisma validation, and backend suite pass (99 passed, 1 skipped)                                                                                                       |
 
 ## Progress summary
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    13 |        27% |
+| Done                    |    14 |        29% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
 | Ready                   |     3 |         6% |
-| Blocked by dependencies |    32 |        67% |
+| Blocked by dependencies |    31 |        65% |
 
 Update this summary whenever a task status changes.
