@@ -1146,3 +1146,104 @@ model ResultAudit {
   metadata  Json     @default("{}")
   createdAt DateTime @default(now())
 }
+
+
+model Timetable {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ academicPeriodId String @db.Uuid
+ name String
+ academicYear String
+ status String @default("DRAFT")
+ version Int @default(1)
+ publishedAt DateTime?
+ lockedAt DateTime?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([tenantId, schoolId, updatedAt])
+}
+
+model TimetableSlot {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ timetableId String @db.Uuid
+ weekday Int
+ startTime String
+ endTime String
+ label String
+ isBreak Boolean @default(false)
+ createdAt DateTime @default(now())
+ @@index([timetableId, weekday, startTime])
+}
+
+model ScheduleEntry {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ timetableId String @db.Uuid
+ timeSlotId String @db.Uuid
+ classId String? @db.Uuid
+ teacherId String? @db.Uuid
+ classroomId String? @db.Uuid
+ subjectCode String
+ kind String @default("LESSON")
+ duration Int @default(1)
+ notes String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([timetableId, timeSlotId])
+}
+
+model SchedulingConflict {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ timetableId String @db.Uuid
+ entryId String @db.Uuid
+ code String
+ severity String
+ message String
+ resolvedAt DateTime?
+ createdAt DateTime @default(now())
+ @@index([timetableId, severity, resolvedAt])
+}
+
+model TimetableVersion {
+ id String @id @default(uuid()) @db.Uuid
+ timetableId String @db.Uuid
+ number Int
+ snapshot Json
+ createdBy String? @db.Uuid
+ createdAt DateTime @default(now())
+ @@unique([timetableId, number])
+}
+
+model TimetableAudit {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ timetableId String @db.Uuid
+ actorId String? @db.Uuid
+ action String
+ metadata Json @default("{}")
+ createdAt DateTime @default(now())
+ @@index([timetableId, createdAt])
+}
+
+model ScheduleSubstitution {
+ id String @id @default(uuid()) @db.Uuid
+ tenantId String @db.Uuid
+ schoolId String @db.Uuid
+ timetableId String @db.Uuid
+ entryId String @db.Uuid
+ originalTeacherId String? @db.Uuid
+ substituteTeacherId String? @db.Uuid
+ reason String
+ startsAt DateTime
+ endsAt DateTime
+ createdBy String? @db.Uuid
+ createdAt DateTime @default(now())
+ @@index([timetableId, startsAt, endsAt])
+}
