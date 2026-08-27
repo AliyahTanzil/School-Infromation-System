@@ -863,6 +863,49 @@ model AttendanceAudit {
   @@index([tenantId, schoolId, sessionId, createdAt])
 }
 
+model NotificationEvent {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  eventType String
+  aggregateType String?
+  aggregateId String?
+  payload Json @default("{}")
+  status String @default("QUEUED")
+  createdAt DateTime @default(now())
+  processedAt DateTime?
+  @@index([tenantId, schoolId, status, createdAt])
+}
+
+model NotificationDelivery {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  eventId String @db.Uuid
+  recipientId String @db.Uuid
+  channel String
+  status String @default("PENDING")
+  providerReference String?
+  attempts Int @default(0)
+  lastError String?
+  sentAt DateTime?
+  deliveredAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([tenantId, schoolId, recipientId, status])
+}
+
+model NotificationPreference {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  userId String @db.Uuid
+  channel String
+  enabled Boolean @default(true)
+  quietHours Json?
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, userId, channel])
+}
+
 model Notification {
   id          String              @id @default(uuid()) @db.Uuid
   tenantId    String              @db.Uuid
