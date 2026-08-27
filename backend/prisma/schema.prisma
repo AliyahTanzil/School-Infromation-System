@@ -779,6 +779,92 @@ model Staff {
   @@unique([tenantId, employeeNumber])
 }
 
+model Employee {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  employeeNumber String
+  firstName String
+  lastName String
+  email String?
+  departmentId String? @db.Uuid
+  positionId String? @db.Uuid
+  status String @default("APPLICANT")
+  emergencyContact Json @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, employeeNumber])
+  @@index([tenantId, schoolId, status])
+}
+
+model HRDepartment {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, name])
+}
+
+model HRPosition {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String
+  salaryMinor Int @default(0)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, name])
+}
+
+model LeaveRequest {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  employeeId String @db.Uuid
+  leaveType String
+  startsAt DateTime
+  endsAt DateTime
+  reason String?
+  status String @default("PENDING")
+  approvedById String? @db.Uuid
+  approvedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([tenantId, schoolId, status, startsAt])
+}
+
+model PayrollRun {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  periodStart DateTime
+  periodEnd DateTime
+  status String @default("DRAFT")
+  totalMinor Int @default(0)
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, periodStart, periodEnd])
+}
+
+model PayrollItem {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  payrollRunId String @db.Uuid
+  employeeId String @db.Uuid
+  grossMinor Int
+  deductionsMinor Int @default(0)
+  netMinor Int
+  status String @default("PENDING")
+  createdAt DateTime @default(now())
+  @@unique([payrollRunId, employeeId])
+}
+
 model Enrollment {
   id             String           @id @default(uuid()) @db.Uuid
   tenantId       String           @db.Uuid
