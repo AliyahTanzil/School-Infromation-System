@@ -31,21 +31,22 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 |    19 | LMS-002     | DONE   | Added tenant-scoped classroom announcements, stream posts, comments, active routes, Neon tables, and validation evidence.                                                                                                    |
 |    20 | LMS-003     | DONE   | Added tenant-scoped Assignment persistence, assignment list/create/status APIs, active route mount, and validation evidence.                                                                                                 |
 |    21 | LMS-004     | DONE   | Added private Blob uploads/download delivery, tenant-scoped DigitalMaterial persistence/list/archive APIs, active route mount, Neon table, and validation evidence.                                                          |
+|    22 | LMS-005     | DONE   | Added tenant-scoped StudentSubmission and SubmissionVersion persistence, draft/save/submit/version-history APIs, active route mount, Neon tables, and validation evidence.                                                   |
 
 ## Current progress
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    23 |        48% |
+| Done                    |    24 |        50% |
 | In review               |     0 |         0% |
-| In progress             |     1 |         2% |
+| In progress             |     0 |         0% |
 | Ready                   |     0 |         0% |
-| Blocked by dependencies |    25 |        52% |
+| Blocked by dependencies |    24 |        50% |
 
 ## Next work
 
-LMS-005 is in progress. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
+LMS-005 is complete. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
 
 ## Verification baseline
 
