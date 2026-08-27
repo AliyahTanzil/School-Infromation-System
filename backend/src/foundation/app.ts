@@ -25,6 +25,14 @@ import classRouter from '../presentation/http/routes/classRoutes.js';
 import attendanceRouter from '../presentation/http/routes/attendanceRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import academicPolicyRouter from '../presentation/http/routes/academicPolicyRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import examinationRouter from '../presentation/http/routes/examinationRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import resultRouter from '../presentation/http/routes/resultRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import timetableRouter from '../presentation/http/routes/timetableRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import financeRouter from '../presentation/http/routes/financeRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -59,6 +67,14 @@ export const createApp = () => {
   app.use('/api/v1/attendance', attendanceRouter);
   app.use('/api/academic-policies', academicPolicyRouter);
   app.use('/api/v1/academic-policies', academicPolicyRouter);
+  app.use('/api/examinations', examinationRouter);
+  app.use('/api/v1/examinations', examinationRouter);
+  app.use('/api/results', resultRouter);
+  app.use('/api/v1/results', resultRouter);
+  app.use('/api/timetables', timetableRouter);
+  app.use('/api/v1/timetables', timetableRouter);
+  app.use('/api/finance', financeRouter);
+  app.use('/api/v1/finance', financeRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

@@ -1,94 +1,128 @@
-import axios from 'axios';
-import { useEffect, useState } from 'react';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+const headers = (schoolId) => ({
+  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
+  'content-type': 'application/json',
+  'x-school-id': schoolId,
 });
-
 export default function ResultsDashboard() {
+  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const [examinationId, setExaminationId] = useState('');
+  const [schemeId, setSchemeId] = useState('');
   const [results, setResults] = useState([]);
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
-  const load = async () => {
+  const load = useCallback(async () => {
+    if (!schoolId) return;
+    const suffix = examinationId ? `?examinationId=${encodeURIComponent(examinationId)}` : '';
     try {
-      const [list, summary] = await Promise.all([
-        api.get('/results'),
-        api.get('/results/statistics'),
+      const [listResponse, statsResponse] = await Promise.all([
+        fetch(`/api/results${suffix}`, { headers: headers(schoolId) }),
+        fetch(`/api/results/statistics${suffix}`, { headers: headers(schoolId) }),
       ]);
-      setResults(list.data.data || []);
-      setStats(summary.data.data);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Unable to load results');
+      const [list, summary] = await Promise.all([listResponse.json(), statsResponse.json()]);
+      if (!listResponse.ok) throw new Error(list?.error?.message ?? 'Unable to load results');
+      setResults(list.data ?? []);
+      setStats(summary.data);
+      sessionStorage.setItem('schoolId', schoolId);
+    } catch (reason) {
+      setError(reason.message);
     }
-  };
+  }, [schoolId, examinationId]);
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
+  const process = async (event) => {
+    event.preventDefault();
+    setError('');
+    const response = await fetch('/api/results/process', {
+      method: 'POST',
+      headers: headers(schoolId),
+      body: JSON.stringify({ examinationId, schemeId }),
+    });
+    const payload = await response.json();
+    if (!response.ok) return setError(payload?.error?.message ?? 'Unable to process results');
+    await load();
+  };
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header>
-          <p className="text-sm uppercase tracking-[0.24em] text-cyan-300">Module 14</p>
-          <h1 className="text-3xl font-semibold">Result Management System</h1>
-          <p className="mt-2 text-slate-400">
-            Process approved examination marks into official academic results.
+    <main className="page-shell">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">Academic records</p>
+          <h1>Result management</h1>
+          <p>
+            Process locked examination marks through review, approval, publication, and final
+            locking.
           </p>
-        </header>
-        {error && (
-          <div
-            role="alert"
-            className="rounded-lg border border-red-400/40 bg-red-950/30 p-4 text-red-200"
-          >
-            {error}
+        </div>
+        <Link className="primary-button" to="/admin">
+          Back to administration
+        </Link>
+      </header>
+      <section className="panel">
+        <label>
+          School ID
+          <input
+            value={schoolId}
+            onChange={(event) => setSchoolId(event.target.value)}
+            placeholder="School UUID"
+          />
+        </label>
+        {error && <p role="alert">{error}</p>}
+      </section>
+      <section className="panel">
+        <h2>Process official results</h2>
+        <form className="space-y-3" onSubmit={process}>
+          <input
+            required
+            aria-label="Examination ID"
+            value={examinationId}
+            onChange={(event) => setExaminationId(event.target.value)}
+            placeholder="Locked examination UUID"
+          />
+          <input
+            required
+            aria-label="Grading scheme ID"
+            value={schemeId}
+            onChange={(event) => setSchemeId(event.target.value)}
+            placeholder="Active grading policy UUID"
+          />
+          <button className="primary-button" disabled={!schoolId}>
+            Process or recalculate
+          </button>
+        </form>
+      </section>
+      <section className="grid gap-4 sm:grid-cols-3">
+        {[
+          ['Results', stats?.count ?? 0],
+          ['Pass count', stats?.passCount ?? 0],
+          ['Average', Number(stats?.average ?? 0).toFixed(2)],
+        ].map(([label, value]) => (
+          <div className="panel" key={label}>
+            <p>{label}</p>
+            <strong>{value}</strong>
           </div>
+        ))}
+      </section>
+      <section className="panel">
+        <h2>Official results</h2>
+        {results.length === 0 ? (
+          <p>No processed results found.</p>
+        ) : (
+          results.map((item) => (
+            <article className="student-row" key={item.id}>
+              <span>
+                <strong>{item.studentId}</strong>
+                <small>
+                  Total {item.total} · Average {item.average} · Grade {item.grade ?? '—'} · Position{' '}
+                  {item.position ?? '—'}
+                </small>
+              </span>
+              <span className="status-pill">{item.status}</span>
+            </article>
+          ))
         )}
-        <section className="grid gap-4 sm:grid-cols-3">
-          {[
-            ['Results', stats?.count ?? '—'],
-            ['Pass count', stats?.passCount ?? '—'],
-            ['Average', stats ? Number(stats.average).toFixed(2) : '—'],
-          ].map(([label, value]) => (
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5" key={label}>
-              <p className="text-sm text-slate-400">{label}</p>
-              <p className="mt-2 text-2xl font-semibold">{value}</p>
-            </div>
-          ))}
-        </section>
-        <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-          <div className="border-b border-slate-800 p-5">
-            <h2 className="font-medium">Official results</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-950/60 text-slate-400">
-                <tr>
-                  <th className="p-4">Student</th>
-                  <th className="p-4">Total</th>
-                  <th className="p-4">Average</th>
-                  <th className="p-4">Grade</th>
-                  <th className="p-4">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {results.map((item) => (
-                  <tr className="border-t border-slate-800" key={item.id}>
-                    <td className="p-4">
-                      {item.student?.profile
-                        ? `${item.student.profile.firstName} ${item.student.profile.lastName}`
-                        : item.studentId}
-                    </td>
-                    <td className="p-4">{item.total}</td>
-                    <td className="p-4">{item.average}</td>
-                    <td className="p-4">{item.grade || '—'}</td>
-                    <td className="p-4">{item.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      </div>
+      </section>
     </main>
   );
 }

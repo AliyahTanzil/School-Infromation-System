@@ -24,14 +24,22 @@ const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath
 const children = [];
 
 function start(command, args, env = {}) {
-  const executable = process.platform === 'win32' && command === 'npm' ? 'npm.cmd' : command;
-  const child = spawn(executable, args, {
+  const isWindowsNpm = process.platform === 'win32' && command === 'npm';
+  const executable = isWindowsNpm ? process.execPath : command;
+  const spawnArgs = isWindowsNpm ? [process.env.npm_execpath, ...args] : args;
+  const child = spawn(executable, spawnArgs, {
     cwd: root,
     env: { ...process.env, ...env },
     stdio: 'inherit',
+    // Execute npm's JavaScript CLI with Node instead of spawning the Windows
+    // .cmd shim, which can throw EINVAL on Node 24.
     shell: false,
   });
   children.push(child);
+  child.on('error', (error) => {
+    console.error(`[SAIS] Unable to start ${command}: ${error.message}`);
+    process.exitCode = 1;
+  });
   child.on('exit', (code, signal) => {
     if (code && code !== 0) process.exitCode = code;
     if (signal) process.exitCode = 1;

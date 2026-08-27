@@ -1,39 +1,97 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-const API = '/api/examinations';
-
+const requestHeaders = (schoolId) => ({
+  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
+  'content-type': 'application/json',
+  'x-school-id': schoolId,
+});
 export default function ExaminationsDashboard() {
+  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
   const [items, setItems] = useState([]);
+  const [form, setForm] = useState({ name: '', code: '' });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const load = useCallback(async () => {
+    if (!schoolId) return;
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch('/api/examinations', { headers: requestHeaders(schoolId) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error?.message ?? 'Unable to load examinations');
+      setItems(payload.data ?? []);
+      sessionStorage.setItem('schoolId', schoolId);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId]);
   useEffect(() => {
-    fetch(API, { credentials: 'include' })
-      .then(async (response) => {
-        if (!response.ok)
-          throw new Error((await response.json()).message || 'Unable to load examinations');
-        return response.json();
-      })
-      .then((result) => setItems(result.data || []))
-      .catch((reason) => setError(reason.message))
-      .finally(() => setLoading(false));
-  }, []);
+    load();
+  }, [load]);
+  const create = async (event) => {
+    event.preventDefault();
+    setError('');
+    const response = await fetch('/api/examinations', {
+      method: 'POST',
+      headers: requestHeaders(schoolId),
+      body: JSON.stringify(form),
+    });
+    const payload = await response.json();
+    if (!response.ok) return setError(payload?.error?.message ?? 'Unable to create examination');
+    setForm({ name: '', code: '' });
+    await load();
+  };
   return (
     <main className="page-shell">
       <header className="page-header">
         <div>
           <p className="eyebrow">Academic operations</p>
           <h1>Examinations</h1>
-          <p>Configure exam windows, track marking, and lock approved marks.</p>
+          <p>
+            Configure candidate registers, subject schedules, marking, moderation, approval, and
+            locking.
+          </p>
         </div>
-        <button className="primary-button" type="button">
-          New examination
-        </button>
+        <Link className="primary-button" to="/admin">
+          Back to administration
+        </Link>
       </header>
-      {error && (
-        <div className="error-banner" role="alert">
-          {error}
-        </div>
-      )}
+      <section className="panel">
+        <label>
+          School ID
+          <input
+            value={schoolId}
+            onChange={(event) => setSchoolId(event.target.value)}
+            placeholder="School UUID"
+          />
+        </label>
+        {error && <p role="alert">{error}</p>}
+      </section>
+      <section className="panel">
+        <h2>New examination cycle</h2>
+        <form className="space-y-3" onSubmit={create}>
+          <input
+            required
+            aria-label="Examination name"
+            placeholder="Examination name"
+            value={form.name}
+            onChange={(event) => setForm({ ...form, name: event.target.value })}
+          />
+          <input
+            required
+            aria-label="Examination code"
+            placeholder="Unique code"
+            value={form.code}
+            onChange={(event) => setForm({ ...form, code: event.target.value })}
+          />
+          <button className="primary-button" disabled={!schoolId}>
+            Create draft
+          </button>
+        </form>
+      </section>
       <section className="dashboard-card">
         <div className="section-heading">
           <div>
@@ -48,7 +106,8 @@ export default function ExaminationsDashboard() {
           <div className="empty-state">
             <h3>No examinations configured</h3>
             <p>
-              Create the first examination cycle to begin scheduling candidates and recording marks.
+              Create the first draft, then add candidates and subject schedules through its API
+              workflow.
             </p>
           </div>
         ) : (

@@ -20,8 +20,8 @@ export const createTimetableSchema = z.object({
       .array(
         z.object({
           weekday: z.number().int().min(1).max(7),
-          startTime: z.string(),
-          endTime: z.string(),
+          startTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+          endTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
           label: z.string().max(80),
           isBreak: z.boolean().optional(),
         })
@@ -30,11 +30,14 @@ export const createTimetableSchema = z.object({
   }),
 });
 
-export const entrySchema = z.object({ body: entry });
+const idParams = z.object({ id: z.string().uuid() });
+export const entrySchema = z.object({ params: idParams, body: entry });
 export const statusSchema = z.object({
+  params: idParams,
   body: z.object({ status: z.enum(['REVIEW', 'PUBLISHED', 'LOCKED', 'ARCHIVED']) }),
 });
 export const substitutionSchema = z.object({
+  params: idParams,
   body: z.object({
     entryId: z.string().uuid(),
     originalTeacherId: z.string().uuid().optional(),

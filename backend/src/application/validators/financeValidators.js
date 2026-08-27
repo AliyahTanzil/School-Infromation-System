@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
 const body = z.object({
-  tenantId: z.string().uuid(),
-  schoolId: z.string().uuid(),
   studentId: z.string().uuid(),
   feeId: z.string().uuid().optional(),
   invoiceNumber: z.string().trim().min(1).max(60),
@@ -13,8 +11,6 @@ const body = z.object({
 export const createInvoiceSchema = z.object({ body });
 export const paymentSchema = z.object({
   body: z.object({
-    tenantId: z.string().uuid(),
-    schoolId: z.string().uuid(),
     invoiceId: z.string().uuid(),
     amount: z.coerce.number().positive(),
     provider: z.string().max(40).default('manual'),
@@ -24,8 +20,8 @@ export const paymentSchema = z.object({
 });
 export const invoiceQuerySchema = z.object({
   query: z.object({
-    schoolId: z.string().uuid(),
     studentId: z.string().uuid().optional(),
     status: z.string().optional(),
   }),
 });
+export const paymentParamsSchema = z.object({ params: z.object({ paymentId: z.string().uuid() }) });

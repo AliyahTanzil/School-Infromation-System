@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -11,23 +12,69 @@ const statusTone = {
   PUBLISHED: 'bg-emerald-100 text-emerald-700',
   LOCKED: 'bg-indigo-100 text-indigo-700',
 };
+const requestHeaders = (schoolId) => ({
+  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
+  'x-school-id': schoolId,
+});
 
 export default function TimetableDashboard() {
+  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
   const [timetables, setTimetables] = useState([]);
   const [selected, setSelected] = useState(null);
   const [message, setMessage] = useState('');
-  const load = async () => {
-    const { data } = await api.get('/timetables');
+  const [form, setForm] = useState({
+    academicPeriodId: '',
+    name: '',
+    academicYear: '',
+    weekday: 1,
+    startTime: '08:00',
+    endTime: '09:00',
+    label: 'Period 1',
+  });
+  const load = useCallback(async () => {
+    if (!schoolId) return;
+    const { data } = await api.get('/timetables', { headers: requestHeaders(schoolId) });
     setTimetables(data.data);
     setSelected((current) => current || data.data[0] || null);
-  };
+    sessionStorage.setItem('schoolId', schoolId);
+  }, [schoolId]);
   useEffect(() => {
     load().catch(() => setMessage('Unable to load timetables.'));
-  }, []);
+  }, [load]);
+  const create = async (event) => {
+    event.preventDefault();
+    try {
+      await api.post(
+        '/timetables',
+        {
+          academicPeriodId: form.academicPeriodId,
+          name: form.name,
+          academicYear: form.academicYear,
+          slots: [
+            {
+              weekday: Number(form.weekday),
+              startTime: form.startTime,
+              endTime: form.endTime,
+              label: form.label,
+            },
+          ],
+        },
+        { headers: requestHeaders(schoolId) }
+      );
+      setMessage('Draft timetable created.');
+      await load();
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to create timetable.');
+    }
+  };
   const transition = async (status) => {
     if (!selected) return;
     try {
-      await api.patch(`/timetables/${selected.id}/status`, { status });
+      await api.patch(
+        `/timetables/${selected.id}/status`,
+        { status },
+        { headers: requestHeaders(schoolId) }
+      );
       setMessage(`Timetable moved to ${status.toLowerCase()}.`);
       await load();
     } catch (error) {
@@ -53,6 +100,12 @@ export default function TimetableDashboard() {
           >
             Print timetable
           </button>
+          <Link
+            to="/admin"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold"
+          >
+            Back to administration
+          </Link>
         </header>
         {message && (
           <p
@@ -62,6 +115,68 @@ export default function TimetableDashboard() {
             {message}
           </p>
         )}
+        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+          <h2 className="font-semibold">Create timetable draft</h2>
+          <form className="mt-4 grid gap-3 md:grid-cols-4" onSubmit={create}>
+            <input
+              required
+              placeholder="School UUID"
+              value={schoolId}
+              onChange={(event) => setSchoolId(event.target.value)}
+            />
+            <input
+              required
+              placeholder="Academic term UUID"
+              value={form.academicPeriodId}
+              onChange={(event) => setForm({ ...form, academicPeriodId: event.target.value })}
+            />
+            <input
+              required
+              placeholder="Timetable name"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+            <input
+              required
+              placeholder="Academic year (2026/27)"
+              value={form.academicYear}
+              onChange={(event) => setForm({ ...form, academicYear: event.target.value })}
+            />
+            <input
+              required
+              type="number"
+              min="1"
+              max="7"
+              aria-label="Weekday"
+              value={form.weekday}
+              onChange={(event) => setForm({ ...form, weekday: event.target.value })}
+            />
+            <input
+              required
+              type="time"
+              value={form.startTime}
+              onChange={(event) => setForm({ ...form, startTime: event.target.value })}
+            />
+            <input
+              required
+              type="time"
+              value={form.endTime}
+              onChange={(event) => setForm({ ...form, endTime: event.target.value })}
+            />
+            <input
+              required
+              placeholder="Slot label"
+              value={form.label}
+              onChange={(event) => setForm({ ...form, label: event.target.value })}
+            />
+            <button
+              disabled={!schoolId}
+              className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
+            >
+              Create draft
+            </button>
+          </form>
+        </section>
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl bg-indigo-950 p-5 text-white">
             <p className="text-sm text-indigo-200">Timetables</p>

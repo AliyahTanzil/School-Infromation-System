@@ -129,11 +129,13 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## examinationRoutes
 
-- `GET` '/', async (req, res) =>
-- `POST` '/', async (req, res) =>
-- `GET` '/:id', async (req, res) =>
-- `PATCH` '/:id/status', async (req, res) =>
-- `PUT` '/:id/marks', async (req, res) =>
+- `GET` '/', validate(examinationQuerySchema), controller.list);
+- `POST` '/', validate(examinationCreateSchema), controller.create);
+- `GET` '/:id', controller.get);
+- `POST` '/:id/candidates', validate(examinationCandidateSchema), controller.addCandidate);
+- `POST` '/:id/schedules', validate(examinationScheduleSchema), controller.addSchedule);
+- `PATCH` '/:id/status', validate(examinationStatusSchema), controller.changeStatus);
+- `PUT` '/:id/marks', validate(examinationMarkSchema), controller.upsertMark);
 
 ## financeCoreRoutes
 
@@ -210,10 +212,10 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## resultRoutes
 
-- `GET` '/', async (req, res) =>
-- `GET` '/statistics', async (req, res) =>
-- `POST` '/process', async (req, res) =>
-- `PATCH` '/:id/status', async (req, res) =>
+- `GET` '/', validate(resultQuerySchema), controller.list);
+- `GET` '/statistics', validate(resultQuerySchema), controller.statistics);
+- `POST` '/process', validate(resultProcessSchema), controller.process);
+- `PATCH` '/:id/status', validate(resultStatusSchema), controller.changeStatus);
 
 ## schoolRoutes
 
@@ -282,11 +284,13 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## timetableRoutes
 
-- `GET` '/', async (req, res) => res.json({ data: await service.listTimetables(scope(req)) }));
-- `POST` '/', validate(createTimetableSchema), async (req, res) =>
-- `POST` '/:id/entries', validate(entrySchema), async (req, res) =>
-- `PATCH` '/:id/status', validate(statusSchema), async (req, res) =>
-- `POST` '/:id/substitutions', validate(substitutionSchema), async (req, res) =>
+- Active mounts: `/api/timetables` and `/api/v1/timetables`.
+- All operations require authentication, `PLATFORM_ADMIN` or `SCHOOL_ADMIN`, and a validated `x-school-id` context.
+- `GET /` lists hydrated timetables, slots, entries, conflicts, and substitutions.
+- `POST /` creates a draft with validated time slots and an initial immutable version.
+- `POST /:id/entries` adds an entry and recalculates scheduling conflicts.
+- `PATCH /:id/status` advances the lifecycle; unresolved hard conflicts block publication.
+- `POST /:id/substitutions` records a bounded teacher substitution for a timetable entry.
 
 ## transportRoutes
 

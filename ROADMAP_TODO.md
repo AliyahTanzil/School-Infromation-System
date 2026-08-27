@@ -52,20 +52,20 @@ A feature task is complete only when all applicable layers exist:
 |     7 | EXM-001     | DONE        | Complete examination persistence and workflow                     | CLS-001, POL-001              | Core 13, Mobile 6                 |
 |     8 | RES-001     | DONE        | Complete result processing and publication workflow               | EXM-001                       | Core 14, Mobile 6                 |
 |     9 | TTB-001     | DONE        | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
-|    10 | FIN-001     | DONE        | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
-|    11 | PAY-001     | DONE        | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
-|    12 | COM-001     | DONE        | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
-|    13 | HR-001      | DONE        | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
-|    14 | LIB-001     | DONE        | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
-|    15 | AST-001     | DONE        | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
-|    16 | TRN-001     | DONE        | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
-|    17 | BRD-001     | DONE        | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
-|    18 | LMS-001     | DONE        | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
-|    19 | LMS-002     | DONE        | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
-|    20 | LMS-003     | DONE        | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
-|    21 | LMS-004     | DONE        | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
-|    22 | LMS-005     | DONE        | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
-|    23 | LMS-006     | IN_PROGRESS | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
+|    10 | FIN-001     | IN_PROGRESS | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
+|    11 | PAY-001     | REVIEW      | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
+|    12 | COM-001     | REVIEW      | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
+|    13 | HR-001      | REVIEW      | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
+|    14 | LIB-001     | REVIEW      | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
+|    15 | AST-001     | REVIEW      | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
+|    16 | TRN-001     | REVIEW      | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
+|    17 | BRD-001     | REVIEW      | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
+|    18 | LMS-001     | REVIEW      | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
+|    19 | LMS-002     | REVIEW      | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
+|    20 | LMS-003     | REVIEW      | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
+|    21 | LMS-004     | REVIEW      | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
+|    22 | LMS-005     | REVIEW      | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
+|    23 | LMS-006     | BLOCKED     | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
 |    24 | LMS-007     | BLOCKED     | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
 |    25 | LMS-008     | BLOCKED     | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
 |    26 | LMS-009     | BLOCKED     | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
@@ -168,16 +168,23 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | 2026-08-27 | LMS-006     | v0    | CLAIMED | Auditing assessment and quiz engine, tenant scope, policy integration, tests, API documentation, and frontend integration                                                                                                                                                                                             |
 | 2026-08-27 | LMS-001     | v0    | CLAIMED | Auditing classroom, membership, enrollment, tenant scope, tests, and frontend integration                                                                                                                                                                                                                             |
 | 2026-08-27 | COM-001     | v0    | DONE    | Notification events, deliveries, preferences, tenant-scoped communication service, active route mount, Prisma validation, and backend suite pass (99 passed, 1 skipped)                                                                                                                                               |
+| 2026-08-27 | V0-AUDIT    | Codex | REVIEW  | Commits 788f092..f33b9d5 retained and audited. Prisma/build and the suite pass after dependency sync, but 16 completion claims lack migrations and full active-server/UI/docs/tests evidence; materials lack authentication and examination school scope is invalid. See the reconciliation audit.                    |
+
+| 2026-08-27 | EXM-001 | Codex | DONE | Reconciled V0 scaffold with migration, candidate and schedule validation, bounded marks, audited lifecycle, authenticated school scope, both server mounts, real UI, API docs, and tests; full suite 102 passed with 1 intentional skip. |
+
+| 2026-08-27 | RES-001 | Codex | DONE | Corrected candidate-to-student identity mapping; added locked-exam and active-policy gates, deterministic recalculation, review/publication/locking audits, migration, validated school-scoped routes on both servers, real UI, docs, and tests; 105 passed, 1 skip. |
 
 ## Progress summary
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    24 |        50% |
-| In review               |     0 |         0% |
-| In progress             |     0 |         0% |
+| Done                    |    11 |        23% |
+| In review               |    12 |        25% |
+| In progress             |     1 |         2% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
 
 Update this summary whenever a task status changes.
+
+| 2026-08-27 | TTB-001 | Codex | DONE | Reconciled timetable persistence with the active flat Prisma schema and AcademicTerm model; added non-destructive migration, authenticated school context, active compatibility/versioned mounts, lifecycle versioning, conflict publication gate, substitutions, creation UI, back navigation, contract tests, and full build verification (109 passed, 1 skipped). |

@@ -15,13 +15,21 @@ export function isCorsOriginAllowed(origin) {
 
   try {
     const url = new URL(normalizedOrigin);
-    const project = config.cors.vercelPreviewProject.toLowerCase();
     const hostname = url.hostname.toLowerCase();
-    const belongsToFrontendProject =
-      hostname === `${project}.vercel.app` ||
-      (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app'));
+    const projects = new Set([
+      'school-administration-information-system-frontend',
+      ...String(config.cors.vercelPreviewProject ?? '').split(','),
+    ]);
+    const belongsToFrontendProject = [...projects]
+      .map((project) => project.trim().toLowerCase())
+      .filter(Boolean)
+      .some(
+        (project) =>
+          hostname === `${project}.vercel.app` ||
+          (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app'))
+      );
 
-    return Boolean(project) && url.protocol === 'https:' && !url.port && belongsToFrontendProject;
+    return url.protocol === 'https:' && !url.port && belongsToFrontendProject;
   } catch {
     return false;
   }

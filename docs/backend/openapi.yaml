@@ -355,3 +355,67 @@ paths:
         '200': { description: Policy transitioned and history recorded }
         '400':
           { description: Invalid transition, incomplete weighting, or overlapping active policy }
+  /examinations:
+    get:
+      summary: List examination cycles for the selected school
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Examination cycles with candidate, schedule, and mark counts }
+    post:
+      summary: Create a draft examination cycle
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Draft examination created }
+  /examinations/{id}/candidates:
+    post:
+      summary: Register an actively enrolled student as an examination candidate
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Candidate registered }
+        '400': { description: Student is not enrolled in the selected class }
+  /examinations/{id}/schedules:
+    post:
+      summary: Schedule a school subject for a class in a draft examination
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Subject schedule created }
+  /examinations/{id}/status:
+    patch:
+      summary: Advance the audited examination lifecycle
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Examination status changed }
+        '400': { description: Invalid transition or incomplete examination setup }
+  /examinations/{id}/marks:
+    put:
+      summary: Create or update a bounded candidate mark during marking
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Candidate mark stored }
+        '400': { description: Mark is out of range, unscheduled, or no longer writable }
+  /results:
+    get:
+      summary: List processed results for a school and optional examination
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Ranked official result records }
+  /results/statistics:
+    get:
+      summary: Return result count, pass count, and average
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Result statistics }
+  /results/process:
+    post:
+      summary: Process locked examination marks with an active grading policy
+      security: [{ bearerAuth: [] }]
+      responses:
+        '201': { description: Results calculated into review state }
+        '400': { description: Examination is unlocked or has incomplete marks }
+  /results/{id}/status:
+    patch:
+      summary: Approve, publish, or lock an official result
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: Result status changed and audited }
+        '400': { description: Invalid result lifecycle transition }

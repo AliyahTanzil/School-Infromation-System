@@ -4,7 +4,9 @@ Last updated: 2026-08-27
 
 This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO.md` remains the authoritative execution queue; update both files whenever a task status changes.
 
-## Completed tasks
+## Tracked task claims
+
+> Reconciliation notice: rows EXM-001 through LMS-005 were imported from V0 and are retained as implementation evidence, but their authoritative status is `REVIEW`, not `DONE`. They do not yet satisfy the repository completion definition. See `docs/audit/v0-change-reconciliation-2026-08-27.md`.
 
 | Order | ID          | Status | Summary                                                                                                                                                                                                                      |
 | ----: | ----------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -38,15 +40,15 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    24 |        50% |
-| In review               |     0 |         0% |
+| Done                    |    11 |        23% |
+| In review               |    12 |        25% |
 | In progress             |     1 |         2% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
 
 ## Next work
 
-LMS-006 is in progress. The next implementation must follow the dependency queue; progress tracking is maintained in this file.
+EXM-001, RES-001, and TTB-001 reconciliation are complete. FIN-001 reconciliation is in progress across persistence, transactions, active-server mounts, authorization, frontend, documentation, and tests.
 
 ## Verification baseline
 
