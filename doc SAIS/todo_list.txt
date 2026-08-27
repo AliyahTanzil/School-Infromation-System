@@ -42,7 +42,7 @@ A feature task is complete only when all applicable layers exist:
 | Order | ID | Status | Task | Depends on | Primary roadmap |
 | ---: | --- | --- | --- | --- | --- |
 | 1 | DB-001 | DONE | Reconcile active Prisma schema with services and routes | None | Backend 4, 10, 25 |
-| 2 | QA-001 | BLOCKED | Stabilize complete backend test runner | DB-001 | Backend 15, 21, 25 |
+| 2 | QA-001 | DONE | Stabilize complete backend test runner | DB-001 | Backend 15, 21, 25 |
 | 3 | SUB-001 | BLOCKED | Implement Subject domain vertical slice | DB-001, QA-001 | Core 10 |
 | 4 | CLS-001 | BLOCKED | Complete Class, Section and Enrollment persistence | SUB-001 | Core 9, Backend 10 |
 | 5 | ATT-001 | BLOCKED | Complete attendance vertical slice | CLS-001 | Core 12, Mobile 5 |
@@ -133,16 +133,17 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | --- | --- | --- | --- | --- |
 | 2026-08-26 | QUEUE | Codex | CREATED | Queue generated from the roadmap progress audit; DB-001 is the only initial READY task |
 | 2026-08-27 | DB-001 | v0 | COMPLETED | Prisma validate, generate, backend build, API integration contract tests, and diff check passed; mismatch inventory and fail-closed deferred routes documented in docs/database/prisma-route-reconciliation.md |
+| 2026-08-27 | QA-001 | v0 | COMPLETED | Test runner now loads /vercel/share/.env.project before spawning tests; npm test -w backend passes 99 tests with 0 failures and 1 skipped test |
 
 ## Progress summary
 
 | Measure | Count | Percentage |
 | --- | ---: | ---: |
 | Total atomic tasks | 46 | 100% |
-| Done | 1 | 2.2% |
+| Done | 2 | 4.3% |
 | In review | 0 | 0% |
 | In progress | 0 | 0% |
 | Ready | 1 | 2.2% |
-| Blocked by dependencies | 44 | 95.6% |
+| Blocked by dependencies | 43 | 93.5% |
 
 Update this summary whenever a task status changes.

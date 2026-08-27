@@ -2,6 +2,11 @@ import { readdirSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import dotenv from 'dotenv';
+
+const projectEnvPath = '/vercel/share/.env.project';
+dotenv.config({ path: projectEnvPath });
+dotenv.config({ path: join(process.cwd(), '.env'), override: false });
 
 const backendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const testsRoot = join(backendRoot, 'tests');
