@@ -1,8 +1,8 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 
-export async function getLibraryOverview({ schoolId, libraryId }) {
+export async function getLibraryOverview({ tenantId, schoolId, libraryId }) {
   const library = await prisma.library.findFirst({
-    where: { id: libraryId, schoolId },
+    where: { id: libraryId, tenantId, schoolId },
     include: { policy: true, locations: { include: { shelves: true } } },
   });
   if (!library) throw new Error('Library not found');

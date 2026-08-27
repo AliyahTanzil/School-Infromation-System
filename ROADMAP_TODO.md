@@ -56,7 +56,7 @@ A feature task is complete only when all applicable layers exist:
 |    11 | PAY-001     | DONE    | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
 |    12 | COM-001     | DONE    | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
 |    13 | HR-001      | DONE    | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
-|    14 | LIB-001     | BLOCKED | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
+|    14 | LIB-001     | DONE    | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
 |    15 | AST-001     | BLOCKED | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
 |    16 | TRN-001     | BLOCKED | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
 |    17 | BRD-001     | BLOCKED | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |

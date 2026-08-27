@@ -23,21 +23,22 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 |    11 | PAY-001     | DONE   | Added payment intents, payment attempts, and idempotent gateway webhook persistence.                                                                                                          |
 |    12 | COM-001     | DONE   | Added notification events, deliveries, preferences, tenant-scoped service, and active routes.                                                                                                 |
 |    13 | HR-001      | DONE   | Added employees, HR departments and positions, leave requests, payroll runs/items, and active HR routes; Prisma validation, syntax checks, backend tests, and Neon table verification passed. |
+|    14 | LIB-001     | DONE   | Activated tenant-scoped library overview, catalog search, and loans APIs; Prisma validation, syntax checks, backend suite, and diff checks passed.                                            |
 
 ## Current progress
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    15 |        31% |
+| Done                    |    16 |        33% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
 | Ready                   |     3 |         6% |
-| Blocked by dependencies |    30 |        63% |
+| Blocked by dependencies |    29 |        60% |
 
 ## Next work
 
-HR-001 is complete. The next implementation must follow the dependency queue and claim only the first dependency-safe task; progress tracking is maintained in this file.
+LIB-001 is complete. The next implementation must follow the dependency queue and claim only the first dependency-safe task; progress tracking is maintained in this file.
 
 ## Verification baseline
 

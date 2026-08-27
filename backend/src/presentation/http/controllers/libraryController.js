@@ -2,6 +2,7 @@ import * as service from '../../../application/services/libraryService.js';
 
 function context(req) {
   return {
+    tenantId: req.user?.tenantId || req.tenantId,
     schoolId: req.user?.schoolId || req.schoolId,
     libraryId: req.params.libraryId || req.query.libraryId,
   };

@@ -23,6 +23,7 @@ import examinationRoutes from './examinationRoutes.js';
 import timetableRoutes from './timetableRoutes.js';
 import communicationRoutes from './communicationRoutes.js';
 import hrRoutes from './hrRoutes.js';
+import libraryRoutes from './libraryRoutes.js';
 
 const router = Router();
 
@@ -49,7 +50,7 @@ router.use('/results', featureUnavailableRoutes('Results', 'RES-001'));
 router.use('/timetables', timetableRoutes);
 router.use('/communication', communicationRoutes);
 router.use('/hr', hrRoutes);
-router.use('/libraries', featureUnavailableRoutes('Library', 'LIB-001'));
+router.use('/libraries', libraryRoutes);
 router.use('/assets-inventory', featureUnavailableRoutes('Assets and inventory', 'AST-001'));
 router.use('/transport', featureUnavailableRoutes('Transport', 'TRN-001'));
 router.use('/boarding', featureUnavailableRoutes('Boarding', 'BRD-001'));
