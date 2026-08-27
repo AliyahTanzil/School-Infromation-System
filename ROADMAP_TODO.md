@@ -52,7 +52,7 @@ A feature task is complete only when all applicable layers exist:
 |     7 | EXM-001     | DONE    | Complete examination persistence and workflow                     | CLS-001, POL-001              | Core 13, Mobile 6                 |
 |     8 | RES-001     | DONE    | Complete result processing and publication workflow               | EXM-001                       | Core 14, Mobile 6                 |
 |     9 | TTB-001     | DONE    | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
-|    10 | FIN-001     | BLOCKED | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
+|    10 | FIN-001     | DONE    | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
 |    11 | PAY-001     | BLOCKED | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
 |    12 | COM-001     | BLOCKED | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
 |    13 | HR-001      | BLOCKED | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
@@ -154,16 +154,17 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | 2026-08-27 | EXM-001     | v0    | DONE    | Examination persistence tables, bounded tenant-safe mark writes, audited lifecycle transitions, raw-query service, active API route mount, syntax checks, and backend suite pass (99 passed, 1 skipped)                                                                       |
 | 2026-08-27 | TTB-001     | v0    | DONE    | Timetable persistence models and Neon tables created for schedules, slots, conflicts, versions, audits, and substitutions; tenant-safe service, validation, lifecycle, conflict detection, active API mount, Prisma validation, and backend suite pass (99 passed, 1 skipped) |
 | 2026-08-27 | RES-001     | v0    | DONE    | Result persistence and audit tables created; result processing, ranking, statistics, lifecycle publication, tenant/school scoping, Prisma validation/generation, and backend suite pass (99 passed, 1 skipped)                                                                |
+| 2026-08-27 | FIN-001     | v0    | DONE    | Finance schema and Neon tables added for fees, invoices, payments, and ledger transactions; existing idempotent transactional payment flow validated; Prisma validation/generation and backend suite pass (99 passed, 1 skipped)                                              |
 
 ## Progress summary
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    11 |        23% |
+| Done                    |    12 |        25% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
-| Ready                   |     1 |         2% |
-| Blocked by dependencies |    36 |        75% |
+| Ready                   |     2 |         4% |
+| Blocked by dependencies |    34 |        71% |
 
 Update this summary whenever a task status changes.
