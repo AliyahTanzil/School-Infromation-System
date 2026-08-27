@@ -22,6 +22,7 @@ import { featureUnavailableRoutes } from './featureUnavailableRoutes.js';
 import examinationRoutes from './examinationRoutes.js';
 import timetableRoutes from './timetableRoutes.js';
 import communicationRoutes from './communicationRoutes.js';
+import hrRoutes from './hrRoutes.js';
 
 const router = Router();
 
@@ -47,7 +48,7 @@ router.use('/examinations', examinationRoutes);
 router.use('/results', featureUnavailableRoutes('Results', 'RES-001'));
 router.use('/timetables', timetableRoutes);
 router.use('/communication', communicationRoutes);
-router.use('/hr', featureUnavailableRoutes('Human resources', 'HR-001'));
+router.use('/hr', hrRoutes);
 router.use('/libraries', featureUnavailableRoutes('Library', 'LIB-001'));
 router.use('/assets-inventory', featureUnavailableRoutes('Assets and inventory', 'AST-001'));
 router.use('/transport', featureUnavailableRoutes('Transport', 'TRN-001'));
