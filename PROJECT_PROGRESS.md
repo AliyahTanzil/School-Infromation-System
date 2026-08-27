@@ -25,21 +25,22 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 |    13 | HR-001      | DONE   | Added employees, HR departments and positions, leave requests, payroll runs/items, and active HR routes; Prisma validation, syntax checks, backend tests, and Neon table verification passed. |
 |    14 | LIB-001     | DONE   | Activated tenant-scoped library overview, catalog search, and loans APIs; Prisma validation, syntax checks, backend suite, and diff checks passed.                                            |
 |    15 | AST-001     | DONE   | Activated tenant-scoped assets and inventory overview/search APIs; Prisma validation, syntax checks, backend suite, and diff checks passed.                                                   |
+|    16 | TRN-001     | DONE   | Added transport vehicles, drivers, routes, stops, trips, inspections, active API mounting, and database persistence; validation and backend suite passed.                                     |
 
 ## Current progress
 
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    17 |        35% |
+| Done                    |    18 |        38% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
 | Ready                   |     3 |         6% |
-| Blocked by dependencies |    28 |        58% |
+| Blocked by dependencies |    27 |        56% |
 
 ## Next work
 
-AST-001 is complete. The next implementation must follow the dependency queue and claim only the first dependency-safe task; progress tracking is maintained in this file.
+TRN-001 is complete. The next implementation must follow the dependency queue and claim only the first dependency-safe task; progress tracking is maintained in this file.
 
 ## Verification baseline
 
