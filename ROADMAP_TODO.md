@@ -57,8 +57,8 @@ A feature task is complete only when all applicable layers exist:
 |    12 | COM-001     | DONE        | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
 |    13 | HR-001      | DONE        | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
 |    14 | LIB-001     | DONE        | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
-|    15 | AST-001     | IN_PROGRESS | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
-|    16 | TRN-001     | REVIEW      | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
+|    15 | AST-001     | DONE        | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
+|    16 | TRN-001     | IN_PROGRESS | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
 |    17 | BRD-001     | REVIEW      | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
 |    18 | LMS-001     | REVIEW      | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
 |    19 | LMS-002     | REVIEW      | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
@@ -179,8 +179,8 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    16 |        33% |
-| In review               |     8 |        17% |
+| Done                    |    17 |        35% |
+| In review               |     7 |        15% |
 | In progress             |     0 |         0% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
@@ -200,3 +200,7 @@ Update this summary whenever a task status changes.
 | 2026-08-27 | LIB-001 | Codex | DONE | Replaced nonexistent library delegates and demo UI with migrated library, book, copy, and loan models; validated school-scoped APIs; atomic borrow/return circulation; both active mounts; operational frontend and back navigation; Prisma, lint, both builds, focused tests, and full suite (129 passed, 1 skipped) pass. |
 
 | 2026-08-27 | AST-001 | Codex | CLAIMED | Auditing asset and inventory models, migrations, CRUD and stock movement lifecycles, authenticated school scope, route mounts, frontend integration, documentation, and tests. |
+
+| 2026-08-27 | AST-001 | Codex | DONE | Replaced missing delegates and seeded UI with migrated asset, inventory-item, and stock-movement models; validated school-scoped CRUD/lifecycle APIs; atomic receipt/issue ledger with negative-stock guard; active mounts, operational frontend, tests, docs, Prisma, lint, both builds, and full suite (134 passed, 1 skipped) pass. |
+
+| 2026-08-27 | TRN-001 | Codex | CLAIMED | Auditing transport vehicle, driver, route, stop, trip and inspection persistence, lifecycle APIs, authenticated school scope, route mounts, frontend integration, documentation, and tests. |
