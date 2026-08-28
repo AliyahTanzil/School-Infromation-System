@@ -40,15 +40,15 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    11 |        23% |
-| In review               |    12 |        25% |
-| In progress             |     1 |         2% |
+| Done                    |    16 |        33% |
+| In review               |     8 |        17% |
+| In progress             |     0 |         0% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
 
 ## Next work
 
-EXM-001, RES-001, and TTB-001 reconciliation are complete. FIN-001 reconciliation is in progress across persistence, transactions, active-server mounts, authorization, frontend, documentation, and tests.
+EXM-001 through LIB-001 reconciliation is complete. AST-001 is the next reviewed slice to reconcile.
 
 ## Verification baseline
 

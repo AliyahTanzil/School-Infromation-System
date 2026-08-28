@@ -33,13 +33,30 @@ import resultRouter from '../presentation/http/routes/resultRoutes.js';
 import timetableRouter from '../presentation/http/routes/timetableRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import financeRouter from '../presentation/http/routes/financeRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import paymentGatewayRouter from '../presentation/http/routes/paymentGatewayRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import communicationRouter from '../presentation/http/routes/communicationRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import hrRouter from '../presentation/http/routes/hrRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import libraryRouter from '../presentation/http/routes/libraryRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import assetInventoryRouter from '../presentation/http/routes/assetInventoryRoutes.js';
 
 export const createApp = () => {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigins, credentials: true }));
-  app.use(express.json({ limit: config.jsonBodyLimit }));
+  app.use(
+    express.json({
+      limit: config.jsonBodyLimit,
+      verify: (req, _res, buffer) => {
+        (req as express.Request & { rawBody?: string }).rawBody = buffer.toString('utf8');
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: false, limit: config.urlencodedBodyLimit }));
   app.use(cookieParser());
   app.use(requestId);
@@ -75,6 +92,18 @@ export const createApp = () => {
   app.use('/api/v1/timetables', timetableRouter);
   app.use('/api/finance', financeRouter);
   app.use('/api/v1/finance', financeRouter);
+  app.use('/api/payment/monime', paymentGatewayRouter);
+  app.use('/api/v1/payment/monime', paymentGatewayRouter);
+  app.use('/api/payment-gateway', paymentGatewayRouter);
+  app.use('/api/v1/payment-gateway', paymentGatewayRouter);
+  app.use('/api/communication', communicationRouter);
+  app.use('/api/v1/communication', communicationRouter);
+  app.use('/api/hr', hrRouter);
+  app.use('/api/v1/hr', hrRouter);
+  app.use('/api/libraries', libraryRouter);
+  app.use('/api/v1/libraries', libraryRouter);
+  app.use('/api/assets-inventory', assetInventoryRouter);
+  app.use('/api/v1/assets-inventory', assetInventoryRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

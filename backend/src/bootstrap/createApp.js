@@ -58,7 +58,14 @@ export function createApp() {
       credentials: config.cors.credentials,
     })
   );
-  app.use(express.json({ limit: config.http.bodyLimit }));
+  app.use(
+    express.json({
+      limit: config.http.bodyLimit,
+      verify: (req, _res, buffer) => {
+        req.rawBody = buffer.toString('utf8');
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: true, limit: config.http.bodyLimit }));
   app.use(cookieParser());
   app.use(requestLogger);

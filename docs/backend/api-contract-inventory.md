@@ -306,3 +306,22 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - `POST` '/:id/restore', requirePermission('users.restore'), controller.restore);
 - `GET` '/:id/profile', requirePermission('users.read'), controller.profile);
 - `DELETE` '/:id/profile-image', requirePermission('users.update'), controller.deleteImage);
+
+### HR (`/api/hr`, `/api/v1/hr`)
+
+Authenticated platform and school administrators must provide `x-school-id`. The API exposes the
+HR dashboard, employee list/create, leave list/create/decision, and payroll run create/finalize
+workflows. Tenant and school ownership are derived from the authenticated context and cannot be
+supplied in request bodies. Payroll amounts are stored in minor currency units.
+
+### Library (`/api/libraries`, `/api/v1/libraries`)
+
+Authenticated platform and school administrators provide `x-school-id`. The API creates a school
+library, manages catalog titles and physical copies, lists circulation records, and performs atomic
+borrow/return operations. Tenant and school ownership are always derived from authentication.
+
+### Assets and inventory (`/api/assets-inventory`, `/api/v1/assets-inventory`)
+
+Authenticated platform and school administrators provide `x-school-id`. Serialized assets have an
+independent lifecycle, while inventory quantities change only through atomic receipt and issue
+movements. Issues that would produce negative stock are rejected. Ownership is server-derived.

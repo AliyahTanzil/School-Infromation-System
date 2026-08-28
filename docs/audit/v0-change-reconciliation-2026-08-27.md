@@ -29,6 +29,6 @@ The imported tasks remain in `REVIEW`, not `DONE`, until these gaps are closed:
 ## Reconciliation decision
 
 - Original Codex-complete tasks DB-001 through POL-001 remain `DONE` (8/48).
-- EXM-001, RES-001, and TTB-001 passed reconciliation and are `DONE`; the other 13 imported V0 tasks remain in `REVIEW`.
+- EXM-001, RES-001, TTB-001, FIN-001, PAY-001, COM-001, HR-001, and LIB-001 passed reconciliation and are `DONE`; the other 8 imported V0 tasks remain in `REVIEW`.
 - LMS-006 is `BLOCKED` until its reviewed prerequisites are promoted to `DONE`.
-- Review work proceeds in dependency order; FIN-001 is next. Each slice must receive migrations, active-server mounts, validated tenant/school authorization, frontend integration, documentation, focused tests, and full verification before promotion.
+- Review work proceeds in dependency order; AST-001 is next. Each slice must receive migrations, active-server mounts, validated tenant/school authorization, frontend integration, documentation, focused tests, and full verification before promotion.

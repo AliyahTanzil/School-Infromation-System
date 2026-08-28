@@ -865,6 +865,114 @@ model PayrollItem {
   @@unique([payrollRunId, employeeId])
 }
 
+model Library {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  name String
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  books LibraryBook[]
+  copies LibraryCopy[]
+  loans LibraryLoan[]
+  @@unique([tenantId, schoolId, name])
+  @@index([tenantId, schoolId, active])
+}
+model LibraryBook {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  libraryId String @db.Uuid
+  title String
+  author String
+  isbn String?
+  category String?
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  copies LibraryCopy[]
+  @@unique([libraryId, isbn])
+  @@index([tenantId, schoolId, libraryId, status])
+}
+model LibraryCopy {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  libraryId String @db.Uuid
+  bookId String @db.Uuid
+  barcode String
+  status String @default("AVAILABLE")
+  createdAt DateTime @default(now())
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  book LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  loans LibraryLoan[]
+  @@unique([libraryId, barcode])
+  @@index([tenantId, schoolId, libraryId, status])
+}
+model LibraryLoan {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  libraryId String @db.Uuid
+  copyId String @db.Uuid
+  borrowerId String @db.Uuid
+  status String @default("BORROWED")
+  borrowedAt DateTime @default(now())
+  dueAt DateTime
+  returnedAt DateTime?
+  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  copy LibraryCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, libraryId, status, dueAt])
+}
+
+model Asset {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  assetNumber String
+  name String
+  serialNumber String?
+  category String?
+  location String?
+  status String @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([tenantId, schoolId, assetNumber])
+  @@index([tenantId, schoolId, status])
+}
+model InventoryItem {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  sku String
+  name String
+  category String?
+  quantity Int @default(0)
+  reorderLevel Int @default(0)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  movements InventoryMovement[]
+  @@unique([tenantId, schoolId, sku])
+  @@index([tenantId, schoolId, active])
+}
+model InventoryMovement {
+  id String @id @default(uuid()) @db.Uuid
+  tenantId String @db.Uuid
+  schoolId String @db.Uuid
+  itemId String @db.Uuid
+  type String
+  quantity Int
+  balanceAfter Int
+  reference String?
+  actorId String? @db.Uuid
+  createdAt DateTime @default(now())
+  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  @@index([tenantId, schoolId, itemId, createdAt])
+}
+
 model Vehicle {
   id String @id @default(uuid()) @db.Uuid
   tenantId String @db.Uuid

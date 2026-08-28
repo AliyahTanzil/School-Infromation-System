@@ -1,37 +1,23 @@
 import * as service from '../../../application/services/libraryService.js';
-
-function context(req) {
-  return {
-    tenantId: req.user?.tenantId || req.tenantId,
-    schoolId: req.user?.schoolId || req.schoolId,
-    libraryId: req.params.libraryId || req.query.libraryId,
-  };
-}
-
-export async function overview(req, res, next) {
-  try {
-    res.json(await service.getLibraryOverview(context(req)));
-  } catch (error) {
-    next(error);
-  }
-}
-export async function books(req, res, next) {
-  try {
-    res.json(
-      await service.searchBooks({
-        ...context(req),
-        query: req.query.q,
-        page: Number(req.query.page || 1),
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-export async function loans(req, res, next) {
-  try {
-    res.json(await service.listLoans({ ...context(req), status: req.query.status }));
-  } catch (error) {
-    next(error);
-  }
-}
+const scope = (req) => ({
+  tenantId: req.schoolContext.tenantId,
+  schoolId: req.schoolContext.schoolId,
+});
+export const createLibrary = async (req, res) =>
+  res.status(201).json({ data: await service.createLibrary(scope(req), req.body) });
+export const overview = async (req, res) =>
+  res.json({ data: await service.overview(scope(req), req.params.libraryId) });
+export const books = async (req, res) =>
+  res.json({ data: await service.searchBooks(scope(req), req.params.libraryId, req.query.q) });
+export const addBook = async (req, res) =>
+  res.status(201).json({ data: await service.addBook(scope(req), req.params.libraryId, req.body) });
+export const addCopy = async (req, res) =>
+  res.status(201).json({
+    data: await service.addCopy(scope(req), req.params.libraryId, req.params.bookId, req.body),
+  });
+export const loans = async (req, res) =>
+  res.json({ data: await service.listLoans(scope(req), req.params.libraryId) });
+export const borrow = async (req, res) =>
+  res.status(201).json({ data: await service.borrow(scope(req), req.params.libraryId, req.body) });
+export const returnLoan = async (req, res) =>
+  res.json({ data: await service.returnLoan(scope(req), req.params.libraryId, req.params.loanId) });

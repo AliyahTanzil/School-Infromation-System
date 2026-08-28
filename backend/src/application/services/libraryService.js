@@ -1,74 +1,79 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
-
-export async function getLibraryOverview({ tenantId, schoolId, libraryId }) {
-  const library = await prisma.library.findFirst({
-    where: { id: libraryId, tenantId, schoolId },
-    include: { policy: true, locations: { include: { shelves: true } } },
-  });
-  if (!library) throw new Error('Library not found');
-
-  const [books, copies, members, activeLoans, overdueLoans, openFines, reservations] =
-    await Promise.all([
-      prisma.book.count({ where: { libraryId, status: 'ACTIVE' } }),
-      prisma.bookCopy.groupBy({
-        where: { book: { libraryId } },
-        by: ['status'],
-        _count: { _all: true },
-      }),
-      prisma.libraryMember.count({ where: { libraryId, active: true } }),
-      prisma.borrowTransaction.count({ where: { libraryId, status: 'BORROWED' } }),
-      prisma.borrowTransaction.count({ where: { libraryId, status: 'OVERDUE' } }),
-      prisma.fine.aggregate({ where: { libraryId, status: 'OPEN' }, _sum: { amount: true } }),
-      prisma.reservation.count({ where: { libraryId, status: 'ACTIVE' } }),
-    ]);
-
-  return {
-    library,
-    stats: {
-      books,
-      copies,
-      members,
-      activeLoans,
-      overdueLoans,
-      openFineTotal: openFines._sum.amount || 0,
-      reservations,
-    },
-    copyStatus: copies,
-  };
-}
-
-export async function searchBooks({ libraryId, query = '', page = 1, pageSize = 12 }) {
-  const where = {
-    libraryId,
-    status: 'ACTIVE',
-    ...(query
-      ? {
-          OR: [
-            { title: { contains: query, mode: 'insensitive' } },
-            { isbn13: { contains: query } },
-            { isbn10: { contains: query } },
-          ],
-        }
-      : {}),
-  };
-  const [items, total] = await Promise.all([
-    prisma.book.findMany({
-      where,
-      include: { copies: { select: { status: true } }, authors: { include: { author: true } } },
-      orderBy: { title: 'asc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+import ConflictError from '../../shared/errors/ConflictError.js';
+import NotFoundError from '../../shared/errors/NotFoundError.js';
+const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+export const createLibrary = (scope, data) =>
+  prisma.library.create({ data: { ...owned(scope), ...data } });
+export async function overview(scope, libraryId) {
+  const library = await prisma.library.findFirst({ where: { id: libraryId, ...owned(scope) } });
+  if (!library) throw new NotFoundError('Library not found');
+  const [books, copies, available, activeLoans, overdue] = await Promise.all([
+    prisma.libraryBook.count({ where: { ...owned(scope), libraryId, status: 'ACTIVE' } }),
+    prisma.libraryCopy.count({ where: { ...owned(scope), libraryId } }),
+    prisma.libraryCopy.count({ where: { ...owned(scope), libraryId, status: 'AVAILABLE' } }),
+    prisma.libraryLoan.count({ where: { ...owned(scope), libraryId, status: 'BORROWED' } }),
+    prisma.libraryLoan.count({
+      where: { ...owned(scope), libraryId, status: 'BORROWED', dueAt: { lt: new Date() } },
     }),
-    prisma.book.count({ where }),
   ]);
-  return { items, total, page, pageSize };
+  return { library, stats: { books, copies, available, activeLoans, overdue } };
 }
-
-export async function listLoans({ libraryId, status }) {
-  return prisma.borrowTransaction.findMany({
-    where: { libraryId, ...(status ? { status } : {}) },
-    include: { copy: { include: { book: true } }, member: true },
-    orderBy: { dueAt: 'asc' },
-    take: 50,
+export const searchBooks = (scope, libraryId, query = '') =>
+  prisma.libraryBook.findMany({
+    where: {
+      ...owned(scope),
+      libraryId,
+      status: 'ACTIVE',
+      ...(query
+        ? {
+            OR: [
+              { title: { contains: query, mode: 'insensitive' } },
+              { author: { contains: query, mode: 'insensitive' } },
+              { isbn: { contains: query } },
+            ],
+          }
+        : {}),
+    },
+    include: { copies: { select: { id: true, barcode: true, status: true } } },
+    orderBy: { title: 'asc' },
+    take: 100,
+  });
+export const addBook = (scope, libraryId, data) =>
+  prisma.libraryBook.create({ data: { ...owned(scope), libraryId, ...data } });
+export async function addCopy(scope, libraryId, bookId, data) {
+  const book = await prisma.libraryBook.findFirst({
+    where: { id: bookId, libraryId, ...owned(scope) },
+  });
+  if (!book) throw new NotFoundError('Book not found');
+  return prisma.libraryCopy.create({ data: { ...owned(scope), libraryId, bookId, ...data } });
+}
+export const listLoans = (scope, libraryId) =>
+  prisma.libraryLoan.findMany({
+    where: { ...owned(scope), libraryId },
+    include: { copy: { include: { book: true } } },
+    orderBy: { borrowedAt: 'desc' },
+    take: 100,
+  });
+export async function borrow(scope, libraryId, data) {
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.libraryCopy.updateMany({
+      where: { id: data.copyId, libraryId, ...owned(scope), status: 'AVAILABLE' },
+      data: { status: 'BORROWED' },
+    });
+    if (!changed.count) throw new ConflictError('Copy is unavailable');
+    return tx.libraryLoan.create({ data: { ...owned(scope), libraryId, ...data } });
+  });
+}
+export async function returnLoan(scope, libraryId, loanId) {
+  return prisma.$transaction(async (tx) => {
+    const loan = await tx.libraryLoan.findFirst({
+      where: { id: loanId, libraryId, ...owned(scope), status: 'BORROWED' },
+    });
+    if (!loan) throw new NotFoundError('Active loan not found');
+    await tx.libraryCopy.update({ where: { id: loan.copyId }, data: { status: 'AVAILABLE' } });
+    return tx.libraryLoan.update({
+      where: { id: loan.id },
+      data: { status: 'RETURNED', returnedAt: new Date() },
+    });
   });
 }

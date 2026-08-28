@@ -1,42 +1,21 @@
-import {
-  getOverview,
-  listAssets,
-  listInventory,
-} from '../../../application/services/assetInventoryService.js';
-
-const tenantId = (req) => req.user?.tenantId || req.user?.tenant?.id;
-const schoolId = (req) => req.user?.schoolId || req.user?.school?.id;
-
-export async function overview(req, res, next) {
-  try {
-    res.json(await getOverview({ tenantId: tenantId(req), schoolId: schoolId(req) }));
-  } catch (error) {
-    next(error);
-  }
-}
-export async function assets(req, res, next) {
-  try {
-    res.json(
-      await listAssets({
-        tenantId: tenantId(req),
-        schoolId: schoolId(req),
-        query: req.query.q || '',
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-}
-export async function inventory(req, res, next) {
-  try {
-    res.json(
-      await listInventory({
-        tenantId: tenantId(req),
-        schoolId: schoolId(req),
-        query: req.query.q || '',
-      })
-    );
-  } catch (error) {
-    next(error);
-  }
-}
+import * as service from '../../../application/services/assetInventoryService.js';
+const scope = (req) => ({
+  tenantId: req.schoolContext.tenantId,
+  schoolId: req.schoolContext.schoolId,
+});
+export const overview = async (req, res) =>
+  res.json({ data: await service.getOverview(scope(req)) });
+export const assets = async (req, res) =>
+  res.json({ data: await service.listAssets(scope(req), req.query.q) });
+export const createAsset = async (req, res) =>
+  res.status(201).json({ data: await service.createAsset(scope(req), req.body) });
+export const updateAsset = async (req, res) =>
+  res.json({ data: await service.updateAssetStatus(scope(req), req.params.id, req.body.status) });
+export const inventory = async (req, res) =>
+  res.json({ data: await service.listInventory(scope(req), req.query.q) });
+export const createItem = async (req, res) =>
+  res.status(201).json({ data: await service.createInventoryItem(scope(req), req.body) });
+export const moveStock = async (req, res) =>
+  res
+    .status(201)
+    .json({ data: await service.moveStock(scope(req), req.params.id, req.body, req.user.id) });

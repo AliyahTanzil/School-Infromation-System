@@ -4,6 +4,7 @@ import api from './api/auth.js';
 import { formatLe } from './utils/currency.js';
 
 const formatMoney = (minor = 0) => formatLe(minor);
+const formatMajorMoney = (major = 0) => formatLe(major, { minor: false });
 
 const statusClass = {
   PAID: 'status-positive',
@@ -19,6 +20,16 @@ export default function FinanceDashboard() {
   const [summary, setSummary] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [state, setState] = useState('loading');
+  const [showCreate, setShowCreate] = useState(false);
+  const [message, setMessage] = useState('');
+  const [form, setForm] = useState({
+    studentId: '',
+    feeId: '',
+    invoiceNumber: '',
+    subtotal: '',
+    discount: '0',
+    dueAt: '',
+  });
 
   useEffect(() => {
     let active = true;
@@ -44,7 +55,7 @@ export default function FinanceDashboard() {
     () =>
       invoices.filter((invoice) => {
         const haystack =
-          `${invoice.invoiceNumber} ${invoice.student?.profile?.firstName ?? ''} ${invoice.student?.profile?.lastName ?? ''}`.toLowerCase();
+          `${invoice.invoiceNumber} ${invoice.student?.firstName ?? ''} ${invoice.student?.lastName ?? ''}`.toLowerCase();
         return (
           haystack.includes(query.toLowerCase()) && (status === 'ALL' || invoice.status === status)
         );
@@ -81,6 +92,24 @@ export default function FinanceDashboard() {
       'Term performance',
     ],
   ];
+  const createInvoice = async (event) => {
+    event.preventDefault();
+    setMessage('');
+    try {
+      const payload = { ...form, feeId: form.feeId || undefined, dueAt: form.dueAt || undefined };
+      await api.post('/finance/invoices', payload, { headers: { 'x-school-id': schoolId } });
+      const [{ data: summaryData }, { data: invoiceData }] = await Promise.all([
+        api.get('/finance/summary', { headers: { 'x-school-id': schoolId } }),
+        api.get('/finance/invoices', { headers: { 'x-school-id': schoolId } }),
+      ]);
+      setSummary(summaryData.data);
+      setInvoices(invoiceData.data);
+      setShowCreate(false);
+      setMessage('Invoice created successfully.');
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to create invoice.');
+    }
+  };
 
   return (
     <main className="finance-page">
@@ -124,13 +153,77 @@ export default function FinanceDashboard() {
             </article>
           ))}
         </section>
+        {message && (
+          <p role="status" className="finance-panel">
+            {message}
+          </p>
+        )}
+        {showCreate && (
+          <section className="finance-panel">
+            <h2>Create invoice</h2>
+            <form className="finance-toolbar" onSubmit={createInvoice}>
+              <input
+                required
+                aria-label="Student ID"
+                placeholder="Student UUID"
+                value={form.studentId}
+                onChange={(event) => setForm({ ...form, studentId: event.target.value })}
+              />
+              <input
+                aria-label="Fee ID"
+                placeholder="Fee UUID (optional)"
+                value={form.feeId}
+                onChange={(event) => setForm({ ...form, feeId: event.target.value })}
+              />
+              <input
+                required
+                aria-label="Invoice number"
+                placeholder="Invoice number"
+                value={form.invoiceNumber}
+                onChange={(event) => setForm({ ...form, invoiceNumber: event.target.value })}
+              />
+              <input
+                required
+                type="number"
+                min="0"
+                step="0.01"
+                aria-label="Subtotal"
+                placeholder="Subtotal"
+                value={form.subtotal}
+                onChange={(event) => setForm({ ...form, subtotal: event.target.value })}
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                aria-label="Discount"
+                placeholder="Discount"
+                value={form.discount}
+                onChange={(event) => setForm({ ...form, discount: event.target.value })}
+              />
+              <input
+                type="date"
+                aria-label="Due date"
+                value={form.dueAt}
+                onChange={(event) => setForm({ ...form, dueAt: event.target.value })}
+              />
+              <button className="finance-primary-action" disabled={!schoolId}>
+                Save invoice
+              </button>
+            </form>
+          </section>
+        )}
         <section className="finance-panel">
           <div className="finance-panel-heading">
             <div>
               <p className="finance-kicker">Receivables ledger</p>
               <h2>Invoices</h2>
             </div>
-            <button className="finance-primary-action" type="button">
+            <button
+              className="finance-primary-action"
+              type="button"
+              onClick={() => setShowCreate((value) => !value)}
+            >
               Create invoice <span>＋</span>
             </button>
           </div>
@@ -177,13 +270,13 @@ export default function FinanceDashboard() {
                       </small>
                     </td>
                     <td>
-                      {invoice.student?.profile
-                        ? `${invoice.student.profile.firstName} ${invoice.student.profile.lastName}`
+                      {invoice.student
+                        ? `${invoice.student.firstName} ${invoice.student.lastName}`
                         : 'Unassigned'}
                     </td>
                     <td>{invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : '—'}</td>
-                    <td>{formatMoney(invoice.total, invoice.currency)}</td>
-                    <td>{formatMoney(invoice.balance, invoice.currency)}</td>
+                    <td>{formatMajorMoney(invoice.total)}</td>
+                    <td>{formatMajorMoney(invoice.balance)}</td>
                     <td>
                       <span
                         className={`finance-status ${statusClass[invoice.status] ?? 'status-neutral'}`}

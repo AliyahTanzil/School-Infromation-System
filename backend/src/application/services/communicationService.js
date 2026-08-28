@@ -1,45 +1,60 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
-
+import ValidationError from '../../shared/errors/ValidationError.js';
 const channels = ['IN_APP', 'EMAIL', 'SMS', 'PUSH'];
+const scopeWhere = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+const hydrateDelivery = async (delivery, db = prisma) => ({
+  ...delivery,
+  event: await db.notificationEvent.findFirst({
+    where: { id: delivery.eventId, ...scopeWhere(delivery) },
+  }),
+});
 
 const communicationService = {
-  async listNotifications(query = {}) {
+  async listNotifications(scope, query = {}) {
     return prisma.notificationEvent.findMany({
+      where: { ...scopeWhere(scope), ...(query.status ? { status: query.status } : {}) },
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(Number(query.limit) || 50, 100),
+    });
+  },
+  async inbox(scope, userId, query = {}) {
+    const rows = await prisma.notificationDelivery.findMany({
       where: {
-        tenantId: query.tenantId,
-        ...(query.schoolId ? { schoolId: query.schoolId } : {}),
+        ...scopeWhere(scope),
+        recipientId: userId,
         ...(query.status ? { status: query.status } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(Number(query.limit) || 50, 100),
     });
+    return Promise.all(rows.map((row) => hydrateDelivery(row)));
   },
-
-  async createNotification(input) {
-    if (!input.tenantId || !input.schoolId || !input.eventType)
-      throw new Error('tenantId, schoolId, and eventType are required');
-    const recipients = [...new Set(input.userIds || [])];
-    const selectedChannels = (input.channels || ['IN_APP']).filter((channel) =>
+  async createNotification(scope, input) {
+    const recipients = [...new Set(input.userIds)];
+    const selectedChannels = [...new Set(input.channels)].filter((channel) =>
       channels.includes(channel)
     );
-    if (!recipients.length || !selectedChannels.length)
-      throw new Error('userIds and valid channels are required');
+    if (!selectedChannels.length)
+      throw new ValidationError('At least one valid delivery channel is required');
+    const validRecipients = await prisma.user.count({
+      where: { id: { in: recipients }, tenantId: scope.tenantId, deletedAt: null },
+    });
+    if (validRecipients !== recipients.length)
+      throw new ValidationError('One or more recipients are outside the authenticated tenant');
     return prisma.$transaction(async (tx) => {
       const event = await tx.notificationEvent.create({
         data: {
-          tenantId: input.tenantId,
-          schoolId: input.schoolId,
+          ...scopeWhere(scope),
           eventType: input.eventType,
           aggregateType: input.aggregateType,
           aggregateId: input.aggregateId,
-          payload: input.payload || {},
+          payload: input.payload,
         },
       });
       await tx.notificationDelivery.createMany({
         data: recipients.flatMap((recipientId) =>
           selectedChannels.map((channel) => ({
-            tenantId: input.tenantId,
-            schoolId: input.schoolId,
+            ...scopeWhere(scope),
             eventId: event.id,
             recipientId,
             channel,
@@ -49,58 +64,45 @@ const communicationService = {
       return event;
     });
   },
-
-  async markRead(notificationId, userId) {
+  async markRead(scope, notificationId, userId) {
     return prisma.notificationDelivery.updateMany({
-      where: { eventId: notificationId, recipientId: userId },
+      where: { ...scopeWhere(scope), eventId: notificationId, recipientId: userId },
       data: { status: 'READ', deliveredAt: new Date() },
     });
   },
-
-  async unreadCount(userId) {
+  unreadCount(scope, userId) {
     return prisma.notificationDelivery.count({
-      where: { recipientId: userId, status: { not: 'READ' } },
+      where: { ...scopeWhere(scope), recipientId: userId, status: { not: 'READ' } },
     });
   },
-
-  async getPreferences(userId, schoolId, tenantId) {
-    if (!userId || !schoolId || !tenantId)
-      throw new Error('userId, schoolId, and tenantId are required');
+  getPreferences(scope, userId) {
     return prisma.notificationPreference.findMany({
-      where: { userId, schoolId, tenantId },
+      where: { ...scopeWhere(scope), userId },
       orderBy: { channel: 'asc' },
     });
   },
-
-  async upsertPreferences(input) {
-    if (!input.userId || !input.schoolId || !input.tenantId || !channels.includes(input.channel))
-      throw new Error('tenantId, userId, schoolId, and valid channel are required');
+  async upsertPreference(scope, userId, input) {
     return prisma.notificationPreference.upsert({
       where: {
-        tenantId_schoolId_userId_channel: {
-          tenantId: input.tenantId,
-          schoolId: input.schoolId,
-          userId: input.userId,
-          channel: input.channel,
-        },
+        tenantId_schoolId_userId_channel: { ...scopeWhere(scope), userId, channel: input.channel },
       },
       create: {
-        tenantId: input.tenantId,
-        schoolId: input.schoolId,
-        userId: input.userId,
+        ...scopeWhere(scope),
+        userId,
         channel: input.channel,
-        enabled: input.enabled ?? true,
+        enabled: input.enabled,
         quietHours: input.quietHours,
       },
-      update: { enabled: input.enabled ?? true, quietHours: input.quietHours },
+      update: { enabled: input.enabled, quietHours: input.quietHours },
     });
   },
-
-  async deliveryHealth(schoolId, tenantId) {
-    const where = { ...(schoolId ? { schoolId } : {}), ...(tenantId ? { tenantId } : {}) };
+  async deliveryHealth(scope) {
+    const where = scopeWhere(scope);
     const [total, delivered, failed, pending] = await Promise.all([
       prisma.notificationDelivery.count({ where }),
-      prisma.notificationDelivery.count({ where: { ...where, status: 'DELIVERED' } }),
+      prisma.notificationDelivery.count({
+        where: { ...where, status: { in: ['DELIVERED', 'READ'] } },
+      }),
       prisma.notificationDelivery.count({ where: { ...where, status: 'FAILED' } }),
       prisma.notificationDelivery.count({ where: { ...where, status: 'PENDING' } }),
     ]);
@@ -113,5 +115,4 @@ const communicationService = {
     };
   },
 };
-
 export default communicationService;

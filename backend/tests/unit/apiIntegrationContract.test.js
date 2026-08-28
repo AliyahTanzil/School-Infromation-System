@@ -69,7 +69,7 @@ test('routes without active Prisma models fail closed with a controlled contract
   assert.match(unavailable, /FEATURE_NOT_IMPLEMENTED/);
   assert.match(routes, /router\.use\('\/subjects', subjectRoutes\)/);
   assert.match(routes, /router\.use\('\/classes', classRoutes\)/);
-  assert.match(routes, /featureUnavailableRoutes\('Finance'/);
+  assert.match(routes, /router\.use\('\/finance', financeRoutes\)/);
   assert.match(routes, /featureUnavailableRoutes\('Digital|featureUnavailableRoutes\('AI/);
 });
 
@@ -80,7 +80,7 @@ test('platform actions use the active audit model', () => {
 });
 
 test('deferred domains return a controlled runtime response', async () => {
-  for (const path of ['/api/finance', '/api/analytics']) {
+  for (const path of ['/api/analytics']) {
     const response = await request(app).get(path).expect(501);
     assert.equal(response.body.error.code, 'FEATURE_NOT_IMPLEMENTED');
     assert.ok(response.body.error.details.requiredTask);

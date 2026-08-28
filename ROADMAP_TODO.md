@@ -52,12 +52,12 @@ A feature task is complete only when all applicable layers exist:
 |     7 | EXM-001     | DONE        | Complete examination persistence and workflow                     | CLS-001, POL-001              | Core 13, Mobile 6                 |
 |     8 | RES-001     | DONE        | Complete result processing and publication workflow               | EXM-001                       | Core 14, Mobile 6                 |
 |     9 | TTB-001     | DONE        | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
-|    10 | FIN-001     | IN_PROGRESS | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
-|    11 | PAY-001     | REVIEW      | Complete payment intent, webhook and reconciliation flow          | FIN-001                       | Core 18, Mobile 7                 |
-|    12 | COM-001     | REVIEW      | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
-|    13 | HR-001      | REVIEW      | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
-|    14 | LIB-001     | REVIEW      | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
-|    15 | AST-001     | REVIEW      | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
+|    10 | FIN-001     | DONE        | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
+|    11 | PAY-001     | DONE        | Complete Monime payment intent, webhook and reconciliation flow   | FIN-001                       | Core 18, Mobile 7                 |
+|    12 | COM-001     | DONE        | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
+|    13 | HR-001      | DONE        | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
+|    14 | LIB-001     | DONE        | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
+|    15 | AST-001     | IN_PROGRESS | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
 |    16 | TRN-001     | REVIEW      | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
 |    17 | BRD-001     | REVIEW      | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
 |    18 | LMS-001     | REVIEW      | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
@@ -179,12 +179,24 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    11 |        23% |
-| In review               |    12 |        25% |
-| In progress             |     1 |         2% |
+| Done                    |    16 |        33% |
+| In review               |     8 |        17% |
+| In progress             |     0 |         0% |
 | Ready                   |     0 |         0% |
 | Blocked by dependencies |    24 |        50% |
 
 Update this summary whenever a task status changes.
 
 | 2026-08-27 | TTB-001 | Codex | DONE | Reconciled timetable persistence with the active flat Prisma schema and AcademicTerm model; added non-destructive migration, authenticated school context, active compatibility/versioned mounts, lifecycle versioning, conflict publication gate, substitutions, creation UI, back navigation, contract tests, and full build verification (109 passed, 1 skipped). |
+
+| 2026-08-27 | COM-001 | Codex | DONE | Reconciled persisted notification events, per-user deliveries and preferences; enforced authenticated tenant/school/user context; mounted both APIs; replaced seeded notification UI and fake analytics with real inbox/read/preferences/status data; focused tests, lint, full backend suite (119 passed, 1 skipped), frontend build, and diff check pass. |
+
+| 2026-08-27 | HR-001 | Codex | CLAIMED | Auditing HR schema, migrations, employee/leave/payroll lifecycles, authenticated school scope, active route mounts, frontend integration, documentation, and tests. |
+
+| 2026-08-27 | HR-001 | Codex | DONE | Added a non-destructive HR migration; corrected authenticated tenant/school ownership; validated employee, leave, and payroll contracts; mounted both active APIs; connected operational UI workflows and back navigation; Prisma, lint, both builds, focused tests, full suite (125 passed, 1 skipped), and diff check pass. |
+
+| 2026-08-27 | LIB-001 | Codex | CLAIMED | Auditing library catalog/copy/loan persistence, circulation lifecycle, fines, authenticated school scope, active route mounts, frontend integration, documentation, and tests. |
+
+| 2026-08-27 | LIB-001 | Codex | DONE | Replaced nonexistent library delegates and demo UI with migrated library, book, copy, and loan models; validated school-scoped APIs; atomic borrow/return circulation; both active mounts; operational frontend and back navigation; Prisma, lint, both builds, focused tests, and full suite (129 passed, 1 skipped) pass. |
+
+| 2026-08-27 | AST-001 | Codex | CLAIMED | Auditing asset and inventory models, migrations, CRUD and stock movement lifecycles, authenticated school scope, route mounts, frontend integration, documentation, and tests. |
