@@ -45,14 +45,15 @@ const toOverview = ({ subscription, usage, invoices, plans, tenantId }) => ({
 });
 
 export async function getBillingOverview({ tenantId }) {
-  if (!tenantId) throw new Error('Tenant context is required');
-  const [invoices] = await Promise.all([
-    prisma.invoice.findMany({
-      where: { tenantId },
-      orderBy: { issuedAt: 'desc' },
-      take: 12,
-    }),
-  ]);
+  // Platform owners may not belong to a tenant. Return a safe empty workspace
+  // instead of failing the billing page; tenant-scoped data is only queried when present.
+  const invoices = tenantId
+    ? await prisma.invoice.findMany({
+        where: { tenantId },
+        orderBy: { issuedAt: 'desc' },
+        take: 12,
+      })
+    : [];
   const subscription = null;
   const usage = [];
   const plans = [];

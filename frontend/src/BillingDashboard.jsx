@@ -86,12 +86,20 @@ export default function BillingDashboard() {
             {money(overview.plan?.amountMinor, overview.plan?.currency)}
             <small> / {overview.plan?.interval ?? 'month'}</small>
           </strong>
-          <p>Your current tenant subscription and renewal controls.</p>
+          <p>
+            {overview.tenantId
+              ? 'Your current tenant subscription and renewal controls.'
+              : 'Select a tenant workspace to manage subscription and payment settings.'}
+          </p>
           <div className="button-row">
-            <button disabled={busy} onClick={() => lifecycle('cancel')}>
+            <button disabled={busy || !overview.tenantId} onClick={() => lifecycle('cancel')}>
               Cancel at period end
             </button>
-            <button className="ghost" disabled={busy} onClick={() => lifecycle('resume')}>
+            <button
+              className="ghost"
+              disabled={busy || !overview.tenantId}
+              onClick={() => lifecycle('resume')}
+            >
               Resume
             </button>
           </div>
