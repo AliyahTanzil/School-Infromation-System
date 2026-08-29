@@ -7,19 +7,26 @@ const context = (req) => ({
 
 export async function list(req, res, next) {
   try {
-    res.json({ success: true, data: await service.list({ ...context(req), ...req.query }) });
+    res.json({
+      success: true,
+      data: await service.list(
+        context(req),
+        req.query.classroomId,
+        req.user.id,
+        req.user.roles ?? [],
+        req.query.status
+      ),
+    });
   } catch (error) {
     next(error);
   }
 }
 export async function create(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.create({ ...context(req), ...req.body, authorId: req.user?.id }),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.create(context(req), req.user.id, req.user.roles ?? [], req.body),
+    });
   } catch (error) {
     next(error);
   }
@@ -28,7 +35,13 @@ export async function updateStatus(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.updateStatus({ ...context(req), id: req.params.id, ...req.body }),
+      data: await service.updateStatus(
+        context(req),
+        req.params.id,
+        req.user.id,
+        req.user.roles ?? [],
+        req.body.status
+      ),
     });
   } catch (error) {
     next(error);

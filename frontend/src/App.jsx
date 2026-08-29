@@ -893,14 +893,19 @@ function AppBackNavigation() {
   };
 
   return (
-    <Link
-      to={destination}
-      className="fixed left-4 top-4 z-[100] inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-950/90 px-3 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur transition hover:border-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400"
-      aria-label={`Back to ${destinationLabels[destination] ?? 'main page'}`}
+    <nav
+      className="relative z-30 flex min-h-14 w-full items-center border-b border-slate-700 bg-slate-950 px-4 py-3 sm:px-6"
+      aria-label="Page navigation"
     >
-      <ArrowLeft size={15} aria-hidden="true" />
-      Back to {destinationLabels[destination] ?? 'main page'}
-    </Link>
+      <Link
+        to={destination}
+        className="inline-flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:border-cyan-400 hover:text-cyan-300 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+        aria-label={`Back to ${destinationLabels[destination] ?? 'main page'}`}
+      >
+        <ArrowLeft size={15} aria-hidden="true" />
+        Back to {destinationLabels[destination] ?? 'main page'}
+      </Link>
+    </nav>
   );
 }
 
@@ -910,7 +915,7 @@ function AppBackNavigation() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
         <Toaster position="top-right" />
         <AppBackNavigation />

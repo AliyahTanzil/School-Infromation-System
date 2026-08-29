@@ -43,6 +43,18 @@ import hrRouter from '../presentation/http/routes/hrRoutes.js';
 import libraryRouter from '../presentation/http/routes/libraryRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import assetInventoryRouter from '../presentation/http/routes/assetInventoryRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import transportRouter from '../presentation/http/routes/transportRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import boardingRouter from '../presentation/http/routes/boardingRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import digitalClassroomRouter from '../presentation/http/routes/digitalClassroomRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import classroomStreamRouter from '../presentation/http/routes/classroomStreamRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import assignmentRouter from '../presentation/http/routes/assignmentRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import materialRouter from '../presentation/http/routes/materialRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -104,6 +116,18 @@ export const createApp = () => {
   app.use('/api/v1/libraries', libraryRouter);
   app.use('/api/assets-inventory', assetInventoryRouter);
   app.use('/api/v1/assets-inventory', assetInventoryRouter);
+  app.use('/api/transport', transportRouter);
+  app.use('/api/v1/transport', transportRouter);
+  app.use('/api/boarding', boardingRouter);
+  app.use('/api/v1/boarding', boardingRouter);
+  app.use('/api/lms/classrooms', digitalClassroomRouter);
+  app.use('/api/v1/lms/classrooms', digitalClassroomRouter);
+  app.use('/api/lms/classroom-stream', classroomStreamRouter);
+  app.use('/api/v1/lms/classroom-stream', classroomStreamRouter);
+  app.use('/api/lms/assignments', assignmentRouter);
+  app.use('/api/v1/lms/assignments', assignmentRouter);
+  app.use('/api/lms/materials', materialRouter);
+  app.use('/api/v1/lms/materials', materialRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

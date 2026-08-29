@@ -1,170 +1,317 @@
-import { useMemo, useState } from 'react';
-import { BusFront, CircleGauge, Fuel, MapPinned, ShieldCheck, Wrench } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import api from './api/auth.js';
 
-const vehicles = [
-  {
-    number: 'BUS-001',
-    plate: 'SAIS-24-01',
-    type: 'School bus',
-    status: 'Active',
-    route: 'North Loop',
-  },
-  {
-    number: 'BUS-002',
-    plate: 'SAIS-24-02',
-    type: 'Minibus',
-    status: 'Maintenance',
-    route: 'East Loop',
-  },
-  { number: 'VAN-004', plate: 'SAIS-24-04', type: 'Van', status: 'Active', route: 'Staff shuttle' },
-];
-const routes = [
-  { code: 'RT-NORTH', name: 'North Loop', stops: 8, students: 42, next: '06:45' },
-  { code: 'RT-EAST', name: 'East Loop', stops: 6, students: 31, next: '07:00' },
-  { code: 'RT-WEST', name: 'West Loop', stops: 9, students: 48, next: '07:10' },
-];
+const emptyVehicle = { vehicleNumber: '', registrationNumber: '', type: '', capacity: 1 };
+const emptyDriver = { name: '', phone: '', licenseNumber: '' };
+const emptyRoute = { code: '', name: '', stops: '' };
 
 export default function TransportDashboard() {
-  const [query, setQuery] = useState('');
-  const filtered = useMemo(
-    () =>
-      vehicles.filter((v) =>
-        `${v.number} ${v.plate} ${v.route}`.toLowerCase().includes(query.toLowerCase())
-      ),
-    [query]
-  );
+  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const [overview, setOverview] = useState({
+    vehicles: 0,
+    drivers: 0,
+    routes: 0,
+    upcomingTrips: 0,
+    failedInspections: 0,
+  });
+  const [vehicles, setVehicles] = useState([]);
+  const [drivers, setDrivers] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [trips, setTrips] = useState([]);
+  const [vehicle, setVehicle] = useState(emptyVehicle);
+  const [driver, setDriver] = useState(emptyDriver);
+  const [route, setRoute] = useState(emptyRoute);
+  const [trip, setTrip] = useState({ routeId: '', vehicleId: '', driverId: '', scheduledAt: '' });
+  const [message, setMessage] = useState('');
+  const headers = { 'x-school-id': schoolId };
+  const load = useCallback(async () => {
+    if (!schoolId) return;
+    try {
+      const [o, v, d, r, t] = await Promise.all([
+        api.get('/transport/overview', { headers: { 'x-school-id': schoolId } }),
+        api.get('/transport/vehicles', { headers: { 'x-school-id': schoolId } }),
+        api.get('/transport/drivers', { headers: { 'x-school-id': schoolId } }),
+        api.get('/transport/routes', { headers: { 'x-school-id': schoolId } }),
+        api.get('/transport/trips', { headers: { 'x-school-id': schoolId } }),
+      ]);
+      setOverview(o.data.data);
+      setVehicles(v.data.data ?? []);
+      setDrivers(d.data.data ?? []);
+      setRoutes(r.data.data ?? []);
+      setTrips(t.data.data ?? []);
+      setMessage('');
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to load transport data.');
+    }
+  }, [schoolId]);
+  useEffect(() => void load(), [load]);
+  const create = async (event, path, body, reset) => {
+    event.preventDefault();
+    try {
+      await api.post(path, body, { headers });
+      reset();
+      setMessage('Transport record saved.');
+      await load();
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to save transport record.');
+    }
+  };
+  const status = async (id, value) => {
+    try {
+      await api.patch(`/transport/vehicles/${id}/status`, { status: value }, { headers });
+      await load();
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to update vehicle.');
+    }
+  };
+  const inspect = async (id) => {
+    try {
+      await api.post(
+        `/transport/vehicles/${id}/inspections`,
+        { passed: true, notes: 'Routine inspection completed' },
+        { headers }
+      );
+      setMessage('Inspection recorded.');
+      await load();
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to record inspection.');
+    }
+  };
+  const routePayload = {
+    code: route.code,
+    name: route.name,
+    stops: route.stops
+      .split(',')
+      .map((name, index) => ({ name: name.trim(), sequence: index + 1 }))
+      .filter((row) => row.name),
+  };
   return (
-    <main className="min-h-screen bg-slate-950 px-4 py-8 text-slate-100 sm:px-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <header className="flex flex-col justify-between gap-4 border-b border-slate-800 pb-6 md:flex-row md:items-end">
+    <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
+      <div className="mx-auto max-w-7xl">
+        <header className="flex flex-wrap justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-cyan-300">
-              SAIS / Module 23
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Transport operations</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              Coordinate vehicles, drivers, routes, trips, safety checks, fuel, and parent-ready
-              tracking without making GPS a core dependency.
-            </p>
+            <p className="text-sm uppercase tracking-widest text-cyan-300">Module 23</p>
+            <h1 className="text-4xl font-bold">Transport operations</h1>
+            <p className="text-slate-400">Fleet, drivers, routes, trips, and safety checks.</p>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-sm text-cyan-200">
-            <CircleGauge className="size-4" /> GPS adapter ready
-          </div>
+          <Link to="/admin" className="rounded-xl border border-slate-700 px-4 py-2">
+            ← Back to administration
+          </Link>
         </header>
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            ['12', 'Vehicles in fleet', BusFront],
-            ['7', 'Active routes', MapPinned],
-            ['4', 'Safety checks due', ShieldCheck],
-            ['86%', 'Fuel efficiency', Fuel],
-          ].map(([value, label, Icon]) => (
-            <article
-              key={label}
-              className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5"
-            >
-              <Icon className="size-5 text-cyan-300" />
-              <p className="mt-5 text-2xl font-semibold">{value}</p>
-              <p className="mt-1 text-sm text-slate-400">{label}</p>
+        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <label>
+            School context{' '}
+            <input
+              className="ml-3 rounded bg-slate-800 p-2"
+              placeholder="School UUID"
+              value={schoolId}
+              onChange={(event) => {
+                const value = event.target.value.trim();
+                setSchoolId(value);
+                sessionStorage.setItem('schoolId', value);
+              }}
+            />
+          </label>
+        </section>
+        {message && (
+          <p role="status" className="mt-5 rounded-xl border border-cyan-700 p-3">
+            {message}
+          </p>
+        )}
+        <section className="mt-6 grid gap-4 sm:grid-cols-5">
+          {Object.entries(overview).map(([key, value]) => (
+            <article key={key} className="rounded-xl border border-slate-800 bg-slate-900 p-4">
+              <p className="text-slate-400">{key}</p>
+              <strong className="text-2xl">{value}</strong>
             </article>
           ))}
         </section>
-        <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-              <div>
-                <h2 className="text-lg font-semibold">Fleet readiness</h2>
-                <p className="mt-1 text-sm text-slate-400">
-                  Live operational register with safe fallback data.
+        <section className="mt-6 grid gap-6 lg:grid-cols-3">
+          <form
+            className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            onSubmit={(event) =>
+              create(event, '/transport/vehicles', vehicle, () => setVehicle(emptyVehicle))
+            }
+          >
+            <h2 className="text-xl">Register vehicle</h2>
+            {Object.keys(vehicle).map((key) => (
+              <input
+                key={key}
+                required
+                type={key === 'capacity' ? 'number' : 'text'}
+                className="rounded bg-slate-800 p-3"
+                placeholder={key}
+                value={vehicle[key]}
+                onChange={(event) => setVehicle({ ...vehicle, [key]: event.target.value })}
+              />
+            ))}
+            <button disabled={!schoolId} className="rounded bg-cyan-700 p-3">
+              Save vehicle
+            </button>
+          </form>
+          <form
+            className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            onSubmit={(event) =>
+              create(event, '/transport/drivers', driver, () => setDriver(emptyDriver))
+            }
+          >
+            <h2 className="text-xl">Register driver</h2>
+            {Object.keys(driver).map((key) => (
+              <input
+                key={key}
+                required={key !== 'phone'}
+                className="rounded bg-slate-800 p-3"
+                placeholder={key}
+                value={driver[key]}
+                onChange={(event) => setDriver({ ...driver, [key]: event.target.value })}
+              />
+            ))}
+            <button disabled={!schoolId} className="rounded bg-cyan-700 p-3">
+              Save driver
+            </button>
+          </form>
+          <form
+            className="grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5"
+            onSubmit={(event) =>
+              create(event, '/transport/routes', routePayload, () => setRoute(emptyRoute))
+            }
+          >
+            <h2 className="text-xl">Create route</h2>
+            <input
+              required
+              className="rounded bg-slate-800 p-3"
+              placeholder="Route code"
+              value={route.code}
+              onChange={(event) => setRoute({ ...route, code: event.target.value })}
+            />
+            <input
+              required
+              className="rounded bg-slate-800 p-3"
+              placeholder="Route name"
+              value={route.name}
+              onChange={(event) => setRoute({ ...route, name: event.target.value })}
+            />
+            <input
+              className="rounded bg-slate-800 p-3"
+              placeholder="Stops, comma separated"
+              value={route.stops}
+              onChange={(event) => setRoute({ ...route, stops: event.target.value })}
+            />
+            <button disabled={!schoolId} className="rounded bg-cyan-700 p-3">
+              Save route
+            </button>
+          </form>
+        </section>
+        <form
+          className="mt-6 grid gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 md:grid-cols-5"
+          onSubmit={(event) =>
+            create(
+              event,
+              '/transport/trips',
+              {
+                ...trip,
+                vehicleId: trip.vehicleId || undefined,
+                driverId: trip.driverId || undefined,
+              },
+              () => setTrip({ routeId: '', vehicleId: '', driverId: '', scheduledAt: '' })
+            )
+          }
+        >
+          <h2 className="text-xl md:col-span-5">Schedule trip</h2>
+          <select
+            required
+            className="rounded bg-slate-800 p-3"
+            value={trip.routeId}
+            onChange={(event) => setTrip({ ...trip, routeId: event.target.value })}
+          >
+            <option value="">Route</option>
+            {routes.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+          <select
+            className="rounded bg-slate-800 p-3"
+            value={trip.vehicleId}
+            onChange={(event) => setTrip({ ...trip, vehicleId: event.target.value })}
+          >
+            <option value="">Vehicle</option>
+            {vehicles
+              .filter((row) => row.status === 'ACTIVE')
+              .map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.vehicleNumber}
+                </option>
+              ))}
+          </select>
+          <select
+            className="rounded bg-slate-800 p-3"
+            value={trip.driverId}
+            onChange={(event) => setTrip({ ...trip, driverId: event.target.value })}
+          >
+            <option value="">Driver</option>
+            {drivers.map((row) => (
+              <option key={row.id} value={row.id}>
+                {row.name}
+              </option>
+            ))}
+          </select>
+          <input
+            required
+            type="datetime-local"
+            className="rounded bg-slate-800 p-3"
+            value={trip.scheduledAt}
+            onChange={(event) => setTrip({ ...trip, scheduledAt: event.target.value })}
+          />
+          <button className="rounded bg-cyan-700 p-3">Schedule</button>
+        </form>
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 className="text-xl">Fleet</h2>
+            {vehicles.map((row) => (
+              <div
+                key={row.id}
+                className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-3"
+              >
+                <span>
+                  <strong>
+                    {row.vehicleNumber} · {row.registrationNumber}
+                  </strong>
+                  <small className="block text-slate-400">
+                    {row.type} · capacity {row.capacity}
+                  </small>
+                </span>
+                <div className="flex gap-2">
+                  <select
+                    className="rounded bg-slate-800 p-2"
+                    value={row.status}
+                    onChange={(event) => status(row.id, event.target.value)}
+                  >
+                    <option>ACTIVE</option>
+                    <option>MAINTENANCE</option>
+                    <option>INACTIVE</option>
+                    <option>RETIRED</option>
+                  </select>
+                  <button onClick={() => inspect(row.id)} className="rounded bg-emerald-700 px-3">
+                    Pass inspection
+                  </button>
+                </div>
+              </div>
+            ))}
+          </article>
+          <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+            <h2 className="text-xl">Trips</h2>
+            {trips.map((row) => (
+              <div key={row.id} className="mt-3 border-t border-slate-800 pt-3">
+                <strong>{row.route.name}</strong>
+                <p className="text-slate-400">
+                  {new Date(row.scheduledAt).toLocaleString()} · {row.status}
                 </p>
               </div>
-              <input
-                aria-label="Search vehicles"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search fleet"
-                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm outline-none placeholder:text-slate-600 focus:border-cyan-300"
-              />
-            </div>
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="pb-3">Vehicle</th>
-                    <th className="pb-3">Route</th>
-                    <th className="pb-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((v) => (
-                    <tr key={v.number} className="border-t border-slate-800">
-                      <td className="py-4">
-                        <p className="font-medium">{v.number}</p>
-                        <p className="text-xs text-slate-500">
-                          {v.type} · {v.plate}
-                        </p>
-                      </td>
-                      <td className="py-4 text-slate-300">{v.route}</td>
-                      <td className="py-4">
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-xs ${v.status === 'Active' ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'}`}
-                        >
-                          {v.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            ))}
           </article>
-          <article className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
-            <div className="flex items-center gap-3">
-              <MapPinned className="size-5 text-cyan-300" />
-              <div>
-                <h2 className="text-lg font-semibold">Route board</h2>
-                <p className="text-sm text-slate-400">Today&apos;s scheduled journeys</p>
-              </div>
-            </div>
-            <div className="mt-5 space-y-3">
-              {routes.map((r) => (
-                <div
-                  key={r.code}
-                  className="flex items-center justify-between rounded-xl bg-slate-950/70 p-4"
-                >
-                  <div>
-                    <p className="font-medium">{r.name}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {r.stops} stops · {r.students} students
-                    </p>
-                  </div>
-                  <span className="font-mono text-sm text-cyan-200">{r.next}</span>
-                </div>
-              ))}
-            </div>
-          </article>
-        </section>
-        <section className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <Wrench className="size-5 text-amber-300" />
-            <h3 className="mt-4 font-semibold">Maintenance queue</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              2 vehicles have scheduled work and one inspection expires this week.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <Fuel className="size-5 text-emerald-300" />
-            <h3 className="mt-4 font-semibold">Fuel control</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Fuel records, odometer readings, and cost-per-route are ready for review.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5">
-            <CircleGauge className="size-5 text-cyan-300" />
-            <h3 className="mt-4 font-semibold">Tracking abstraction</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-400">
-              Connect GPS, mobile, or IoT providers later without changing core trip operations.
-            </p>
-          </div>
         </section>
       </div>
     </main>

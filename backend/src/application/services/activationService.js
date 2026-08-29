@@ -1,5 +1,4 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
-import { generateOpaqueToken, hashToken } from '../../shared/utils/tokenUtils.js';
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 
@@ -21,65 +20,57 @@ export async function createRequest({
   designation,
   ownerUserId,
 }) {
-  const token = generateOpaqueToken(32);
+  const owner = await requireOwner(ownerUserId);
   const expiresAt = new Date(Date.now() + ACTIVATION_TTL_MS);
-  const tokenHash = hashToken(token);
-  await prisma.$executeRaw`
-    INSERT INTO "UserActivationRequest" ("userId", "ownerUserId", "activationTokenHash", "expiresAt")
-    VALUES (${userId}::uuid, ${ownerUserId}::uuid, ${tokenHash}, ${expiresAt})
-  `;
-  await prisma.$executeRaw`
-    INSERT INTO "DevelopmentEmailOutbox" ("toEmail", "subject", "template", "payload")
-    VALUES (${email}, ${'Tenant user activation request'}, ${'tenant-activation'}, ${JSON.stringify({ userId, firstName, lastName, designation, activationToken: token })}::jsonb)
-  `;
-  return { ownerEmail: (await requireOwner(ownerUserId)).email, expiresAt };
+  await prisma.activationRequest.create({
+    data: {
+      userId,
+      ownerUserId,
+      email,
+      firstName,
+      lastName,
+      designation,
+      expiresAt,
+    },
+  });
+  return { ownerEmail: owner.email, expiresAt };
 }
 
 export async function listPending(ownerUserId) {
   await requireOwner(ownerUserId);
-  return prisma.$queryRaw`
-    SELECT r."id", r."userId", r."ownerUserId", r."status", r."expiresAt", r."createdAt",
-           u."email", p."firstName", p."lastName"
-    FROM "UserActivationRequest" r
-    JOIN "User" u ON u."id" = r."userId"
-    LEFT JOIN "UserProfile" p ON p."userId" = r."userId"
-    WHERE r."ownerUserId" = ${ownerUserId}::uuid AND r."status" = 'PENDING'
-    ORDER BY r."createdAt" DESC
-  `;
+  return prisma.activationRequest.findMany({
+    where: { ownerUserId, status: 'PENDING', expiresAt: { gt: new Date() } },
+    orderBy: { createdAt: 'desc' },
+  });
 }
 
 export async function decide({ ownerUserId, requestId, decision }) {
   await requireOwner(ownerUserId);
-  const rows = await prisma.$queryRaw`
-    SELECT "id", "userId" FROM "UserActivationRequest"
-    WHERE "id" = ${requestId}::uuid AND "ownerUserId" = ${ownerUserId}::uuid AND "status" = 'PENDING'
-    LIMIT 1
-  `;
-  const request = rows[0];
-  if (!request) throw new NotFoundError('Activation request not found');
   const status = decision === 'approve' ? 'APPROVED' : 'REJECTED';
-  await prisma.$executeRaw`
-    UPDATE "UserActivationRequest"
-    SET "status" = ${status}, "activatedAt" = CASE WHEN ${status} = 'APPROVED' THEN CURRENT_TIMESTAMP ELSE NULL END,
-        "rejectedAt" = CASE WHEN ${status} = 'REJECTED' THEN CURRENT_TIMESTAMP ELSE NULL END,
-        "updatedAt" = CURRENT_TIMESTAMP
-    WHERE "id" = ${requestId}::uuid
-  `;
-  if (status === 'APPROVED') {
-    await prisma.user.update({
-      where: { id: request.userId },
-      data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+  return prisma.$transaction(async (tx) => {
+    const changed = await tx.activationRequest.updateMany({
+      where: { id: requestId, ownerUserId, status: 'PENDING', expiresAt: { gt: new Date() } },
+      data: { status, decidedAt: new Date() },
     });
-  }
-  return { status, userId: request.userId };
+    if (!changed.count) throw new NotFoundError('Activation request not found or expired');
+    const request = await tx.activationRequest.findFirst({
+      where: { id: requestId, ownerUserId },
+    });
+    if (status === 'APPROVED') {
+      await tx.user.update({
+        where: { id: request.userId },
+        data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
+      });
+    }
+    return { status, userId: request.userId };
+  });
 }
 
+// Development verification mail is emitted through the configured email logger;
+// there is no separate database outbox in the active schema.
 export async function outbox(ownerUserId) {
   await requireOwner(ownerUserId);
-  return prisma.$queryRaw`
-    SELECT "id", "toEmail", "subject", "template", "payload", "createdAt", "readAt"
-    FROM "DevelopmentEmailOutbox" ORDER BY "createdAt" DESC LIMIT 100
-  `;
+  return [];
 }
 
 export default { createRequest, listPending, decide, outbox };

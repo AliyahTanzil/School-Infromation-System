@@ -325,3 +325,64 @@ borrow/return operations. Tenant and school ownership are always derived from au
 Authenticated platform and school administrators provide `x-school-id`. Serialized assets have an
 independent lifecycle, while inventory quantities change only through atomic receipt and issue
 movements. Issues that would produce negative stock are rejected. Ownership is server-derived.
+
+### Transport (`/api/transport`, `/api/v1/transport`)
+
+Authenticated platform and school administrators provide `x-school-id`. The API manages vehicles,
+drivers, routes and ordered stops, trips, vehicle lifecycle status, and safety inspections. All
+ownership is derived from the authenticated school context.
+
+### Boarding (`/api/boarding`, `/api/v1/boarding`)
+
+Authenticated platform and school administrators provide `x-school-id`. The API provisions
+dormitories, rooms and beds; manages applications and decisions; and performs atomic bed allocation
+and checkout. Occupancy and ownership are enforced server-side.
+
+### Digital classrooms (`/api/lms/classrooms`, `/api/v1/lms/classrooms`)
+
+Authenticated users provide `x-school-id`. Administrators can see the school's active learning
+spaces; teachers and other users see only classrooms they own or actively belong to. Administrators
+and teachers can create a digital classroom, optionally linked to an academic `Class`. Classroom
+owners and administrators manage tenant-owned user memberships and archive learning spaces.
+
+- `GET /` — list accessible digital classrooms with active membership counts.
+- `POST /` — create a classroom and its owner membership.
+- `GET /:classroomId` — inspect an accessible classroom and its memberships.
+- `POST /:classroomId/members` — add or reactivate a tenant user membership.
+- `DELETE /:classroomId/members/:userId` — remove an active membership.
+- `PATCH /:classroomId/archive` — archive a classroom without deleting history.
+
+### Classroom stream (`/api/lms/classroom-stream`, `/api/v1/lms/classroom-stream`)
+
+All operations require authentication, an active school context, and access to the referenced
+digital classroom. Administrators and classroom owners bypass membership lookup. Active teacher
+members may publish announcements; all active members may read the stream, create posts, and add
+comments. Inputs are bounded and validated before persistence.
+
+- `GET /:classroomId` — list published announcements and posts with bounded comments.
+- `POST /:classroomId/announcements` — publish or save a teacher announcement.
+- `POST /:classroomId/posts` — add a classroom-member stream post.
+- `POST /posts/:postId/comments` — comment after resolving and authorizing the post's classroom.
+
+### Classwork and assignments (`/api/lms/assignments`, `/api/v1/lms/assignments`)
+
+Active classroom members may list classwork. Classroom owners, administrators, and active teacher
+members may create and manage it. Optional subjects are validated against the authenticated school.
+The server enforces `DRAFT → PUBLISHED → CLOSED → ARCHIVED` transitions, while allowing a draft or
+published assignment to be archived. Due dates must follow availability dates.
+
+- `GET /?classroomId=<uuid>&status=<status>` — list bounded, accessible classroom assignments.
+- `POST /` — create a validated assignment draft.
+- `PATCH /:id/status` — publish, close, or archive according to the lifecycle.
+
+### Digital materials (`/api/lms/materials`, `/api/v1/lms/materials`)
+
+All operations require authentication, a validated `x-school-id`, and active access to the selected
+digital classroom. Classroom owners, administrators, and active teacher members may upload or
+archive materials. Other active members may list and download them. Files are limited to 25 MB,
+stored as private Vercel blobs, and delivered only after a fresh authorization check.
+
+- `GET /?classroomId=<uuid>` — list active materials in an accessible classroom.
+- `POST /` — upload a multipart `file` with `classroomId`, optional `title`, and `description`.
+- `GET /:id/download` — stream an authorized private material.
+- `PATCH /:id/archive` — hide a material without deleting its audit history or blob reference.

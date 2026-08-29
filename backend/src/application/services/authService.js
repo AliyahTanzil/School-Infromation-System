@@ -69,6 +69,41 @@ export async function register({
 }) {
   const existing = await userRepository.findByEmail(email);
   if (existing) {
+    // Recover a tenant registration that created the user but failed before
+    // creating its owner-activation request (for example, an interrupted deploy).
+    if (
+      accountType === 'TENANT_ADMIN' &&
+      existing.accountType === 'TENANT_ADMIN' &&
+      existing.status === 'PENDING_VERIFICATION' &&
+      (await passwordService.verifyPassword(password, existing.passwordHash))
+    ) {
+      const pendingRequest = await prisma.activationRequest.findFirst({
+        where: { userId: existing.id, status: 'PENDING' },
+      });
+      if (!pendingRequest) {
+        const owner = await prisma.user.findFirst({
+          where: { accountType: 'APPLICATION_MANAGER', status: 'ACTIVE', deletedAt: null },
+          orderBy: { createdAt: 'asc' },
+        });
+        if (!owner) {
+          throw new ConflictError(
+            'No active application owner is available to approve this account'
+          );
+        }
+        await activationService.createRequest({
+          userId: existing.id,
+          ownerUserId: owner.id,
+          email: existing.email,
+          firstName: existing.firstName,
+          lastName: existing.lastName,
+          designation,
+        });
+      }
+      return {
+        user: toPublicUser(existing, { roles: [] }),
+        activationPending: true,
+      };
+    }
     throw new ConflictError('An account with this email already exists');
   }
   if (accountType === 'APPLICATION_MANAGER') {

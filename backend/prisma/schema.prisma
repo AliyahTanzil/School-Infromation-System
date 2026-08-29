@@ -142,14 +142,14 @@ enum AcademicPolicyStatus {
 }
 
 model Tenant {
-  id                 String               @id @default(uuid()) @db.Uuid
+  id                 String                   @id @default(uuid()) @db.Uuid
   name               String
-  code               String               @unique
-  status             TenantStatus         @default(PENDING)
-  timezone           String               @default("UTC")
-  currency           String               @default("USD")
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
+  code               String                   @unique
+  status             TenantStatus             @default(PENDING)
+  timezone           String                   @default("UTC")
+  currency           String                   @default("USD")
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
   deletedAt          DateTime?
   users              User[]
   schools            School[]
@@ -174,56 +174,65 @@ model Tenant {
   classEnrollments   ClassEnrollment[]
   gradeSchemes       GradeScheme[]
   gradeSchemeHistory GradeSchemeHistory[]
+  digitalClassrooms  DigitalClassroom[]
+  classroomMembers   DigitalClassroomMember[]
 
   @@index([status])
 }
 
 model User {
-  id                 String                   @id @default(uuid()) @db.Uuid
-  tenantId           String?                  @db.Uuid
-  email              String                   @unique
-  firstName          String
-  lastName           String
-  phone              String?
-  passwordHash       String?
-  accountType        AccountType              @default(TENANT_ADMIN)
-  status             UserStatus               @default(INVITED)
-  platformRole       PlatformRole?
-  emailVerifiedAt    DateTime?
-  failedLoginCount   Int                      @default(0)
-  lockedUntil        DateTime?
-  lastLoginAt        DateTime?
-  deletedAt          DateTime?
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @updatedAt
-  tenant             Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
-  roles              UserRole[]
-  devices            UserDevice[]
-  sessions           UserSession[]
-  staff              Staff?
-  notifications      Notification[]
-  auditLogs          AuditLog[]
-  loginAttempts      LoginAttempt[]
-  auditLogins        AuditLogin[]
-  refreshTokens      RefreshToken[]
-  passwordResets     PasswordResetToken[]
-  emailVerifications EmailVerificationToken[]
-  trustedDevices     TrustedDevice[]
-  activationRequests ActivationRequest[]      @relation("ActivationApplicant")
-  ownedActivations   ActivationRequest[]      @relation("ActivationOwner")
-  profile            UserProfile?
-  preference         UserPreference?
-  userAudits         UserAudit[]              @relation("UserAuditSubject")
-  actedUserAudits    UserAudit[]              @relation("UserAuditActor")
-  parent             Parent?
-  teacher            Teacher?
+  id                     String                   @id @default(uuid()) @db.Uuid
+  tenantId               String?                  @db.Uuid
+  email                  String                   @unique
+  firstName              String
+  lastName               String
+  phone                  String?
+  passwordHash           String?
+  accountType            AccountType              @default(TENANT_ADMIN)
+  status                 UserStatus               @default(INVITED)
+  platformRole           PlatformRole?
+  emailVerifiedAt        DateTime?
+  failedLoginCount       Int                      @default(0)
+  lockedUntil            DateTime?
+  lastLoginAt            DateTime?
+  deletedAt              DateTime?
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  tenant                 Tenant?                  @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+  roles                  UserRole[]
+  devices                UserDevice[]
+  sessions               UserSession[]
+  staff                  Staff?
+  notifications          Notification[]
+  auditLogs              AuditLog[]
+  loginAttempts          LoginAttempt[]
+  auditLogins            AuditLogin[]
+  refreshTokens          RefreshToken[]
+  passwordResets         PasswordResetToken[]
+  emailVerifications     EmailVerificationToken[]
+  trustedDevices         TrustedDevice[]
+  activationRequests     ActivationRequest[]      @relation("ActivationApplicant")
+  ownedActivations       ActivationRequest[]      @relation("ActivationOwner")
+  profile                UserProfile?
+  preference             UserPreference?
+  userAudits             UserAudit[]              @relation("UserAuditSubject")
+  actedUserAudits        UserAudit[]              @relation("UserAuditActor")
+  parent                 Parent?
+  teacher                Teacher?
+  ownedClassrooms        DigitalClassroom[]       @relation("DigitalClassroomOwner")
+  classroomMemberships   DigitalClassroomMember[]
+  classroomAnnouncements ClassroomAnnouncement[]
+  classroomPosts         ClassroomStreamPost[]
+  classroomComments      ClassroomStreamComment[]
+  authoredAssignments    Assignment[]
+  uploadedMaterials      DigitalMaterial[]
 
   @@index([tenantId, status])
 }
 
 model School {
-  id                 String               @id @default(uuid()) @db.Uuid
-  tenantId           String               @db.Uuid
+  id                 String                   @id @default(uuid()) @db.Uuid
+  tenantId           String                   @db.Uuid
   name               String
   code               String
   address            String?
@@ -231,9 +240,9 @@ model School {
   country            String?
   phone              String?
   email              String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  tenant             Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  tenant             Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   campuses           Campus[]
   parents            Parent[]
   teachers           Teacher[]
@@ -247,6 +256,8 @@ model School {
   attendanceAudits   AttendanceAudit[]
   gradeSchemes       GradeScheme[]
   gradeSchemeHistory GradeSchemeHistory[]
+  digitalClassrooms  DigitalClassroom[]
+  classroomMembers   DigitalClassroomMember[]
 
   @@unique([tenantId, code])
 }
@@ -359,6 +370,7 @@ model AcademicTerm {
   endsOn             DateTime
   academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
   attendanceSessions AttendanceSession[]
+  digitalClassrooms  DigitalClassroom[]
 
   @@unique([academicYearId, name])
 }
@@ -582,6 +594,7 @@ model Subject {
   school            School             @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   classes           ClassSubject[]
   assessmentWeights AssessmentWeight[]
+  assignments       Assignment[]
 
   @@unique([tenantId, schoolId, code])
   @@index([tenantId, schoolId, status, name])
@@ -710,6 +723,7 @@ model Class {
   subjects           ClassSubject[]
   history            ClassHistory[]
   attendanceSessions AttendanceSession[]
+  DigitalClassroom   DigitalClassroom[]
 
   @@unique([tenantId, schoolId, academicYearId, code])
   @@index([tenantId, schoolId, status])
@@ -730,6 +744,54 @@ model ClassEnrollment {
 
   @@id([classId, studentId])
   @@index([tenantId, schoolId, status])
+}
+
+model DigitalClassroom {
+  id             String                   @id @default(uuid()) @db.Uuid
+  tenantId       String                   @db.Uuid
+  schoolId       String                   @db.Uuid
+  classId        String?                  @db.Uuid
+  ownerId        String                   @db.Uuid
+  name           String
+  code           String
+  description    String?
+  status         String                   @default("ACTIVE")
+  createdAt      DateTime                 @default(now())
+  updatedAt      DateTime                 @updatedAt
+  archivedAt     DateTime?
+  tenant         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school         School                   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  academicClass  Class?                   @relation(fields: [classId], references: [id], onDelete: SetNull)
+  owner          User                     @relation("DigitalClassroomOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  memberships    DigitalClassroomMember[]
+  announcements  ClassroomAnnouncement[]
+  posts          ClassroomStreamPost[]
+  assignments    Assignment[]
+  materials      DigitalMaterial[]
+  academicTerm   AcademicTerm?            @relation(fields: [academicTermId], references: [id], onDelete: SetNull)
+  academicTermId String?                  @db.Uuid
+
+  @@unique([tenantId, schoolId, code])
+  @@index([tenantId, schoolId, status, createdAt])
+  @@index([tenantId, schoolId, classId])
+}
+
+model DigitalClassroomMember {
+  classroomId String           @db.Uuid
+  tenantId    String           @db.Uuid
+  schoolId    String           @db.Uuid
+  userId      String           @db.Uuid
+  role        String
+  status      String           @default("ACTIVE")
+  joinedAt    DateTime         @default(now())
+  removedAt   DateTime?
+  classroom   DigitalClassroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  tenant      Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school      School           @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classroomId, userId])
+  @@index([tenantId, schoolId, userId, status])
 }
 
 model ClassTeacher {
@@ -780,379 +842,503 @@ model Staff {
 }
 
 model Employee {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  employeeNumber String
-  firstName String
-  lastName String
-  email String?
-  departmentId String? @db.Uuid
-  positionId String? @db.Uuid
-  status String @default("APPLICANT")
-  emergencyContact Json @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(uuid()) @db.Uuid
+  tenantId         String   @db.Uuid
+  schoolId         String   @db.Uuid
+  employeeNumber   String
+  firstName        String
+  lastName         String
+  email            String?
+  departmentId     String?  @db.Uuid
+  positionId       String?  @db.Uuid
+  status           String   @default("APPLICANT")
+  emergencyContact Json     @default("{}")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
   @@unique([tenantId, schoolId, employeeNumber])
   @@index([tenantId, schoolId, status])
 }
 
 model HRDepartment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String
-  active Boolean @default(true)
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  name      String
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@unique([tenantId, schoolId, name])
 }
 
 model HRPosition {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String
-  salaryMinor Int @default(0)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  name        String
+  salaryMinor Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   @@unique([tenantId, schoolId, name])
 }
 
 model LeaveRequest {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  employeeId String @db.Uuid
-  leaveType String
-  startsAt DateTime
-  endsAt DateTime
-  reason String?
-  status String @default("PENDING")
-  approvedById String? @db.Uuid
-  approvedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  schoolId     String    @db.Uuid
+  employeeId   String    @db.Uuid
+  leaveType    String
+  startsAt     DateTime
+  endsAt       DateTime
+  reason       String?
+  status       String    @default("PENDING")
+  approvedById String?   @db.Uuid
+  approvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
   @@index([tenantId, schoolId, status, startsAt])
 }
 
 model PayrollRun {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  schoolId    String    @db.Uuid
   periodStart DateTime
-  periodEnd DateTime
-  status String @default("DRAFT")
-  totalMinor Int @default(0)
+  periodEnd   DateTime
+  status      String    @default("DRAFT")
+  totalMinor  Int       @default(0)
   processedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@unique([tenantId, schoolId, periodStart, periodEnd])
 }
 
 model PayrollItem {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  payrollRunId String @db.Uuid
-  employeeId String @db.Uuid
-  grossMinor Int
-  deductionsMinor Int @default(0)
-  netMinor Int
-  status String @default("PENDING")
-  createdAt DateTime @default(now())
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  schoolId        String   @db.Uuid
+  payrollRunId    String   @db.Uuid
+  employeeId      String   @db.Uuid
+  grossMinor      Int
+  deductionsMinor Int      @default(0)
+  netMinor        Int
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+
   @@unique([payrollRunId, employeeId])
 }
 
 model Library {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  books LibraryBook[]
-  copies LibraryCopy[]
-  loans LibraryLoan[]
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @db.Uuid
+  schoolId  String        @db.Uuid
+  name      String
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  books     LibraryBook[]
+  copies    LibraryCopy[]
+  loans     LibraryLoan[]
+
   @@unique([tenantId, schoolId, name])
   @@index([tenantId, schoolId, active])
 }
+
 model LibraryBook {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  libraryId String @db.Uuid
-  title String
-  author String
-  isbn String?
-  category String?
-  status String @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  copies LibraryCopy[]
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @db.Uuid
+  schoolId  String        @db.Uuid
+  libraryId String        @db.Uuid
+  title     String
+  author    String
+  isbn      String?
+  category  String?
+  status    String        @default("ACTIVE")
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  library   Library       @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  copies    LibraryCopy[]
+
   @@unique([libraryId, isbn])
   @@index([tenantId, schoolId, libraryId, status])
 }
+
 model LibraryCopy {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  libraryId String @db.Uuid
-  bookId String @db.Uuid
-  barcode String
-  status String @default("AVAILABLE")
-  createdAt DateTime @default(now())
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  book LibraryBook @relation(fields: [bookId], references: [id], onDelete: Cascade)
-  loans LibraryLoan[]
+  id        String        @id @default(uuid()) @db.Uuid
+  tenantId  String        @db.Uuid
+  schoolId  String        @db.Uuid
+  libraryId String        @db.Uuid
+  bookId    String        @db.Uuid
+  barcode   String
+  status    String        @default("AVAILABLE")
+  createdAt DateTime      @default(now())
+  library   Library       @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  book      LibraryBook   @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  loans     LibraryLoan[]
+
   @@unique([libraryId, barcode])
   @@index([tenantId, schoolId, libraryId, status])
 }
+
 model LibraryLoan {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  libraryId String @db.Uuid
-  copyId String @db.Uuid
-  borrowerId String @db.Uuid
-  status String @default("BORROWED")
-  borrowedAt DateTime @default(now())
-  dueAt DateTime
+  id         String      @id @default(uuid()) @db.Uuid
+  tenantId   String      @db.Uuid
+  schoolId   String      @db.Uuid
+  libraryId  String      @db.Uuid
+  copyId     String      @db.Uuid
+  borrowerId String      @db.Uuid
+  status     String      @default("BORROWED")
+  borrowedAt DateTime    @default(now())
+  dueAt      DateTime
   returnedAt DateTime?
-  library Library @relation(fields: [libraryId], references: [id], onDelete: Cascade)
-  copy LibraryCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+  library    Library     @relation(fields: [libraryId], references: [id], onDelete: Cascade)
+  copy       LibraryCopy @relation(fields: [copyId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, libraryId, status, dueAt])
 }
 
 model Asset {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  assetNumber String
-  name String
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  schoolId     String   @db.Uuid
+  assetNumber  String
+  name         String
   serialNumber String?
-  category String?
-  location String?
-  status String @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  category     String?
+  location     String?
+  status       String   @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@unique([tenantId, schoolId, assetNumber])
   @@index([tenantId, schoolId, status])
 }
+
 model InventoryItem {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  sku String
-  name String
-  category String?
-  quantity Int @default(0)
-  reorderLevel Int @default(0)
-  active Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  movements InventoryMovement[]
+  id           String              @id @default(uuid()) @db.Uuid
+  tenantId     String              @db.Uuid
+  schoolId     String              @db.Uuid
+  sku          String
+  name         String
+  category     String?
+  quantity     Int                 @default(0)
+  reorderLevel Int                 @default(0)
+  active       Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  movements    InventoryMovement[]
+
   @@unique([tenantId, schoolId, sku])
   @@index([tenantId, schoolId, active])
 }
+
 model InventoryMovement {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  itemId String @db.Uuid
-  type String
-  quantity Int
+  id           String        @id @default(uuid()) @db.Uuid
+  tenantId     String        @db.Uuid
+  schoolId     String        @db.Uuid
+  itemId       String        @db.Uuid
+  type         String
+  quantity     Int
   balanceAfter Int
-  reference String?
-  actorId String? @db.Uuid
-  createdAt DateTime @default(now())
-  item InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  reference    String?
+  actorId      String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  item         InventoryItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, itemId, createdAt])
 }
 
+model Dormitory {
+  id           String          @id @default(uuid()) @db.Uuid
+  tenantId     String          @db.Uuid
+  schoolId     String          @db.Uuid
+  name         String
+  genderPolicy String          @default("MIXED")
+  status       String          @default("ACTIVE")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  rooms        DormitoryRoom[]
+
+  @@unique([tenantId, schoolId, name])
+  @@index([tenantId, schoolId, status])
+}
+
+model DormitoryRoom {
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @db.Uuid
+  schoolId    String         @db.Uuid
+  dormitoryId String         @db.Uuid
+  roomNumber  String
+  status      String         @default("ACTIVE")
+  createdAt   DateTime       @default(now())
+  dormitory   Dormitory      @relation(fields: [dormitoryId], references: [id], onDelete: Cascade)
+  beds        DormitoryBed[]
+
+  @@unique([dormitoryId, roomNumber])
+  @@index([tenantId, schoolId, status])
+}
+
+model DormitoryBed {
+  id          String               @id @default(uuid()) @db.Uuid
+  tenantId    String               @db.Uuid
+  schoolId    String               @db.Uuid
+  roomId      String               @db.Uuid
+  bedNumber   String
+  status      String               @default("AVAILABLE")
+  createdAt   DateTime             @default(now())
+  room        DormitoryRoom        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  allocations BoardingAllocation[]
+
+  @@unique([roomId, bedNumber])
+  @@index([tenantId, schoolId, status])
+}
+
+model BoardingApplication {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  schoolId    String    @db.Uuid
+  studentId   String    @db.Uuid
+  status      String    @default("PENDING")
+  notes       String?
+  decidedById String?   @db.Uuid
+  decidedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([tenantId, schoolId, status, createdAt])
+}
+
+model BoardingAllocation {
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String       @db.Uuid
+  schoolId     String       @db.Uuid
+  studentId    String       @db.Uuid
+  bedId        String       @db.Uuid
+  status       String       @default("ACTIVE")
+  checkedInAt  DateTime     @default(now())
+  checkedOutAt DateTime?
+  createdAt    DateTime     @default(now())
+  bed          DormitoryBed @relation(fields: [bedId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, schoolId, studentId, status])
+  @@index([tenantId, schoolId, bedId, status])
+}
+
 model Vehicle {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  vehicleNumber String
+  id                 String              @id @default(uuid()) @db.Uuid
+  tenantId           String              @db.Uuid
+  schoolId           String              @db.Uuid
+  vehicleNumber      String
   registrationNumber String
-  type String
-  capacity Int
-  status String @default("ACTIVE")
-  driverId String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  inspections VehicleInspection[]
+  type               String
+  capacity           Int
+  status             String              @default("ACTIVE")
+  driverId           String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  inspections        VehicleInspection[]
+
   @@unique([tenantId, schoolId, vehicleNumber])
   @@unique([tenantId, schoolId, registrationNumber])
   @@index([tenantId, schoolId, status])
 }
 
 model TransportDriver {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String
-  phone String?
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  schoolId      String   @db.Uuid
+  name          String
+  phone         String?
   licenseNumber String
-  status String @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   @@unique([tenantId, schoolId, licenseNumber])
 }
 
 model TransportRoute {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  code String
-  name String
-  active Boolean @default(true)
-  stops TransportStop[]
-  trips TransportTrip[]
+  id       String          @id @default(uuid()) @db.Uuid
+  tenantId String          @db.Uuid
+  schoolId String          @db.Uuid
+  code     String
+  name     String
+  active   Boolean         @default(true)
+  stops    TransportStop[]
+  trips    TransportTrip[]
+
   @@unique([tenantId, schoolId, code])
 }
 
 model TransportStop {
-  id String @id @default(uuid()) @db.Uuid
-  routeId String @db.Uuid
-  name String
-  sequence Int
+  id         String         @id @default(uuid()) @db.Uuid
+  routeId    String         @db.Uuid
+  name       String
+  sequence   Int
   pickupTime String?
-  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  route      TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
   @@unique([routeId, sequence])
 }
 
 model TransportTrip {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  routeId String @db.Uuid
-  vehicleId String?
-  driverId String?
+  id          String         @id @default(uuid()) @db.Uuid
+  tenantId    String         @db.Uuid
+  schoolId    String         @db.Uuid
+  routeId     String         @db.Uuid
+  vehicleId   String?
+  driverId    String?
   scheduledAt DateTime
-  status String @default("SCHEDULED")
-  createdAt DateTime @default(now())
-  route TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  status      String         @default("SCHEDULED")
+  createdAt   DateTime       @default(now())
+  route       TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
   @@index([tenantId, schoolId, scheduledAt, status])
 }
 
 model VehicleInspection {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  vehicleId String @db.Uuid
-  passed Boolean @default(false)
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  vehicleId   String   @db.Uuid
+  passed      Boolean  @default(false)
   inspectedAt DateTime @default(now())
-  notes String?
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  notes       String?
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
   @@index([tenantId, schoolId, vehicleId, passed])
 }
 
 model ClassroomAnnouncement {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  classroomId String @db.Uuid
-  authorId String @db.Uuid
-  title String
-  body String
-  status String @default("PUBLISHED")
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  schoolId    String           @db.Uuid
+  classroomId String           @db.Uuid
+  authorId    String           @db.Uuid
+  title       String
+  body        String
+  status      String           @default("PUBLISHED")
   publishedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  classroom   DigitalClassroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, classroomId, status, createdAt])
 }
 
 model ClassroomStreamPost {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  classroomId String @db.Uuid
-  authorId String @db.Uuid
-  body String
-  attachments Json @default("[]")
-  status String @default("PUBLISHED")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  comments ClassroomStreamComment[]
+  id          String                   @id @default(uuid()) @db.Uuid
+  tenantId    String                   @db.Uuid
+  schoolId    String                   @db.Uuid
+  classroomId String                   @db.Uuid
+  authorId    String                   @db.Uuid
+  body        String
+  attachments Json                     @default("[]")
+  status      String                   @default("PUBLISHED")
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+  comments    ClassroomStreamComment[]
+  classroom   DigitalClassroom         @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  author      User                     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, classroomId, status, createdAt])
 }
 
 model ClassroomStreamComment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  postId String @db.Uuid
-  authorId String @db.Uuid
-  body String
-  createdAt DateTime @default(now())
-  post ClassroomStreamPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String              @db.Uuid
+  schoolId  String              @db.Uuid
+  postId    String              @db.Uuid
+  authorId  String              @db.Uuid
+  body      String
+  createdAt DateTime            @default(now())
+  post      ClassroomStreamPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author    User                @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, postId, createdAt])
 }
 
 model DigitalMaterial {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  classroomId String? @db.Uuid
-  uploaderId String @db.Uuid
-  title String
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @db.Uuid
+  schoolId    String           @db.Uuid
+  classroomId String           @db.Uuid
+  uploaderId  String           @db.Uuid
+  title       String
   description String?
-  pathname String
+  pathname    String
   contentType String
-  size Int
-  status String @default("ACTIVE")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  size        Int
+  status      String           @default("ACTIVE")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  classroom   DigitalClassroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  uploader    User             @relation(fields: [uploaderId], references: [id], onDelete: Restrict)
+
   @@index([tenantId, schoolId, classroomId, status, createdAt])
 }
 
 model StudentSubmission {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  assignmentId String @db.Uuid
-  studentId String @db.Uuid
-  status String @default("DRAFT")
-  submittedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  versions SubmissionVersion[]
+  id           String              @id @default(uuid()) @db.Uuid
+  tenantId     String              @db.Uuid
+  schoolId     String              @db.Uuid
+  assignmentId String              @db.Uuid
+  studentId    String              @db.Uuid
+  status       String              @default("DRAFT")
+  submittedAt  DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  versions     SubmissionVersion[]
+
   @@unique([tenantId, schoolId, assignmentId, studentId])
   @@index([tenantId, schoolId, studentId, status])
 }
 
 model SubmissionVersion {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  submissionId String @db.Uuid
-  version Int
-  body String
-  attachments Json @default("[]")
-  createdAt DateTime @default(now())
-  submission StudentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @db.Uuid
+  schoolId     String            @db.Uuid
+  submissionId String            @db.Uuid
+  version      Int
+  body         String
+  attachments  Json              @default("[]")
+  createdAt    DateTime          @default(now())
+  submission   StudentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
   @@unique([submissionId, version])
   @@index([tenantId, schoolId, submissionId, createdAt])
 }
 
 model Assignment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  classroomId String @db.Uuid
-  authorId String @db.Uuid
-  title String
-  description String?
-  dueAt DateTime?
-  points Int @default(0)
-  status String @default("DRAFT")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String           @id @default(uuid()) @db.Uuid
+  tenantId     String           @db.Uuid
+  schoolId     String           @db.Uuid
+  classroomId  String           @db.Uuid
+  authorId     String           @db.Uuid
+  subjectId    String?          @db.Uuid
+  title        String
+  description  String?
+  instructions String?
+  topic        String?
+  type         String           @default("ASSIGNMENT")
+  dueAt        DateTime?
+  points       Int              @default(0)
+  status       String           @default("DRAFT")
+  availableAt  DateTime?
+  publishedAt  DateTime?
+  closedAt     DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  classroom    DigitalClassroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  author       User             @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  subject      Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+
   @@index([tenantId, schoolId, classroomId, status, dueAt])
 }
 
@@ -1241,45 +1427,48 @@ model AttendanceAudit {
 }
 
 model NotificationEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  eventType String
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  schoolId      String    @db.Uuid
+  eventType     String
   aggregateType String?
-  aggregateId String?
-  payload Json @default("{}")
-  status String @default("QUEUED")
-  createdAt DateTime @default(now())
-  processedAt DateTime?
+  aggregateId   String?
+  payload       Json      @default("{}")
+  status        String    @default("QUEUED")
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
   @@index([tenantId, schoolId, status, createdAt])
 }
 
 model NotificationDelivery {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  eventId String @db.Uuid
-  recipientId String @db.Uuid
-  channel String
-  status String @default("PENDING")
+  id                String    @id @default(uuid()) @db.Uuid
+  tenantId          String    @db.Uuid
+  schoolId          String    @db.Uuid
+  eventId           String    @db.Uuid
+  recipientId       String    @db.Uuid
+  channel           String
+  status            String    @default("PENDING")
   providerReference String?
-  attempts Int @default(0)
-  lastError String?
-  sentAt DateTime?
-  deliveredAt DateTime?
-  createdAt DateTime @default(now())
+  attempts          Int       @default(0)
+  lastError         String?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime  @default(now())
+
   @@index([tenantId, schoolId, recipientId, status])
 }
 
 model NotificationPreference {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  userId String @db.Uuid
-  channel String
-  enabled Boolean @default(true)
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  schoolId   String   @db.Uuid
+  userId     String   @db.Uuid
+  channel    String
+  enabled    Boolean  @default(true)
   quietHours Json?
-  updatedAt DateTime @updatedAt
+  updatedAt  DateTime @updatedAt
+
   @@unique([tenantId, schoolId, userId, channel])
 }
 
@@ -1473,126 +1662,134 @@ model DatabaseSentinel {
 }
 
 model PaymentIntent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  invoiceId String @db.Uuid
-  studentId String @db.Uuid
-  providerId String?
-  internalReference String @unique
-  idempotencyKey String @unique
-  amountMinor Int
-  currency String
-  channel String
-  status String @default("CREATED")
-  description String?
-  metadata Json @default("{}")
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(uuid()) @db.Uuid
+  tenantId          String   @db.Uuid
+  schoolId          String   @db.Uuid
+  invoiceId         String   @db.Uuid
+  studentId         String   @db.Uuid
+  providerId        String?
+  internalReference String   @unique
+  idempotencyKey    String   @unique
+  amountMinor       Int
+  currency          String
+  channel           String
+  status            String   @default("CREATED")
+  description       String?
+  metadata          Json     @default("{}")
+  expiresAt         DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
   @@index([tenantId, schoolId, invoiceId, status])
 }
 
 model PaymentAttempt {
-  id String @id @default(uuid()) @db.Uuid
-  intentId String @db.Uuid
-  attemptNumber Int
+  id                String   @id @default(uuid()) @db.Uuid
+  intentId          String   @db.Uuid
+  attemptNumber     Int
   externalReference String?
-  providerStatus String?
-  status String
-  createdAt DateTime @default(now())
+  providerStatus    String?
+  status            String
+  createdAt         DateTime @default(now())
+
   @@unique([intentId, attemptNumber])
 }
 
 model GatewayWebhookEvent {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  providerId String
-  eventId String
-  eventType String
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  schoolId       String    @db.Uuid
+  providerId     String
+  eventId        String
+  eventType      String
   signatureValid Boolean
-  processedAt DateTime?
-  payload Json
-  createdAt DateTime @default(now())
+  processedAt    DateTime?
+  payload        Json
+  createdAt      DateTime  @default(now())
+
   @@unique([providerId, eventId])
   @@index([tenantId, schoolId, processedAt])
 }
 
 model Fee {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  name String
-  amount Decimal @db.Decimal(12, 2)
-  currency String @default("SLE")
-  active Boolean @default(true)
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  schoolId  String   @db.Uuid
+  name      String
+  amount    Decimal  @db.Decimal(12, 2)
+  currency  String   @default("SLE")
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
   @@index([tenantId, schoolId, active])
 }
 
 model Invoice {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  studentId String @db.Uuid
-  feeId String? @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  schoolId      String    @db.Uuid
+  studentId     String    @db.Uuid
+  feeId         String?   @db.Uuid
   invoiceNumber String
-  subtotal Decimal @db.Decimal(12, 2)
-  discount Decimal @default(0) @db.Decimal(12, 2)
-  total Decimal @db.Decimal(12, 2)
-  balance Decimal @db.Decimal(12, 2)
-  status String @default("ISSUED")
-  issuedAt DateTime @default(now())
-  dueAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  subtotal      Decimal   @db.Decimal(12, 2)
+  discount      Decimal   @default(0) @db.Decimal(12, 2)
+  total         Decimal   @db.Decimal(12, 2)
+  balance       Decimal   @db.Decimal(12, 2)
+  status        String    @default("ISSUED")
+  issuedAt      DateTime  @default(now())
+  dueAt         DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
   @@unique([tenantId, schoolId, invoiceNumber])
   @@index([tenantId, schoolId, studentId, status])
 }
 
 model Payment {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  invoiceId String @db.Uuid
-  amount Decimal @db.Decimal(12, 2)
-  provider String
-  reference String
-  idempotencyKey String @unique
-  status String @default("PENDING")
-  paidAt DateTime?
-  createdAt DateTime @default(now())
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  schoolId       String    @db.Uuid
+  invoiceId      String    @db.Uuid
+  amount         Decimal   @db.Decimal(12, 2)
+  provider       String
+  reference      String
+  idempotencyKey String    @unique
+  status         String    @default("PENDING")
+  paidAt         DateTime?
+  createdAt      DateTime  @default(now())
+
   @@index([tenantId, schoolId, invoiceId, status])
 }
 
 model FinancialTransaction {
-  id String @id @default(uuid()) @db.Uuid
-  tenantId String @db.Uuid
-  schoolId String @db.Uuid
-  studentId String? @db.Uuid
-  invoiceId String? @db.Uuid
-  paymentId String? @db.Uuid
-  type String
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  studentId   String?  @db.Uuid
+  invoiceId   String?  @db.Uuid
+  paymentId   String?  @db.Uuid
+  type        String
   amountMinor Int
-  reference String @unique
-  metadata Json?
-  createdAt DateTime @default(now())
+  reference   String   @unique
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
   @@index([tenantId, schoolId, createdAt])
 }
 
 model Examination {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  schoolId    String   @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  schoolId    String    @db.Uuid
   name        String
   code        String
-  status      String   @default("DRAFT")
-  createdById String?  @db.Uuid
-  lockedAt   DateTime?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  status      String    @default("DRAFT")
+  createdById String?   @db.Uuid
+  lockedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   @@unique([tenantId, schoolId, code])
 }
 
@@ -1604,6 +1801,7 @@ model ExaminationCandidate {
   studentId     String   @db.Uuid
   classId       String?  @db.Uuid
   createdAt     DateTime @default(now())
+
   @@unique([examinationId, studentId])
 }
 
@@ -1618,18 +1816,20 @@ model ExaminationMark {
   recordedById  String?  @db.Uuid
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
   @@unique([examinationId, candidateId, subjectCode])
 }
 
 model ExaminationSchedule {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @db.Uuid
-  schoolId      String   @db.Uuid
-  examinationId String   @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  schoolId      String    @db.Uuid
+  examinationId String    @db.Uuid
   subjectCode   String
-  classId       String?  @db.Uuid
+  classId       String?   @db.Uuid
   scheduledAt   DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
+
   @@unique([examinationId, subjectCode, classId])
 }
 
@@ -1645,24 +1845,25 @@ model ExaminationAudit {
 }
 
 model Result {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @db.Uuid
-  schoolId      String   @db.Uuid
-  examinationId String   @db.Uuid
-  studentId     String   @db.Uuid
-  schemeId      String   @db.Uuid
-  status        String   @default("REVIEW")
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  schoolId      String    @db.Uuid
+  examinationId String    @db.Uuid
+  studentId     String    @db.Uuid
+  schemeId      String    @db.Uuid
+  status        String    @default("REVIEW")
   studentStatus String
-  total         Decimal  @default(0) @db.Decimal(8, 2)
-  average       Decimal  @default(0) @db.Decimal(6, 2)
+  total         Decimal   @default(0) @db.Decimal(8, 2)
+  average       Decimal   @default(0) @db.Decimal(6, 2)
   grade         String?
-  gradePoint    Decimal? @db.Decimal(5, 2)
+  gradePoint    Decimal?  @db.Decimal(5, 2)
   position      Int?
   processedAt   DateTime?
   publishedAt   DateTime?
   lockedAt      DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
   @@unique([examinationId, studentId])
 }
 
@@ -1677,103 +1878,109 @@ model ResultAudit {
   createdAt DateTime @default(now())
 }
 
-
 model Timetable {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- academicPeriodId String @db.Uuid
- name String
- academicYear String
- status String @default("DRAFT")
- version Int @default(1)
- publishedAt DateTime?
- lockedAt DateTime?
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
- @@index([tenantId, schoolId, updatedAt])
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @db.Uuid
+  schoolId         String    @db.Uuid
+  academicPeriodId String    @db.Uuid
+  name             String
+  academicYear     String
+  status           String    @default("DRAFT")
+  version          Int       @default(1)
+  publishedAt      DateTime?
+  lockedAt         DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([tenantId, schoolId, updatedAt])
 }
 
 model TimetableSlot {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- timetableId String @db.Uuid
- weekday Int
- startTime String
- endTime String
- label String
- isBreak Boolean @default(false)
- createdAt DateTime @default(now())
- @@index([timetableId, weekday, startTime])
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  weekday     Int
+  startTime   String
+  endTime     String
+  label       String
+  isBreak     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([timetableId, weekday, startTime])
 }
 
 model ScheduleEntry {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- timetableId String @db.Uuid
- timeSlotId String @db.Uuid
- classId String? @db.Uuid
- teacherId String? @db.Uuid
- classroomId String? @db.Uuid
- subjectCode String
- kind String @default("LESSON")
- duration Int @default(1)
- notes String?
- createdAt DateTime @default(now())
- updatedAt DateTime @updatedAt
- @@index([timetableId, timeSlotId])
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  timeSlotId  String   @db.Uuid
+  classId     String?  @db.Uuid
+  teacherId   String?  @db.Uuid
+  classroomId String?  @db.Uuid
+  subjectCode String
+  kind        String   @default("LESSON")
+  duration    Int      @default(1)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([timetableId, timeSlotId])
 }
 
 model SchedulingConflict {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- timetableId String @db.Uuid
- entryId String @db.Uuid
- code String
- severity String
- message String
- resolvedAt DateTime?
- createdAt DateTime @default(now())
- @@index([timetableId, severity, resolvedAt])
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  schoolId    String    @db.Uuid
+  timetableId String    @db.Uuid
+  entryId     String    @db.Uuid
+  code        String
+  severity    String
+  message     String
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([timetableId, severity, resolvedAt])
 }
 
 model TimetableVersion {
- id String @id @default(uuid()) @db.Uuid
- timetableId String @db.Uuid
- number Int
- snapshot Json
- createdBy String? @db.Uuid
- createdAt DateTime @default(now())
- @@unique([timetableId, number])
+  id          String   @id @default(uuid()) @db.Uuid
+  timetableId String   @db.Uuid
+  number      Int
+  snapshot    Json
+  createdBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@unique([timetableId, number])
 }
 
 model TimetableAudit {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- timetableId String @db.Uuid
- actorId String? @db.Uuid
- action String
- metadata Json @default("{}")
- createdAt DateTime @default(now())
- @@index([timetableId, createdAt])
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  schoolId    String   @db.Uuid
+  timetableId String   @db.Uuid
+  actorId     String?  @db.Uuid
+  action      String
+  metadata    Json     @default("{}")
+  createdAt   DateTime @default(now())
+
+  @@index([timetableId, createdAt])
 }
 
 model ScheduleSubstitution {
- id String @id @default(uuid()) @db.Uuid
- tenantId String @db.Uuid
- schoolId String @db.Uuid
- timetableId String @db.Uuid
- entryId String @db.Uuid
- originalTeacherId String? @db.Uuid
- substituteTeacherId String? @db.Uuid
- reason String
- startsAt DateTime
- endsAt DateTime
- createdBy String? @db.Uuid
- createdAt DateTime @default(now())
- @@index([timetableId, startsAt, endsAt])
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  schoolId            String   @db.Uuid
+  timetableId         String   @db.Uuid
+  entryId             String   @db.Uuid
+  originalTeacherId   String?  @db.Uuid
+  substituteTeacherId String?  @db.Uuid
+  reason              String
+  startsAt            DateTime
+  endsAt              DateTime
+  createdBy           String?  @db.Uuid
+  createdAt           DateTime @default(now())
+
+  @@index([timetableId, startsAt, endsAt])
 }

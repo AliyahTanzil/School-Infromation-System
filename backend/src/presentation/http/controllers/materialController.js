@@ -2,13 +2,16 @@ import { get } from '@vercel/blob';
 import { put } from '@vercel/blob';
 import { create, list, getById, archive } from '../../../application/services/materialService.js';
 
-const scope = (req) => ({ tenantId: req.user?.tenantId, schoolId: req.user?.schoolId });
+const scope = (req) => ({
+  tenantId: req.schoolContext.tenantId,
+  schoolId: req.schoolContext.schoolId,
+});
 
 export async function listMaterials(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await list({ ...scope(req), classroomId: req.query.classroomId }),
+      data: await list(scope(req), req.query.classroomId, req.user.id, req.user.roles ?? []),
     });
   } catch (error) {
     next(error);
@@ -19,15 +22,14 @@ export async function uploadMaterial(req, res, next) {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ success: false, error: 'File is required' });
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-180);
     const blob = await put(
-      `materials/${scope(req).tenantId}/${crypto.randomUUID()}-${file.originalname}`,
+      `materials/${scope(req).tenantId}/${crypto.randomUUID()}-${safeName}`,
       file.buffer,
       { access: 'private', contentType: file.mimetype }
     );
-    const material = await create({
-      ...scope(req),
-      classroomId: req.body.classroomId || null,
-      uploaderId: req.user.id,
+    const material = await create(scope(req), req.user.id, req.user.roles ?? [], {
+      classroomId: req.body.classroomId,
       title: req.body.title || file.originalname,
       description: req.body.description || null,
       pathname: blob.pathname,
@@ -42,8 +44,7 @@ export async function uploadMaterial(req, res, next) {
 
 export async function downloadMaterial(req, res, next) {
   try {
-    const material = await getById({ ...scope(req), id: req.params.id });
-    if (!material) return res.status(404).json({ success: false, error: 'Material not found' });
+    const material = await getById(scope(req), req.params.id, req.user.id, req.user.roles ?? []);
     const result = await get(material.pathname, { access: 'private' });
     if (!result) return res.status(404).json({ success: false, error: 'File not found' });
     res.set({
@@ -59,7 +60,10 @@ export async function downloadMaterial(req, res, next) {
 
 export async function archiveMaterial(req, res, next) {
   try {
-    res.json({ success: true, data: await archive({ ...scope(req), id: req.params.id }) });
+    res.json({
+      success: true,
+      data: await archive(scope(req), req.params.id, req.user.id, req.user.roles ?? []),
+    });
   } catch (error) {
     next(error);
   }
