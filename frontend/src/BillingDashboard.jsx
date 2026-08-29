@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from './api/auth.js';
+import { useAuth } from './context/AuthContext.jsx';
 
 const money = (minor = 0, currency = 'USD') =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(minor / 100);
 
 export default function BillingDashboard() {
+  const { user, loading: authLoading } = useAuth();
   const [overview, setOverview] = useState(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -20,8 +22,9 @@ export default function BillingDashboard() {
   };
 
   useEffect(() => {
+    if (authLoading || !user) return;
     load();
-  }, []);
+  }, [authLoading, user]);
 
   const lifecycle = async (action, planKey) => {
     setBusy(true);
@@ -38,6 +41,12 @@ export default function BillingDashboard() {
     }
   };
 
+  if (authLoading || !user)
+    return (
+      <main className="billing-page">
+        <div className="billing-notice">Sign in to access billing.</div>
+      </main>
+    );
   if (error && !overview)
     return (
       <main className="billing-page">

@@ -30,6 +30,7 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     if (
+      !accessToken ||
       error.response?.status !== 401 ||
       originalRequest?._authRetry ||
       originalRequest?.url?.includes('/auth/')
