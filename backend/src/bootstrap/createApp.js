@@ -26,7 +26,8 @@ export function isCorsOriginAllowed(origin) {
       .some(
         (project) =>
           hostname === `${project}.vercel.app` ||
-          (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app'))
+          (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app')) ||
+          (hostname.startsWith(`${project}--`) && hostname.endsWith('.vercel.app'))
       );
 
     return url.protocol === 'https:' && !url.port && belongsToFrontendProject;

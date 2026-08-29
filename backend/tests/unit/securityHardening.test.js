@@ -44,5 +44,11 @@ test('allows only this frontend project Vercel deployment origins', () => {
     ),
     true
   );
+  assert.equal(
+    isCorsOriginAllowed(
+      'https://school-administration-information-system-frontend--aph3fmch6.vercel.app'
+    ),
+    true
+  );
   assert.equal(isCorsOriginAllowed('https://unrelated-project.vercel.app'), false);
 });
