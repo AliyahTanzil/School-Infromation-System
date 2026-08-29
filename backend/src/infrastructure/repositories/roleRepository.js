@@ -2,7 +2,7 @@ import prisma from '../orm/prismaClient.js';
 
 const db = (tx) => tx ?? prisma;
 const roleInclude = {
-  rolePermissions: { include: { permission: true } },
+  permissions: { include: { permission: true } },
   userRoles: { where: { revokedAt: null } },
 };
 

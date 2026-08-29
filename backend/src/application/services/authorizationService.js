@@ -21,11 +21,11 @@ export async function effectivePermissions(userId, scopeKey = 'global') {
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
       role: { deletedAt: null },
     },
-    include: { role: { include: { rolePermissions: { include: { permission: true } } } } },
+    include: { role: { include: { permissions: { include: { permission: true } } } } },
   });
   const permissions = new Map();
   for (const assignment of assignments) {
-    for (const grant of assignment.role.rolePermissions) {
+    for (const grant of assignment.role.permissions) {
       if (grant.permission.deletedAt) continue;
       const current = permissions.get(grant.permission.code);
       if (!current || grant.permission.effect === 'DENY')

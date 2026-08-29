@@ -12,7 +12,7 @@ const dto = (role) => ({
   isSystem: role.isSystem,
   isAssignable: role.isAssignable,
   permissions:
-    role.rolePermissions?.map(({ permission }) => ({
+    role.permissions?.map(({ permission }) => ({
       id: permission.id,
       code: permission.code,
       name: permission.name,
