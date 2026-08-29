@@ -64,8 +64,8 @@ A feature task is complete only when all applicable layers exist:
 |    19 | LMS-002     | DONE    | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
 |    20 | LMS-003     | DONE    | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
 |    21 | LMS-004     | DONE    | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
-|    22 | LMS-005     | REVIEW  | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
-|    23 | LMS-006     | BLOCKED | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
+|    22 | LMS-005     | DONE    | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
+|    23 | LMS-006     | READY   | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
 |    24 | LMS-007     | BLOCKED | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
 |    25 | LMS-008     | BLOCKED | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
 |    26 | LMS-009     | BLOCKED | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
@@ -179,17 +179,19 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    23 |        48% |
-| In review               |     1 |         2% |
+| Done                    |    24 |        50% |
+| In review               |     0 |         0% |
 | In progress             |     0 |         0% |
-| Ready                   |     0 |         0% |
-| Blocked by dependencies |    24 |        50% |
+| Ready                   |     1 |         2% |
+| Blocked by dependencies |    23 |        48% |
 
 Update this summary whenever a task status changes.
 
 | 2026-08-29 | LMS-003 | Codex | DONE | Reconciled classwork with migrated digital-classroom assignments, optional school-scoped subjects, membership-aware reads, teacher/admin management, validated draft/publish/close/archive transitions, operational UI, API documentation, and tests; Prisma validation, lint, both builds, diff check, and the full backend suite pass (161 passed, 1 skipped). |
 | 2026-08-29 | LMS-004 | Codex | CLAIMED | Reconciling private digital-material persistence, classroom membership authorization, bounded uploads, active mounts, frontend workflows, documentation, migrations, and tests. |
 | 2026-08-29 | LMS-004 | Codex | DONE | Added relational classroom/uploader persistence and a non-destructive migration; authenticated member reads and private downloads; teacher/admin bounded uploads and archive controls; both active mounts, operational UI, docs, and tests; Prisma, lint, builds, diff check, and full suite pass (166 passed, 1 skipped). |
+| 2026-08-29 | LMS-005 | Codex | CLAIMED | Reconciling authenticated student-owned submissions, assignment/classroom access, immutable transactional versions, lifecycle validation, active mounts, operational UI, migration, documentation, and tests. |
+| 2026-08-29 | LMS-005 | Codex | DONE | Added assignment/user relational persistence, authenticated student ownership, active-classroom membership checks, bounded same-classroom attachments, serializable immutable version creation, controlled submit/retract lifecycle, both active mounts, live UI, docs, migration, and tests; Prisma, lint, builds, diff check, and full suite pass (172 passed, 1 skipped). |
 
 | 2026-08-27 | TTB-001 | Codex | DONE | Reconciled timetable persistence with the active flat Prisma schema and AcademicTerm model; added non-destructive migration, authenticated school context, active compatibility/versioned mounts, lifecycle versioning, conflict publication gate, substitutions, creation UI, back navigation, contract tests, and full build verification (109 passed, 1 skipped). |
 

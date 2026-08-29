@@ -1,104 +1,103 @@
-import { useMemo, useState } from 'react';
-import { ArrowRight, CheckCircle2, Clock3, FileText, RotateCcw, Send, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { ArrowRight, Clock3, FileText, RotateCcw, Search, Send } from 'lucide-react';
+import api from './api/auth.js';
 import './classroom.css';
+import './digital-classroom.css';
 
-const INITIAL_WORK = [
-  {
-    id: 1,
-    title: 'Algebraic expressions',
-    course: 'Mathematics 8A',
-    due: 'Today, 3:30 PM',
-    points: 20,
-    status: 'In progress',
-    feedback: '',
-  },
-  {
-    id: 2,
-    title: 'Fractions checkpoint',
-    course: 'Mathematics 8A',
-    due: 'Fri, 11:30 AM',
-    points: 15,
-    status: 'Assigned',
-    feedback: '',
-  },
-  {
-    id: 3,
-    title: 'Science lab reflection',
-    course: 'Integrated Science',
-    due: 'Yesterday',
-    points: 25,
-    status: 'Returned',
-    grade: '22 / 25',
-    feedback: 'Strong observation notes. Add one more connection to the hypothesis.',
-  },
-  {
-    id: 4,
-    title: 'Reading response',
-    course: 'English Language Arts',
-    due: 'Aug 08',
-    points: 10,
-    status: 'Missing',
-    feedback: '',
-  },
-];
-const FILTERS = ['All work', 'Assigned', 'In progress', 'Submitted', 'Returned', 'Missing'];
+const errorMessage = (error) =>
+  error.response?.data?.error?.message || error.message || 'Request failed';
 
 export default function StudentSubmissionCenter() {
-  const [work, setWork] = useState(INITIAL_WORK);
-  const [filter, setFilter] = useState('All work');
+  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
+  const [classroomId, setClassroomId] = useState(
+    () => sessionStorage.getItem('sais.classroomId') || ''
+  );
+  const [assignments, setAssignments] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
   const [response, setResponse] = useState('');
-  const [saveState, setSaveState] = useState('Not started');
+  const [notice, setNotice] = useState('');
+  const [busy, setBusy] = useState(false);
+  const headers = schoolId ? { 'x-school-id': schoolId } : {};
 
-  const visible = useMemo(
+  const load = useCallback(async () => {
+    if (!schoolId || !classroomId) {
+      setAssignments([]);
+      setSubmissions([]);
+      return;
+    }
+    setBusy(true);
+    try {
+      const [assignmentResponse, submissionResponse] = await Promise.all([
+        api.get('/lms/assignments', {
+          headers: { 'x-school-id': schoolId },
+          params: { classroomId, status: 'PUBLISHED' },
+        }),
+        api.get('/lms/submissions', { headers: { 'x-school-id': schoolId } }),
+      ]);
+      setAssignments(assignmentResponse.data.data);
+      setSubmissions(submissionResponse.data.data);
+      setNotice('');
+    } catch (error) {
+      setNotice(errorMessage(error));
+    } finally {
+      setBusy(false);
+    }
+  }, [classroomId, schoolId]);
+
+  useEffect(() => {
+    sessionStorage.setItem('sais.schoolId', schoolId);
+    sessionStorage.setItem('sais.classroomId', classroomId);
+    load();
+  }, [classroomId, load, schoolId]);
+
+  const work = useMemo(
     () =>
-      work.filter(
-        (item) =>
-          (filter === 'All work' || item.status === filter) &&
-          `${item.title} ${item.course}`.toLowerCase().includes(query.toLowerCase())
-      ),
-    [work, filter, query]
-  );
-  const counts = FILTERS.reduce(
-    (result, key) => ({
-      ...result,
-      [key]: key === 'All work' ? work.length : work.filter((item) => item.status === key).length,
-    }),
-    {}
+      assignments
+        .map((assignment) => ({
+          ...assignment,
+          submission: submissions.find((item) => item.assignmentId === assignment.id),
+        }))
+        .filter((item) => item.title.toLowerCase().includes(query.toLowerCase())),
+    [assignments, query, submissions]
   );
 
   function openWork(item) {
     setSelected(item);
-    setResponse(item.response || '');
-    setSaveState(item.status === 'In progress' ? 'Draft saved' : 'Not started');
+    setResponse(item.submission?.versions?.[0]?.body || '');
+    setNotice('');
   }
-  function saveDraft(event) {
-    event.preventDefault();
-    setWork((items) =>
-      items.map((item) =>
-        item.id === selected.id ? { ...item, response, status: 'In progress' } : item
-      )
-    );
-    setSelected({ ...selected, response, status: 'In progress' });
-    setSaveState('Draft saved just now');
+
+  async function save(status) {
+    if (!response.trim()) return setNotice('Write a response before saving.');
+    try {
+      await api.post(
+        '/lms/submissions',
+        { assignmentId: selected.id, body: response, attachments: [], status },
+        { headers }
+      );
+      setNotice(status === 'SUBMITTED' ? 'Work submitted for review.' : 'Draft version saved.');
+      await load();
+      setSelected(null);
+    } catch (error) {
+      setNotice(errorMessage(error));
+    }
   }
-  function submitWork() {
-    if (!response.trim()) return setSaveState('Write a response before submitting.');
-    setWork((items) =>
-      items.map((item) =>
-        item.id === selected.id ? { ...item, response, status: 'Submitted' } : item
-      )
-    );
-    setSelected({ ...selected, response, status: 'Submitted' });
-    setSaveState('Submitted for review');
-  }
-  function retractWork() {
-    setWork((items) =>
-      items.map((item) => (item.id === selected.id ? { ...item, status: 'In progress' } : item))
-    );
-    setSelected({ ...selected, status: 'In progress' });
-    setSaveState('Submission retracted');
+
+  async function retract() {
+    try {
+      await api.patch(
+        `/lms/submissions/${selected.submission.id}/status`,
+        { status: 'DRAFT' },
+        { headers }
+      );
+      setNotice('Submission retracted. You may now create a new version.');
+      await load();
+      setSelected(null);
+    } catch (error) {
+      setNotice(errorMessage(error));
+    }
   }
 
   return (
@@ -107,18 +106,23 @@ export default function StudentSubmissionCenter() {
         <div>
           <p className="eyebrow">Student workspace</p>
           <h1>My work</h1>
-          <p>Keep track of what is assigned, submitted, and ready for your next step.</p>
-        </div>
-        <div className="work-summary">
-          <span>
-            <strong>{counts['In progress']}</strong> in progress
-          </span>
-          <span>
-            <strong>{counts.Returned}</strong> returned
-          </span>
+          <p>Save immutable draft versions, submit work, and review your submission history.</p>
         </div>
       </header>
+
       <div className="work-toolbar">
+        <input
+          value={schoolId}
+          onChange={(event) => setSchoolId(event.target.value)}
+          placeholder="School UUID"
+          aria-label="School ID"
+        />
+        <input
+          value={classroomId}
+          onChange={(event) => setClassroomId(event.target.value)}
+          placeholder="Classroom UUID"
+          aria-label="Classroom ID"
+        />
         <label className="materials-search">
           <Search />
           <input
@@ -128,55 +132,48 @@ export default function StudentSubmissionCenter() {
             placeholder="Search assignments..."
           />
         </label>
-        <div className="folder-pills">
-          {FILTERS.map((item) => (
-            <button
-              key={item}
-              className={filter === item ? 'filter-chip active' : 'filter-chip'}
-              onClick={() => setFilter(item)}
-            >
-              {item}
-              <span>{counts[item]}</span>
-            </button>
-          ))}
-        </div>
       </div>
+      {notice && <div className="dc-notice">{notice}</div>}
+
       <section className="work-layout">
         <div className="work-list">
-          {visible.map((item) => (
-            <button className="work-card" key={item.id} onClick={() => openWork(item)}>
+          {!busy && schoolId && classroomId && !work.length && (
+            <p>No published assignments found.</p>
+          )}
+          {work.map((item) => (
+            <button
+              className="work-card"
+              key={item.id}
+              onClick={() => openWork(item)}
+              type="button"
+            >
               <span className="classwork-icon">
                 <FileText />
               </span>
               <span className="work-card-body">
-                <span className="item-type">{item.course}</span>
+                <span className="item-type">{item.type}</span>
                 <strong>{item.title}</strong>
                 <small>
-                  <Clock3 /> Due {item.due} · {item.points} points
+                  <Clock3 />{' '}
+                  {item.dueAt ? `Due ${new Date(item.dueAt).toLocaleString()}` : 'No due date'} ·{' '}
+                  {item.points} points
                 </small>
               </span>
-              <span className={`status-badge ${item.status.toLowerCase().replace(' ', '-')}`}>
-                {item.status}
-              </span>
+              <span className="status-badge">{item.submission?.status || 'NOT STARTED'}</span>
               <ArrowRight />
             </button>
           ))}
         </div>
         <aside className="work-upcoming">
-          <p className="eyebrow">Next up</p>
-          <h2>Make progress visible.</h2>
+          <p className="eyebrow">Version history</p>
+          <h2>Your work remains traceable.</h2>
           <p>
-            Open an assignment to save a draft, submit work, or review feedback from your teacher.
+            Every save creates an immutable version. Submitted work must be retracted before
+            editing.
           </p>
-          <div className="upcoming-note">
-            <CheckCircle2 />
-            <span>
-              <strong>{counts.Submitted} submitted</strong>
-              <small>Teacher review is next.</small>
-            </span>
-          </div>
         </aside>
       </section>
+
       {selected && (
         <div className="modal-backdrop" role="presentation">
           <section className="create-modal work-detail-modal" role="dialog" aria-modal="true">
@@ -184,57 +181,51 @@ export default function StudentSubmissionCenter() {
               className="modal-close"
               aria-label="Close assignment detail"
               onClick={() => setSelected(null)}
+              type="button"
             >
               ×
             </button>
-            <p className="eyebrow">{selected.course}</p>
+            <p className="eyebrow">{selected.type}</p>
             <h2>{selected.title}</h2>
             <p className="modal-copy">
-              Due {selected.due} · {selected.points} points · <strong>{selected.status}</strong>
+              {selected.instructions || selected.description || 'Complete the assigned work.'}
             </p>
-            {selected.feedback && (
+            <textarea
+              aria-label="Assignment response"
+              value={response}
+              onChange={(event) => setResponse(event.target.value)}
+              placeholder="Write your response here..."
+              disabled={selected.submission?.status === 'SUBMITTED'}
+            />
+            <div className="student-submit-actions">
+              {selected.submission?.status === 'SUBMITTED' ? (
+                <button className="secondary-action" type="button" onClick={retract}>
+                  Retract submission <RotateCcw />
+                </button>
+              ) : (
+                <>
+                  <button className="secondary-action" type="button" onClick={() => save('DRAFT')}>
+                    Save draft
+                  </button>
+                  <button
+                    className="primary-action"
+                    type="button"
+                    onClick={() => save('SUBMITTED')}
+                  >
+                    Submit work <Send />
+                  </button>
+                </>
+              )}
+            </div>
+            {!!selected.submission?.versions?.length && (
               <div className="student-response">
-                <span>Teacher feedback {selected.grade && `· ${selected.grade}`}</span>
-                <p>{selected.feedback}</p>
+                <span>Saved versions</span>
+                {selected.submission.versions.map((version) => (
+                  <p key={version.id}>
+                    Version {version.version} · {new Date(version.createdAt).toLocaleString()}
+                  </p>
+                ))}
               </div>
-            )}
-            {selected.status === 'Returned' ? (
-              <button
-                className="primary-action"
-                onClick={() => {
-                  setResponse('');
-                  setSelected({ ...selected, status: 'In progress' });
-                }}
-              >
-                Resubmit revision <RotateCcw />
-              </button>
-            ) : (
-              <form className="student-submit-form" onSubmit={saveDraft}>
-                <textarea
-                  aria-label="Assignment response"
-                  value={response}
-                  onChange={(event) => setResponse(event.target.value)}
-                  placeholder="Write your response here..."
-                  disabled={selected.status === 'Submitted'}
-                />
-                <div className="student-submit-actions">
-                  <span>{saveState}</span>
-                  {selected.status === 'Submitted' ? (
-                    <button className="secondary-action" type="button" onClick={retractWork}>
-                      Retract submission
-                    </button>
-                  ) : (
-                    <>
-                      <button className="secondary-action" type="submit">
-                        Save draft
-                      </button>
-                      <button className="primary-action" type="button" onClick={submitWork}>
-                        Submit work <Send />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </form>
             )}
           </section>
         </div>

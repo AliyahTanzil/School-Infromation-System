@@ -386,3 +386,16 @@ stored as private Vercel blobs, and delivered only after a fresh authorization c
 - `POST /` — upload a multipart `file` with `classroomId`, optional `title`, and `description`.
 - `GET /:id/download` — stream an authorized private material.
 - `PATCH /:id/archive` — hide a material without deleting its audit history or blob reference.
+
+### Student submissions (`/api/lms/submissions`, `/api/v1/lms/submissions`)
+
+Submission identity is always the authenticated user and requires an active `STUDENT` membership in
+the assignment's classroom. Only published assignments accept work. Every draft save and submission
+creates an immutable version in a serializable transaction; submitted work must be explicitly
+retracted before another version can be created. Attachments may reference only active digital
+materials from the same classroom. Classroom teachers and administrators may list an assignment's
+submissions, while students can read only their own work.
+
+- `GET /?assignmentId=<uuid>` — list authorized submissions with bounded version history.
+- `POST /` — create a new draft or submitted version for the authenticated student.
+- `PATCH /:id/status` — retract the student's own submitted work back to draft while open.

@@ -7,7 +7,15 @@ const scope = (req) => ({
 
 export async function list(req, res, next) {
   try {
-    res.json({ success: true, data: await service.list({ ...scope(req), ...req.query }) });
+    res.json({
+      success: true,
+      data: await service.list(
+        scope(req),
+        req.user.id,
+        req.user.roles ?? [],
+        req.query.assignmentId
+      ),
+    });
   } catch (error) {
     next(error);
   }
@@ -15,16 +23,10 @@ export async function list(req, res, next) {
 
 export async function save(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.saveVersion({
-          ...scope(req),
-          ...req.body,
-          studentId: req.body.studentId || req.user?.id,
-        }),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.saveVersion(scope(req), req.user.id, req.user.roles ?? [], req.body),
+    });
   } catch (error) {
     next(error);
   }
@@ -34,7 +36,13 @@ export async function updateStatus(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.updateStatus({ ...scope(req), id: req.params.id, ...req.body }),
+      data: await service.updateStatus(
+        scope(req),
+        req.params.id,
+        req.user.id,
+        req.user.roles ?? [],
+        req.body.status
+      ),
     });
   } catch (error) {
     next(error);

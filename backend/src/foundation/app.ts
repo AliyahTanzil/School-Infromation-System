@@ -55,6 +55,8 @@ import classroomStreamRouter from '../presentation/http/routes/classroomStreamRo
 import assignmentRouter from '../presentation/http/routes/assignmentRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import materialRouter from '../presentation/http/routes/materialRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -128,6 +130,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/assignments', assignmentRouter);
   app.use('/api/lms/materials', materialRouter);
   app.use('/api/v1/lms/materials', materialRouter);
+  app.use('/api/lms/submissions', submissionRouter);
+  app.use('/api/v1/lms/submissions', submissionRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;
