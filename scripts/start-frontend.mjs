@@ -81,7 +81,7 @@ if (!(await backendIsReady(backendPort))) {
 }
 
 const frontendPort =
-  process.env.FRONTEND_PORT || String(manifest?.frontend || (isV0 ? 3000 : 5173));
+  process.env.FRONTEND_PORT || String(manifest?.frontend || 3000);
 if (await frontendIsReady(frontendPort)) {
   console.log(`[SAIS] Frontend is already running on port ${frontendPort}; reusing it.`);
   process.exit(0);

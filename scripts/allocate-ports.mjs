@@ -31,7 +31,7 @@ const isV0 =
   process.env.V0 ||
   process.env.V0_RUNTIME_URL ||
   process.env.V0_DEV_APP_URL;
-const frontendStart = process.env.FRONTEND_PORT || (isV0 ? 3000 : 0);
+const frontendStart = process.env.FRONTEND_PORT || 3000;
 const frontend = await findPort(Number(frontendStart));
 const backend = await findPort(Number(process.env.BACKEND_PORT || (isV0 ? 44555 : 0)));
 const manifest = resolve(process.cwd(), '.sais-ports.json');
