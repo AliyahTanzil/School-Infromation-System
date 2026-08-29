@@ -140,6 +140,14 @@ export const createApp = () => {
   app.use('/api/v1/lms/submissions', submissionRouter);
   app.use('/api/lms/quizzes', quizRouter);
   app.use('/api/v1/lms/quizzes', quizRouter);
+  app.get('/', (_request, response) => {
+    response.status(200).json({
+      success: true,
+      service: 'sais-backend',
+      message: 'SAIS API is running',
+      health: '/api/v1/health',
+    });
+  });
   app.use(notFound);
   app.use(errorHandler);
   return app;
