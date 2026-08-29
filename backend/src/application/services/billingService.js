@@ -26,9 +26,12 @@ const toOverview = ({ subscription, usage, invoices, plans, tenantId }) => ({
     includedQuantity: item.includedQuantity,
   })),
   invoices: invoices.map((invoice) => ({
-    number: invoice.number,
+    id: invoice.id,
+    number: invoice.invoiceNumber,
     status: invoice.status,
-    totalMinor: invoice.totalMinor,
+    totalMinor: Math.round(Number(invoice.total) * 100),
+    balanceMinor: Math.round(Number(invoice.balance) * 100),
+    currency: 'USD',
     issuedAt: invoice.issuedAt,
   })),
   plans: plans.map(({ key, name, amountMinor, currency, interval, description }) => ({
@@ -43,20 +46,16 @@ const toOverview = ({ subscription, usage, invoices, plans, tenantId }) => ({
 
 export async function getBillingOverview({ tenantId }) {
   if (!tenantId) throw new Error('Tenant context is required');
-  const [subscription, usage, invoices, plans] = await Promise.all([
-    prisma.billingSubscription.findFirst({
-      where: { tenantId },
-      include: { plan: true },
-      orderBy: { updatedAt: 'desc' },
-    }),
-    prisma.billingUsage.findMany({ where: { tenantId }, orderBy: { metricKey: 'asc' } }),
-    prisma.billingInvoice.findMany({
+  const [invoices] = await Promise.all([
+    prisma.invoice.findMany({
       where: { tenantId },
       orderBy: { issuedAt: 'desc' },
       take: 12,
     }),
-    prisma.billingPlan.findMany({ where: { active: true }, orderBy: { amountMinor: 'asc' } }),
   ]);
+  const subscription = null;
+  const usage = [];
+  const plans = [];
   return toOverview({ subscription, usage, invoices, plans, tenantId });
 }
 

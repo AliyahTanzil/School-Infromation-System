@@ -34,6 +34,7 @@ import classroomStreamRoutes from './classroomStreamRoutes.js';
 import assignmentRoutes from './assignmentRoutes.js';
 import materialRoutes from './materialRoutes.js';
 import submissionRoutes from './submissionRoutes.js';
+import billingRoutes from './billingRoutes.js';
 
 const router = Router();
 
@@ -74,7 +75,7 @@ router.use('/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-0
 router.use('/smart-identity', featureUnavailableRoutes('Smart identity', 'BIO-001'));
 router.use('/iot', featureUnavailableRoutes('IoT', 'IOT-001'));
 router.use('/tenant-admin', tenantAdminRoutes);
-router.use('/billing', featureUnavailableRoutes('Subscription billing', 'SaaS-001'));
+router.use('/billing', billingRoutes);
 router.use('/platform-admin', platformAdminRoutes);
 router.use('/security-admin', featureUnavailableRoutes('Security administration', 'SEC-001'));
 router.use('/ai-academic', featureUnavailableRoutes('AI academic assistant', 'AI-001'));

@@ -59,6 +59,8 @@ import materialRouter from '../presentation/http/routes/materialRoutes.js';
 import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import quizRouter from '../presentation/http/routes/quizRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import billingRouter from '../presentation/http/routes/billingRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -108,6 +110,8 @@ export const createApp = () => {
   app.use('/api/v1/timetables', timetableRouter);
   app.use('/api/finance', financeRouter);
   app.use('/api/v1/finance', financeRouter);
+  app.use('/api/billing', billingRouter);
+  app.use('/api/v1/billing', billingRouter);
   app.use('/api/payment/monime', paymentGatewayRouter);
   app.use('/api/v1/payment/monime', paymentGatewayRouter);
   app.use('/api/payment-gateway', paymentGatewayRouter);
