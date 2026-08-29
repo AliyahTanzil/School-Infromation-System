@@ -9,15 +9,43 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-let accessToken = null;
+const accessTokenStorageKey = 'sais.accessToken';
+let accessToken =
+  typeof window !== 'undefined' ? window.sessionStorage.getItem(accessTokenStorageKey) : null;
+
 export const setAccessToken = (token) => {
-  accessToken = token;
+  accessToken = token || null;
+  if (typeof window === 'undefined') return;
+  if (accessToken) window.sessionStorage.setItem(accessTokenStorageKey, accessToken);
+  else window.sessionStorage.removeItem(accessTokenStorageKey);
 };
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response?.status !== 401 ||
+      originalRequest?._authRetry ||
+      originalRequest?.url?.includes('/auth/')
+    ) {
+      return Promise.reject(error);
+    }
+    originalRequest._authRetry = true;
+    try {
+      await refresh();
+      return api(originalRequest);
+    } catch {
+      setAccessToken(null);
+      return Promise.reject(error);
+    }
+  }
+);
 
 export async function login(credentials) {
   const { data } = await api.post('/auth/login', credentials);
