@@ -4,9 +4,11 @@ import {
   requestLifecycle,
 } from '../../../application/services/billingService.js';
 
+const tenantContext = (req) => req.user?.tenantId || req.auth?.tenantId || null;
+
 export async function getOverview(req, res, next) {
   try {
-    res.json({ data: await getBillingOverview({ tenantId: req.auth?.tenantId }) });
+    res.json({ data: await getBillingOverview({ tenantId: tenantContext(req) }) });
   } catch (error) {
     next(error);
   }
@@ -15,8 +17,8 @@ export async function getOverview(req, res, next) {
 export async function lifecycle(req, res, next) {
   try {
     const data = await requestLifecycle({
-      tenantId: req.auth?.tenantId,
-      actorId: req.auth?.userId,
+      tenantId: tenantContext(req),
+      actorId: req.user?.id || req.auth?.userId,
       action: req.body?.action,
       planKey: req.body?.planKey,
     });
