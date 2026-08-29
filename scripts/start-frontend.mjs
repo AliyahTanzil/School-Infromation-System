@@ -18,6 +18,17 @@ async function backendIsReady(port) {
   }
 }
 
+async function frontendIsReady(port) {
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/`, {
+      signal: AbortSignal.timeout(800),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 const root = resolve(process.cwd(), '..');
 const manifestPath = resolve(root, '.sais-ports.json');
 const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : null;
@@ -71,6 +82,10 @@ if (!(await backendIsReady(backendPort))) {
 
 const frontendPort =
   process.env.FRONTEND_PORT || String(manifest?.frontend || (isV0 ? 3000 : 5173));
+if (await frontendIsReady(frontendPort)) {
+  console.log(`[SAIS] Frontend is already running on port ${frontendPort}; reusing it.`);
+  process.exit(0);
+}
 const vite = start(
   'npm',
   ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
