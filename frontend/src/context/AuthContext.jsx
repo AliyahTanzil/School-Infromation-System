@@ -5,9 +5,10 @@ import * as authApi from '../api/auth.js';
 const AuthContext = createContext(null);
 // Demo access is opt-in and requires an explicitly isolated development data mode.
 // Never enable this merely because the build is development or against real data.
-const adminDemoEnabled = import.meta.env.DEV
-  && import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true'
-  && import.meta.env.VITE_DEMO_DATA_MODE === 'isolated';
+const adminDemoEnabled =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' &&
+  import.meta.env.VITE_DEMO_DATA_MODE === 'isolated';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -82,5 +83,16 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 export function useAuth() {
-  return useContext(AuthContext);
+  const context = useContext(AuthContext);
+  return (
+    context ?? {
+      user: null,
+      loading: false,
+      error: null,
+      login: async () => {},
+      register: async () => {},
+      logout: async () => {},
+      refresh: async () => null,
+    }
+  );
 }
