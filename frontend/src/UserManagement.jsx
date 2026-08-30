@@ -3,7 +3,15 @@ import api from './api/auth.js';
 
 export default function UserManagement() {
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ email: '', password: '', status: 'ACTIVE' });
+  const emptyForm = {
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    accountType: 'APPLICATION_MANAGER',
+    status: 'ACTIVE',
+  };
+  const [form, setForm] = useState(emptyForm);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
@@ -24,7 +32,7 @@ export default function UserManagement() {
     setError('');
     try {
       await api.post('/users', form);
-      setForm({ email: '', password: '', status: 'ACTIVE' });
+      setForm(emptyForm);
       setMessage('User created and saved to the backend.');
       await loadUsers();
     } catch (err) {
@@ -53,6 +61,26 @@ export default function UserManagement() {
           >
             <h2 className="text-lg font-semibold">Create user</h2>
             <div className="mt-5 grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="text-sm text-slate-400">
+                  First name
+                  <input
+                    required
+                    value={form.firstName}
+                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                    className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                  />
+                </label>
+                <label className="text-sm text-slate-400">
+                  Last name
+                  <input
+                    required
+                    value={form.lastName}
+                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                    className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                  />
+                </label>
+              </div>
               <label className="text-sm text-slate-400">
                 Email
                 <input
@@ -73,6 +101,21 @@ export default function UserManagement() {
                   onChange={(e) => setForm({ ...form, password: e.target.value })}
                   className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
                 />
+              </label>
+              <label className="text-sm text-slate-400">
+                Account type
+                <select
+                  value={form.accountType}
+                  onChange={(e) => setForm({ ...form, accountType: e.target.value })}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                >
+                  <option value="APPLICATION_MANAGER">Application manager</option>
+                  <option value="TENANT_ADMIN">Tenant administrator</option>
+                  <option value="STAFF">Staff</option>
+                  <option value="TEACHER">Teacher</option>
+                  <option value="PARENT">Parent</option>
+                  <option value="STUDENT">Student</option>
+                </select>
               </label>
               <label className="text-sm text-slate-400">
                 Status
