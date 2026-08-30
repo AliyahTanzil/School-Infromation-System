@@ -82,29 +82,30 @@ if (!(await backendIsReady(backendPort))) {
 
 const frontendPort =
   process.env.FRONTEND_PORT || String(manifest?.frontend || 3000);
-if (await frontendIsReady(frontendPort)) {
+const reuseFrontend = await frontendIsReady(frontendPort);
+if (reuseFrontend) {
   console.log(`[SAIS] Frontend is already running on port ${frontendPort}; reusing it.`);
-  process.exit(0);
-}
-const vite = start(
-  'npm',
-  ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
-  {
-    FRONTEND_PORT: frontendPort,
-    BACKEND_PORT: backendPort,
-    SAIS_LOCAL_DEV: 'true',
-  }
-);
+} else {
+  const vite = start(
+    'npm',
+    ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
+    {
+      FRONTEND_PORT: frontendPort,
+      BACKEND_PORT: backendPort,
+      SAIS_LOCAL_DEV: 'true',
+    }
+  );
 
-let stopping = false;
-function shutdown(signal) {
-  if (stopping) return;
-  stopping = true;
-  for (const child of children) {
-    if (!child.killed) child.kill(signal);
+  let stopping = false;
+  function shutdown(signal) {
+    if (stopping) return;
+    stopping = true;
+    for (const child of children) {
+      if (!child.killed) child.kill(signal);
+    }
   }
+  process.once('SIGINT', () => shutdown('SIGINT'));
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  vite.once('exit', () => shutdown('SIGTERM'));
+  await new Promise(() => {});
 }
-process.once('SIGINT', () => shutdown('SIGINT'));
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-vite.once('exit', () => shutdown('SIGTERM'));
-await new Promise(() => {});

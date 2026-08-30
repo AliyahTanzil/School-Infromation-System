@@ -399,3 +399,20 @@ submissions, while students can read only their own work.
 - `GET /?assignmentId=<uuid>` — list authorized submissions with bounded version history.
 - `POST /` — create a new draft or submitted version for the authenticated student.
 - `PATCH /:id/status` — retract the student's own submitted work back to draft while open.
+
+### Quizzes and assessments (`/api/lms/quizzes`, `/api/v1/lms/quizzes`)
+
+Administrators, classroom owners, and active teacher members author quiz drafts, optionally linking
+them to an assignment and an assessment weight from an active school policy. Choice and short-answer
+questions become immutable after publication. Non-staff members can see only published quizzes and
+never receive answer keys. Active student members receive bounded timed attempts; answers are
+autosaved against the authenticated attempt and scored server-side when submitted.
+
+- `GET /?classroomId=<uuid>` — list quizzes visible to the authenticated classroom member.
+- `POST /` — create a validated teacher-owned quiz draft.
+- `GET /:id` — retrieve authorized questions and bounded attempt history.
+- `POST /:id/questions` — add a validated question while the quiz remains a draft.
+- `PATCH /:id/status` — advance `DRAFT → PUBLISHED → CLOSED → ARCHIVED`.
+- `POST /:id/attempts` — start a timed student attempt subject to the configured limit.
+- `PUT /attempts/:attemptId/answers` — autosave one answer before expiry.
+- `POST /attempts/:attemptId/submit` — lock and score the authenticated student's attempt.

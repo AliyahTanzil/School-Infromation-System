@@ -11,4 +11,6 @@ test('frontend launcher executes npm through Node instead of a Windows command s
   assert.match(source, /process\.env\.npm_execpath/);
   assert.match(source, /shell: false/);
   assert.match(source, /child\.on\('error'/);
+  assert.match(source, /const reuseFrontend = await frontendIsReady/);
+  assert.doesNotMatch(source, /Frontend is already running[\s\S]{0,160}process\.exit\(0\)/);
 });

@@ -57,6 +57,8 @@ import assignmentRouter from '../presentation/http/routes/assignmentRoutes.js';
 import materialRouter from '../presentation/http/routes/materialRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import quizRouter from '../presentation/http/routes/quizRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -132,6 +134,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/materials', materialRouter);
   app.use('/api/lms/submissions', submissionRouter);
   app.use('/api/v1/lms/submissions', submissionRouter);
+  app.use('/api/lms/quizzes', quizRouter);
+  app.use('/api/v1/lms/quizzes', quizRouter);
   app.use(notFound);
   app.use(errorHandler);
   return app;

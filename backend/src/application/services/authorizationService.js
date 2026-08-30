@@ -26,14 +26,11 @@ export async function effectivePermissions(userId, scopeKey = 'global') {
   const permissions = new Map();
   for (const assignment of assignments) {
     for (const grant of assignment.role.permissions) {
-      if (grant.permission.deletedAt) continue;
-      const current = permissions.get(grant.permission.code);
-      if (!current || grant.permission.effect === 'DENY')
-        permissions.set(grant.permission.code, {
-          allowed: grant.permission.effect === 'ALLOW',
-          source: 'direct',
-          roleCode: assignment.role.code,
-        });
+      permissions.set(grant.permission.key, {
+        allowed: true,
+        source: 'role',
+        roleCode: assignment.role.code,
+      });
     }
   }
   const result = Object.fromEntries(permissions);

@@ -65,9 +65,9 @@ A feature task is complete only when all applicable layers exist:
 |    20 | LMS-003     | DONE    | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
 |    21 | LMS-004     | DONE    | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
 |    22 | LMS-005     | DONE    | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
-|    23 | LMS-006     | READY   | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
-|    24 | LMS-007     | BLOCKED | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
-|    25 | LMS-008     | BLOCKED | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
+|    23 | LMS-006     | DONE    | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
+|    24 | LMS-007     | READY   | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
+|    25 | LMS-008     | READY   | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
 |    26 | LMS-009     | BLOCKED | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
 |    27 | LMS-010     | BLOCKED | Implement classroom communication and live-learning orchestration | LMS-002, LMS-008              | Core 51.17-51.18                  |
 |    28 | ANA-001     | BLOCKED | Replace demo analytics with persisted, calculated metrics         | ATT-001, RES-001, FIN-001     | Core 26, 35, 51.19                |
@@ -179,11 +179,11 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 | Measure                 | Count | Percentage |
 | ----------------------- | ----: | ---------: |
 | Total atomic tasks      |    48 |       100% |
-| Done                    |    24 |        50% |
+| Done                    |    25 |        52% |
 | In review               |     0 |         0% |
 | In progress             |     0 |         0% |
-| Ready                   |     1 |         2% |
-| Blocked by dependencies |    23 |        48% |
+| Ready                   |     2 |         4% |
+| Blocked by dependencies |    21 |        44% |
 
 Update this summary whenever a task status changes.
 
@@ -192,6 +192,9 @@ Update this summary whenever a task status changes.
 | 2026-08-29 | LMS-004 | Codex | DONE | Added relational classroom/uploader persistence and a non-destructive migration; authenticated member reads and private downloads; teacher/admin bounded uploads and archive controls; both active mounts, operational UI, docs, and tests; Prisma, lint, builds, diff check, and full suite pass (166 passed, 1 skipped). |
 | 2026-08-29 | LMS-005 | Codex | CLAIMED | Reconciling authenticated student-owned submissions, assignment/classroom access, immutable transactional versions, lifecycle validation, active mounts, operational UI, migration, documentation, and tests. |
 | 2026-08-29 | LMS-005 | Codex | DONE | Added assignment/user relational persistence, authenticated student ownership, active-classroom membership checks, bounded same-classroom attachments, serializable immutable version creation, controlled submit/retract lifecycle, both active mounts, live UI, docs, migration, and tests; Prisma, lint, builds, diff check, and full suite pass (172 passed, 1 skipped). |
+| 2026-08-29 | LMS-006 | Codex | CLAIMED | Implementing policy-linked quiz persistence, teacher authoring and lifecycle, student attempt limits/timers/autosave, server-side scoring, active mounts, shared live UI, migration, documentation, and tests. |
+| 2026-08-29 | LMS-006 | Codex | DONE | Added policy/assignment-linked quiz persistence, teacher authoring, immutable published questions, controlled lifecycle, protected answer keys, timed student attempts, limits, autosave and server-side scoring; both active mounts and UI routes now share the operational engine; Prisma, lint, builds, frontend tests, diff check, and full suite pass (177 passed, 1 skipped). |
+| 2026-08-29 | RBAC-HOTFIX | Codex | DONE | Aligned effective permission loading with the active Role.permissions and Permission.key schema, restored the authenticated platform-owner bypass, verified the corrected query against the live development database, and passed the full backend suite (179 passed, 1 skipped). |
 
 | 2026-08-27 | TTB-001 | Codex | DONE | Reconciled timetable persistence with the active flat Prisma schema and AcademicTerm model; added non-destructive migration, authenticated school context, active compatibility/versioned mounts, lifecycle versioning, conflict publication gate, substitutions, creation UI, back navigation, contract tests, and full build verification (109 passed, 1 skipped). |
 

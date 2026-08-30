@@ -23,6 +23,7 @@ export function requirePermission(
 ) {
   return async (req, _res, next) => {
     const scopeKey = scopeResolver(req);
+    if (req.user?.platformRole === 'OWNER') return next();
     await authorizationService.assertCan(req.user.id, permissionCode, scopeKey);
     next();
   };
