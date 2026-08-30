@@ -17,7 +17,7 @@ function GuardedStack() {
   if (state.status === 'authenticated') {
     const expected = rolePath(state.session.role).slice(1);
     const publicRoute = current === undefined || current === 'auth' || current === 'application-token';
-    if (publicRoute || (current && ['owner', 'tenant', 'administrator', 'staff'].includes(current) && current !== expected)) {
+    if (publicRoute || (current && ['administrator', 'staff'].includes(current) && current !== expected)) {
       return <Redirect href={rolePath(state.session.role)} />;
     }
   }

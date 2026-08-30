@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "SAIS Mobile",
-    "slug": "sais-mobile",
+    "name": "School Information System",
+    "slug": "school-information-system",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "sais",
+    "scheme": "school-information-system",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {

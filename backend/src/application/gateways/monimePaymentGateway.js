@@ -64,7 +64,7 @@ export class MonimePaymentGateway {
         cancelUrl: process.env.MONIME_CANCEL_URL,
         paymentOptions: {
           card: { disable: false },
-          bank: { disable: false },
+          bank: { disable: true },
           momo: { disable: false },
           ussd: { disable: false },
           wallet: { disable: true },

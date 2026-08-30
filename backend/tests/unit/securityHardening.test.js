@@ -11,14 +11,16 @@ test('redacts credential-shaped request fields', () => {
   assert.equal(safe.name, 'Ada');
 });
 
-test('rejects cross-tenant request context', () => {
+test('ignores caller-supplied tenant context', () => {
   const req = {
     user: { tenantId: 'tenant-a' },
     query: { tenantId: 'tenant-b' },
     params: {},
     get: () => undefined,
   };
-  assert.throws(() => requireTenantContext(req, {}, () => {}), /Tenant context is not permitted/);
+  req.auth = {};
+  requireTenantContext(req, {}, () => {});
+  assert.equal(req.auth.tenantId, 'tenant-a');
 });
 
 test('does not accept tenant context without authentication', () => {

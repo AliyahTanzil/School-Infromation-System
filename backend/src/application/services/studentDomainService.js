@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import studentRepository from '../../infrastructure/repositories/studentDomainRepository.js';
-import prisma from '../../infrastructure/orm/prismaClient.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 

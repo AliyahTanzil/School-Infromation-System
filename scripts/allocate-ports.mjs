@@ -1,4 +1,3 @@
-/* global console, process */
 import { createServer } from 'node:net';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';

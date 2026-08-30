@@ -39,7 +39,6 @@ const UserManagement = lazy(() => import('./UserManagement.jsx'));
 const TimetableDashboard = lazy(() => import('./TimetableDashboard.jsx'));
 const AdminDemoEntry = lazy(() => import('./AdminDemoEntry.jsx'));
 const RoadmapInspectionHub = lazy(() => import('./RoadmapInspectionHub.jsx'));
-const OwnerActivationPanel = lazy(() => import('./OwnerActivationPanel.jsx'));
 const AdminWorkspace = lazy(() => import('./AdminWorkspace.jsx'));
 const ClassroomDashboard = lazy(() => import('./ClassroomDashboard.jsx'));
 const LiveLearningWorkspace = lazy(() => import('./LiveLearningWorkspace.jsx'));
@@ -63,9 +62,7 @@ const LearningAnalyticsWorkspace = lazy(() => import('./LearningAnalyticsWorkspa
 const AIIntelligenceDashboard = lazy(() => import('./AIIntelligenceDashboard.jsx'));
 const SmartIdentityDashboard = lazy(() => import('./SmartIdentityDashboard.jsx'));
 const IoTDashboard = lazy(() => import('./IoTDashboard.jsx'));
-const TenantAdminDashboard = lazy(() => import('./TenantAdminDashboard.jsx'));
 const BillingDashboard = lazy(() => import('./BillingDashboard.jsx'));
-const PlatformAdminDashboard = lazy(() => import('./PlatformAdminDashboard.jsx'));
 const SecurityAdminDashboard = lazy(() => import('./SecurityAdminDashboard.jsx'));
 const AIAcademicDashboard = lazy(() => import('./AIAcademicDashboard.jsx'));
 const AILearningWorkspace = lazy(() => import('./AILearningWorkspace.jsx'));
@@ -163,7 +160,7 @@ function getDestinationForUser(user) {
    * Platform Application Owner
    */
   if (user.platformRole === 'OWNER' || user.accountType === 'APPLICATION_MANAGER') {
-    return '/platform-admin';
+    return '/admin';
   }
 
   /*
@@ -173,7 +170,7 @@ function getDestinationForUser(user) {
     user.accountType === 'TENANT_ADMIN' ||
     roles.some((role) => ['SCHOOL_ADMIN', 'ADMIN'].includes(role))
   ) {
-    return '/tenant-admin';
+    return '/admin';
   }
 
   /*
@@ -220,38 +217,13 @@ function getDestinationForUser(user) {
  * ======================================================= */
 
 function Login() {
-  const { login, logout } = useAuth();
-
-  const location = useLocation();
+  const { login } = useAuth();
   const nav = useNavigate();
 
-  const rolePath = location.pathname;
-
-  const isManager = rolePath.startsWith('/manager') || rolePath.startsWith('/owner');
-
-  const isStaff = rolePath.startsWith('/staff');
-
-  const roleConfig = isManager
-    ? {
-        title: 'Application owner sign in',
-        subtitle: 'Manage the SAIS platform, tenants, security, and system operations.',
-        alternatePath: '/tenant/login',
-        alternateLabel: 'Tenant sign in',
-      }
-    : isStaff
-      ? {
-          title: 'Staff sign in',
-          subtitle:
-            'Access your assigned teaching, administration, student-support, or operational workspace.',
-          alternatePath: '/tenant/login',
-          alternateLabel: 'Tenant sign in',
-        }
-      : {
-          title: 'Tenant administrator sign in',
-          subtitle: 'Sign in to access your school administration workspace.',
-          alternatePath: '/owner/login',
-          alternateLabel: 'Application owner sign in',
-        };
+  const roleConfig = {
+    title: 'School Information System sign in',
+    subtitle: 'Sign in with the account issued by your school administrator.',
+  };
 
   const [form, setForm] = useState({
     email: '',
@@ -267,38 +239,6 @@ function Login() {
     try {
       const result = await login(form);
       const user = result.user;
-
-      /*
-       * Owner portal must only admit the actual platform owner.
-       */
-      if (
-        isManager &&
-        !(user?.accountType === 'APPLICATION_MANAGER' && user?.platformRole === 'OWNER')
-      ) {
-        await logout();
-
-        toast.error('This account does not have Application Owner access.');
-
-        return;
-      }
-
-      /*
-       * If the Owner accidentally signs in through another login page,
-       * still send them to the correct platform workspace.
-       */
-      if (
-        !isManager &&
-        user?.accountType === 'APPLICATION_MANAGER' &&
-        user?.platformRole === 'OWNER'
-      ) {
-        toast.success('Welcome back');
-
-        nav('/platform-admin', {
-          replace: true,
-        });
-
-        return;
-      }
 
       const destination = getDestinationForUser(user);
 
@@ -362,40 +302,8 @@ function Login() {
         </button>
       </form>
 
-      {!isManager && !isStaff && (
-        <p className="mt-7 text-center text-sm text-slate-500">
-          New school on SAIS?{' '}
-          <Link to="/tenant/register" className="font-semibold text-indigo-600">
-            Create a tenant account
-          </Link>
-        </p>
-      )}
-
-      {isManager && (
-        <div className="mt-7 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center">
-          <p className="text-sm font-medium text-slate-700">
-            Application Owner registration is closed.
-          </p>
-
-          <p className="mt-1 text-xs leading-5 text-slate-500">
-            The SAIS Application Owner account is provisioned securely during platform
-            initialization.
-          </p>
-        </div>
-      )}
-
-      {isStaff && (
-        <p className="mt-7 text-center text-xs text-slate-500">
-          Staff accounts are created and assigned by an authorized administrator.
-        </p>
-      )}
-
-      <p className="mt-3 text-center text-xs text-slate-400">
-        <Link to={roleConfig.alternatePath} className="font-semibold text-indigo-600">
-          {roleConfig.alternateLabel}
-        </Link>
-
-        {isStaff && <span className="ml-2 text-slate-400">Use your assigned staff account</span>}
+      <p className="mt-7 text-center text-xs text-slate-500">
+        Accounts are created and assigned by an authorized school administrator.
       </p>
     </AuthShell>
   );
@@ -408,7 +316,8 @@ function Login() {
  * The first Owner is provisioned securely by backend bootstrap.
  * ======================================================= */
 
-function Register() {
+// Retained temporarily for migration reference; no public route renders it.
+export function Register() {
   const { register } = useAuth();
 
   const location = useLocation();
@@ -865,18 +774,12 @@ function AppBackNavigation() {
   if (loading || pathname === '/') return null;
 
   const homePath = user ? getDestinationForUser(user) : '/';
-  const isPlatformOperator =
-    user?.accountType === 'OWNER' ||
-    user?.platformRole === 'OWNER' ||
-    user?.platformRole === 'APPLICATION_MANAGER' ||
-    (user?.roles ?? []).some((role) => ['OWNER', 'APPLICATION_MANAGER'].includes(role));
-
   const routeParents = {
-    '/owner/activations': '/platform-admin',
+    '/owner/activations': '/admin',
     '/parent-classroom': '/parent-portal',
     '/student-dashboard': '/students',
     '/my-work': '/students',
-    '/tenant-admin': isPlatformOperator ? '/platform-admin' : homePath,
+    '/tenant-admin': '/admin',
   };
   const destination = routeParents[pathname] ?? homePath;
 
@@ -886,10 +789,10 @@ function AppBackNavigation() {
     '/': 'Home',
     '/dashboard': 'Dashboard',
     '/parent-portal': 'Parent portal',
-    '/platform-admin': 'Platform admin',
+    '/platform-admin': 'Administration',
     '/students': 'Student workspace',
     '/teachers': 'Teacher workspace',
-    '/tenant-admin': 'Tenant administration',
+    '/tenant-admin': 'Administration',
   };
 
   return (
@@ -942,21 +845,21 @@ export default function App() {
 
             <Route path="/login" element={<Login />} />
 
-            <Route path="/register" element={<Register />} />
+            <Route path="/register" element={<Navigate to="/login" replace />} />
 
-            <Route path="/owner/login" element={<Login />} />
+            <Route path="/owner/login" element={<Navigate to="/login" replace />} />
 
             <Route path="/owner/register" element={<Navigate to="/owner/login" replace />} />
 
-            <Route path="/manager/login" element={<Login />} />
+            <Route path="/manager/login" element={<Navigate to="/login" replace />} />
 
             <Route path="/manager/register" element={<Navigate to="/owner/login" replace />} />
 
-            <Route path="/tenant/login" element={<Login />} />
+            <Route path="/tenant/login" element={<Navigate to="/login" replace />} />
 
-            <Route path="/tenant/register" element={<Register />} />
+            <Route path="/tenant/register" element={<Navigate to="/login" replace />} />
 
-            <Route path="/staff/login" element={<Login />} />
+            <Route path="/staff/login" element={<Navigate to="/login" replace />} />
 
             <Route path="/forgot-password" element={<Forgot />} />
 
@@ -973,40 +876,11 @@ export default function App() {
               }
             />
 
-            <Route
-              path="/platform-admin"
-              element={
-                <Protected allowed={['APPLICATION_MANAGER', 'OWNER']}>
-                  <PlatformAdminDashboard />
-                </Protected>
-              }
-            />
+            <Route path="/platform-admin" element={<Navigate to="/admin" replace />} />
 
-            <Route
-              path="/tenant-admin"
-              element={
-                <Protected
-                  allowed={[
-                    'APPLICATION_MANAGER',
-                    'OWNER',
-                    'TENANT_ADMIN',
-                    'SCHOOL_ADMIN',
-                    'ADMIN',
-                  ]}
-                >
-                  <TenantAdminDashboard />
-                </Protected>
-              }
-            />
+            <Route path="/tenant-admin" element={<Navigate to="/admin" replace />} />
 
-            <Route
-              path="/owner/activations"
-              element={
-                <Protected>
-                  <OwnerActivationPanel />
-                </Protected>
-              }
-            />
+            <Route path="/owner/activations" element={<Navigate to="/admin" replace />} />
 
             <Route
               path="/admin"

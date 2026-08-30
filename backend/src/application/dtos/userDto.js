@@ -24,14 +24,13 @@ export function toPublicUser(user, { roles = [] } = {}) {
 export function toUserDto(user) {
   if (!user) return null;
   return {
-    ...toPublicUser(user, { roles: user.userRoles?.map(({ role }) => role.code) ?? [] }),
+    ...toPublicUser(user, { roles: user.roles?.map(({ role }) => role.code) ?? [] }),
     profile: user.profile ?? null,
     preference: user.preference ?? null,
     roleAssignments:
-      user.userRoles?.map(({ role, scopeKey, expiresAt }) => ({
+      user.roles?.map(({ role, expiresAt }) => ({
         code: role.code,
         name: role.name,
-        scopeKey,
         expiresAt,
       })) ?? [],
   };

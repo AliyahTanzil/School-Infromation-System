@@ -12,9 +12,10 @@ import {
   reasonSchema,
 } from '../../../application/validators/userValidators.js';
 import profileImageUpload from '../../../middleware/uploads/profileImageUpload.js';
+import singleSchoolContext from '../../../middleware/auth/singleSchoolContext.js';
 
 const router = Router();
-router.use(authenticate);
+router.use(authenticate, singleSchoolContext);
 router.get(
   '/',
   requirePermission('users.read'),

@@ -23,6 +23,7 @@ export const config = {
   env: process.env.NODE_ENV ?? 'development',
   port: numberFrom('PORT', 3000),
   databaseUrl: process.env.DATABASE_URL ?? '',
+  singleSchoolId: process.env.SINGLE_SCHOOL_ID ?? '',
   corsOrigins,
   logLevel: process.env.LOG_LEVEL ?? 'info',
   jsonBodyLimit: process.env.HTTP_BODY_LIMIT ?? '1mb',

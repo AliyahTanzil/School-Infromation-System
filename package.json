@@ -16,6 +16,7 @@
     "dev": "npm run dev:frontend",
     "dev:all": "node scripts/ensure-workspaces.mjs && node scripts/allocate-ports.mjs && concurrently -k -n backend,frontend -c blue,green \"node scripts/start-backend.mjs\" \"node scripts/wait-for-backend.mjs\"",
     "build:frontend": "npm run build -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
     "lint": "eslint .",
     "test": "npm run test -w backend && npm run test -w frontend",
     "test:backend": "npm run test -w backend",

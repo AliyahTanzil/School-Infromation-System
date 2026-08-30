@@ -38,7 +38,7 @@ export async function listAcademicPeriods({ tenantId, type, status }) {
     .sort((a, b) => a.startsAt - b.startsAt);
 }
 
-export async function createAcademicPeriod({ tenantId, actorId, data }) {
+export async function createAcademicPeriod({ tenantId, data }) {
   assertAcademicPeriodRange(data.startsAt, data.endsAt);
   if (data.type === 'YEAR') {
     const year = await prisma.academicYear.create({

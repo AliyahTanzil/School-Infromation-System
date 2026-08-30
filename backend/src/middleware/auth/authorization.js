@@ -2,12 +2,7 @@ import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import authorizationService from '../../application/services/authorizationService.js';
 
 function tenantFromRequest(req) {
-  const requested = req.get('x-tenant-id') || req.params.tenantId || req.query.tenantId;
-  const current = req.user?.tenantId;
-  if (requested && current && requested !== current) {
-    throw new AuthorizationError('Tenant context is not permitted', 'TENANT_CONTEXT_FORBIDDEN');
-  }
-  return requested || current || null;
+  return req.auth?.tenantId || req.user?.tenantId || null;
 }
 
 export function requireTenantContext(req, _res, next) {

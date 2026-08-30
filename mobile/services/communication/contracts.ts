@@ -9,7 +9,6 @@ export type NotificationRecipient = {
 
 export type Notification = {
   id: string;
-  tenantId: string;
   schoolId: string;
   title: string;
   body: string;

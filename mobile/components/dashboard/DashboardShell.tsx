@@ -5,10 +5,8 @@ import { Screen } from '../ui/Screen';
 import { useAuth } from '../../providers/AuthProvider';
 import { ProfileImagePicker } from '../profile/ProfileImagePicker';
 
-export type DashboardRole = 'owner' | 'tenant' | 'administrator' | 'staff';
+export type DashboardRole = 'administrator' | 'staff';
 const data: Record<DashboardRole, { eyebrow: string; title: string; summary: string; cards: string[] }> = {
-  owner: { eyebrow: 'Owner workspace', title: 'Platform overview', summary: 'Monitor tenant health, security, and platform operations.', cards: ['Tenant provisioning', 'Security posture', 'System activity'] },
-  tenant: { eyebrow: 'Tenant workspace', title: 'School operations', summary: 'Keep your school community aligned and informed.', cards: ['Today at a glance', 'Attendance pulse', 'Announcements'] },
   administrator: { eyebrow: 'Administrator workspace', title: 'Daily administration', summary: 'Coordinate people, records, and academic operations.', cards: ['Tasks requiring attention', 'People and permissions', 'Academic calendar'] },
   staff: { eyebrow: 'Staff workspace', title: 'Your school day', summary: 'Access the records and actions you need most.', cards: ['My schedule', 'Classes and attendance', 'Messages'] },
 };
@@ -18,8 +16,6 @@ export function DashboardShell({ role }: { role: DashboardRole }) {
   const { state, signOut } = useAuth();
   const userId = state.status === 'authenticated' ? state.session.userId : '';
   const destinations: Record<DashboardRole, string[]> = {
-    owner: ['/tenants', '/examinations', '/notifications'],
-    tenant: ['/attendance', '/people', '/notifications'],
     administrator: ['/people', '/attendance', '/timetable'],
     staff: ['/timetable', '/attendance', '/notifications'],
   };

@@ -12,7 +12,7 @@ export function FinanceDashboard({ summary, invoices, onPay }: { summary: Financ
         <Metric label="Overdue" value={`${summary.currency} ${summary.overdue.toFixed(2)}`} />
       </View>
       <Text style={styles.section}>Invoices</Text>
-      {invoices.length === 0 ? <Text style={styles.muted}>No invoices are available for this tenant.</Text> : invoices.map((invoice) => (
+      {invoices.length === 0 ? <Text style={styles.muted}>No invoices are available for this school.</Text> : invoices.map((invoice) => (
         <View key={invoice.id} style={styles.invoice}>
           <View style={styles.invoiceCopy}>
             <Text style={styles.invoiceTitle}>{invoice.invoiceNumber}</Text>

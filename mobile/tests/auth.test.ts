@@ -1,8 +1,8 @@
 import { rolePath } from '../services/auth/state';
 
 const roleTests: Array<[string, string]> = [
-  ['owner', '/owner'],
-  ['tenant', '/tenant'],
+  ['owner', '/administrator'],
+  ['tenant', '/administrator'],
   ['administrator', '/administrator'],
   ['staff', '/staff'],
 ];

@@ -8,11 +8,7 @@ import { healthRouter } from './health.js';
 // @ts-expect-error Legacy JavaScript router is mounted during the TypeScript migration.
 import authRouter from '../presentation/http/routes/authRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
-import platformAdminRouter from '../presentation/http/routes/platformAdminRoutes.js';
-// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import userRouter from '../presentation/http/routes/userRoutes.js';
-// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
-import tenantLifecycleRouter from '../presentation/http/routes/tenantLifecycleRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import parentRouter from '../presentation/http/routes/parentRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
@@ -61,6 +57,8 @@ import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
 import quizRouter from '../presentation/http/routes/quizRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import billingRouter from '../presentation/http/routes/billingRoutes.js';
+// @ts-expect-error Single-school route is implemented in the active JavaScript module layer.
+import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.js';
 
 export const createApp = () => {
   const app = express();
@@ -84,12 +82,10 @@ export const createApp = () => {
   // the remaining domain routes are migrated to the foundation app.
   app.use('/api/auth', authRouter);
   app.use('/api/v1/auth', authRouter);
-  app.use('/api/platform-admin', platformAdminRouter);
-  app.use('/api/v1/platform-admin', platformAdminRouter);
+  app.use('/api/school', singleSchoolRouter);
+  app.use('/api/v1/school', singleSchoolRouter);
   app.use('/api/users', userRouter);
   app.use('/api/v1/users', userRouter);
-  app.use('/api/tenants', tenantLifecycleRouter);
-  app.use('/api/v1/tenants', tenantLifecycleRouter);
   app.use('/api/parents', parentRouter);
   app.use('/api/v1/parents', parentRouter);
   app.use('/api/teachers', teacherRouter);

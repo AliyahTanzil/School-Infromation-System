@@ -8,13 +8,11 @@ export type AuthState =
   | { status: 'authenticated'; session: MobileSessionContext }
   | { status: 'error'; message: string };
 
-export function rolePath(role: string): '/owner' | '/tenant' | '/administrator' | '/staff' {
+export function rolePath(role: string): '/administrator' | '/staff' {
   switch (role.toLowerCase()) {
     case 'owner':
     case 'application_owner':
-      return '/owner';
     case 'tenant':
-      return '/tenant';
     case 'administrator':
     case 'admin':
       return '/administrator';

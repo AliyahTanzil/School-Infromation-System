@@ -17,10 +17,9 @@ export async function fetchInvoices(status?: string) {
   return apiRequest<Invoice[]>(`${endpoint}/invoices${query}`, await authOptions())
 }
 
-export async function createVerifiedPayment(input: { tenantId: string; schoolId: string; invoiceId: string; amount: number; idempotencyKey: string }) {
+export async function createVerifiedPayment(input: { invoiceId: string; amount: number; idempotencyKey: string }) {
   if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error('Payment amount must be positive')
-  if (!input.invoiceId.trim() || !input.tenantId.trim() || !input.schoolId.trim()) throw new Error('Payment context is incomplete')
-  if (input.tenantId !== input.schoolId) throw new Error('A verified school context is required for payment')
+  if (!input.invoiceId.trim()) throw new Error('Payment context is incomplete')
   return apiRequest<Payment>(`${endpoint}/payments`, { ...await authOptions(), method: 'POST', headers: { 'Idempotency-Key': input.idempotencyKey }, body: JSON.stringify(input) })
 }
 
@@ -30,18 +29,18 @@ export async function getPaymentStatus(paymentId: string) {
 }
 
 export type FinanceApi = {
-  listInvoices?: (params: { tenantId: string; status?: string; page?: number }) => Promise<Invoice[]>
-  getSummary?: (tenantId: string) => Promise<FinanceSummary>
+  listInvoices?: (params: { status?: string; page?: number }) => Promise<Invoice[]>
+  getSummary?: () => Promise<FinanceSummary>
   createPayment?: (input: { invoiceId: string; amount: number; idempotencyKey: string }) => Promise<Payment>
 }
 
 export function createFinanceService(api: FinanceApi) {
   return {
-    async listInvoices(tenantId: string, status?: string) {
-      return api.listInvoices ? api.listInvoices({ tenantId, status, page: 1 }) : []
+    async listInvoices(status?: string) {
+      return api.listInvoices ? api.listInvoices({ status, page: 1 }) : []
     },
-    async getSummary(tenantId: string) {
-      return api.getSummary ? api.getSummary(tenantId) : { outstanding: 0, paidThisPeriod: 0, overdue: 0, currency: 'USD' }
+    async getSummary() {
+      return api.getSummary ? api.getSummary() : { outstanding: 0, paidThisPeriod: 0, overdue: 0, currency: 'USD' }
     },
     async payInvoice(input: { invoiceId: string; amount: number; idempotencyKey: string }) {
       if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error('Payment amount must be positive')

@@ -6,7 +6,7 @@ import {
 } from '../../src/middleware/auth/authorization.js';
 import AuthorizationError from '../../src/shared/errors/AuthorizationError.js';
 
-test('tenant context pins regular users to their own tenant', () => {
+test('single-school context ignores client tenant selectors', () => {
   const req = {
     user: { tenantId: 'tenant-a' },
     auth: {},
@@ -14,10 +14,8 @@ test('tenant context pins regular users to their own tenant', () => {
     params: {},
     query: {},
   };
-  assert.throws(
-    () => requireTenantContext(req, {}, () => {}),
-    (error) => error instanceof AuthorizationError && error.code === 'TENANT_CONTEXT_FORBIDDEN'
-  );
+  requireTenantContext(req, {}, () => {});
+  assert.equal(req.auth.tenantId, 'tenant-a');
 });
 
 test('tenant context resolves the authenticated tenant', () => {

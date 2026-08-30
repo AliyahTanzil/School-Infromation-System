@@ -3,7 +3,7 @@ export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PARTIALLY_PAID' | 'PAID' | 'OV
 export type Invoice = {
   id: string
   invoiceNumber: string
-  tenantId: string
+  schoolId: string
   studentName?: string
   description: string
   amount: number

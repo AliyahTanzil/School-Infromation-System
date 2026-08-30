@@ -1,4 +1,28 @@
-# SAIS Configuration Guide
+# School Information System
+
+This repository contains a production-oriented information and administration system for one
+school. It is being migrated from an earlier multi-tenant SAAS design. The target deployment has
+one configured `School`, optional campuses, server-enforced roles and permissions, and no
+user-facing school or tenant selection.
+
+The monorepo contains an Express/Prisma/PostgreSQL backend, a React/Vite web application, and an
+Expo/React Native mobile client. See [the re-engineering audit](docs/REENGINEERING-AUDIT.md) for
+the current architecture, migration constraints, known issues, and staged conversion plan.
+
+## Quick start
+
+1. Install Node.js 20 or later and PostgreSQL 16.
+2. Run `npm install` at the repository root and `npm install --prefix mobile` for the mobile app.
+3. Copy `.env.example` to `.env` and provide the database URL and independent strong access and
+   refresh token secrets. Never commit `.env`.
+4. Run `npm run db:generate`, then `npm run db:migrate:deploy -w backend`.
+5. Set `SINGLE_SCHOOL_ID` if the migrated database contains more than one legacy School row.
+6. Run `npm run dev:all` for the web and backend applications.
+
+Useful verification commands are `npm test`, `npm run lint`, `npm run build:frontend`,
+`npm run build -w backend`, and `npm run typecheck --prefix mobile`.
+
+## Legacy configuration reference
 
 This project is configured as a Node.js monorepo with `backend` and `frontend` workspaces, plus Docker infrastructure services.
 

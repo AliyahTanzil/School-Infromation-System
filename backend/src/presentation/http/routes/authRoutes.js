@@ -3,7 +3,6 @@ import authController from '../controllers/authController.js';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import validate from '../../../middleware/validation/validate.js';
 import {
-  registerSchema,
   loginSchema,
   refreshSchema,
   forgotPasswordSchema,
@@ -14,14 +13,12 @@ import {
 } from '../../../application/validators/authValidators.js';
 import {
   loginLimiter,
-  registerLimiter,
   passwordResetLimiter,
   loginLimiter as refreshLimiter,
 } from '../../../middleware/auth/rateLimiters.js';
 
 const router = Router();
 
-router.post('/register', registerLimiter, validate(registerSchema), authController.register);
 router.post('/login', loginLimiter, validate(loginSchema), authController.login);
 router.post('/refresh', refreshLimiter, validate(refreshSchema), authController.refresh);
 router.post('/logout', authenticate, authController.logout);

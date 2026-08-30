@@ -19,12 +19,14 @@ export function list(
     includeDeleted = false,
     sort = 'createdAt',
     direction = 'desc',
+    tenantId,
   } = {},
   tx
 ) {
   const allowedSorts = new Set(['createdAt', 'updatedAt', 'email', 'status']);
   const orderField = allowedSorts.has(sort) ? sort : 'createdAt';
   const where = {
+    tenantId,
     ...(includeDeleted ? {} : { deletedAt: null }),
     ...(status ? { status } : {}),
     ...(search
@@ -37,7 +39,7 @@ export function list(
         }
       : {}),
     ...(roleCode
-      ? { userRoles: { some: { revokedAt: null, role: { code: roleCode, deletedAt: null } } } }
+      ? { roles: { some: { revokedAt: null, role: { code: roleCode, deletedAt: null } } } }
       : {}),
   };
   return db(tx).user.findMany({
@@ -49,9 +51,9 @@ export function list(
   });
 }
 
-export function findById(id, { includeDeleted = false } = {}, tx) {
+export function findById(id, tenantId, { includeDeleted = false } = {}, tx) {
   return db(tx).user.findFirst({
-    where: includeDeleted ? { id } : whereNotDeleted({ id }),
+    where: includeDeleted ? { id, tenantId } : whereNotDeleted({ id, tenantId }),
     include: baseInclude,
   });
 }
@@ -60,24 +62,28 @@ export function create(data, tx) {
   return db(tx).user.create({ data, include: baseInclude });
 }
 
-export function update(id, data, tx) {
-  return db(tx).user.update({ where: { id }, data, include: baseInclude });
+export function update(id, tenantId, data, tx) {
+  return db(tx).user.update({ where: { id, tenantId }, data, include: baseInclude });
 }
 
-export function updateStatus(id, status, tx) {
-  return db(tx).user.update({ where: { id }, data: { status }, include: baseInclude });
+export function updateStatus(id, tenantId, status, tx) {
+  return db(tx).user.update({ where: { id, tenantId }, data: { status }, include: baseInclude });
 }
 
-export function softDelete(id, tx) {
+export function softDelete(id, tenantId, tx) {
   return db(tx).user.update({
-    where: { id },
+    where: { id, tenantId },
     data: { deletedAt: new Date() },
     include: baseInclude,
   });
 }
 
-export function restore(id, tx) {
-  return db(tx).user.update({ where: { id }, data: { deletedAt: null }, include: baseInclude });
+export function restore(id, tenantId, tx) {
+  return db(tx).user.update({
+    where: { id, tenantId },
+    data: { deletedAt: null },
+    include: baseInclude,
+  });
 }
 
 export default { list, findById, create, update, updateStatus, softDelete, restore };

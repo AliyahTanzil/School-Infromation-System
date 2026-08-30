@@ -33,7 +33,10 @@ export const listUsersSchema = z.object({ query: listUsersFields });
 export const createUserSchema = z.object({
   body: z.object({
     email: z.string().email().max(320),
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
     password: z.string().min(12).max(128),
+    accountType: z.enum(['STAFF', 'TEACHER', 'PARENT', 'STUDENT']).default('STAFF'),
     status: z.enum(['PENDING_VERIFICATION', 'ACTIVE']).optional(),
     profile: profile.optional(),
     preference: preference.optional(),
@@ -43,6 +46,8 @@ export const updateUserSchema = z.object({
   body: z
     .object({
       email: z.string().email().max(320).optional(),
+      firstName: z.string().trim().min(1).max(100).optional(),
+      lastName: z.string().trim().min(1).max(100).optional(),
       profile: profile.optional(),
       preference: preference.optional(),
     })

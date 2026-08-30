@@ -30,10 +30,8 @@ export default async function authenticate(req, _res, next) {
     throw new AuthenticationError('Session is no longer valid');
   }
 
-  const context = await accessContextService.resolveAccessContext(
-    payload.sub,
-    req.get('x-tenant-id') || null
-  );
+  // A single-school deployment never accepts tenant selection from a client.
+  const context = await accessContextService.resolveAccessContext(payload.sub);
   req.user = {
     id: payload.sub,
     email: payload.email,

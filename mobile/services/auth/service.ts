@@ -5,15 +5,15 @@ import { secureAuthStorage } from './secureStorage';
 import { sessionStore } from '../../store/session';
 
 export type LoginInput = { identifier: string; password: string };
-type AuthUser = { id: string; tenantId?: string | null; roles?: string[]; status?: string };
+type AuthUser = { id: string; schoolId?: string | null; tenantId?: string | null; roles?: string[]; status?: string };
 type AuthResponse = { user?: AuthUser; accessToken?: string; token?: string; sessionId?: string };
 
 type MeResponse = { user: AuthUser };
 
 function toSession(user: AuthUser, sessionId?: string): MobileSessionContext {
-  const role = user.roles?.some((value) => value.toLowerCase().includes('owner')) ? 'owner' : user.roles?.some((value) => value.toLowerCase().includes('admin')) ? 'administrator' : user.roles?.some((value) => value.toLowerCase().includes('teacher') || value.toLowerCase().includes('staff')) ? 'staff' : 'tenant';
+  const role = user.roles?.some((value) => value.toLowerCase().includes('admin') || value.toLowerCase().includes('owner')) ? 'administrator' : 'staff';
   const accountStatus = user.status === 'SUSPENDED' ? 'suspended' : user.status === 'PENDING_VERIFICATION' ? 'pending' : 'active';
-  return { userId: user.id, tenantId: user.tenantId ?? null, role, permissions: [], accountStatus, deviceId: sessionId ?? null };
+  return { userId: user.id, schoolId: user.schoolId ?? user.tenantId ?? null, role, permissions: [], accountStatus, deviceId: sessionId ?? null };
 }
 
 async function sessionFromToken(accessToken: string) {

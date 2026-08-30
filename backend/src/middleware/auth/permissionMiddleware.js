@@ -3,7 +3,7 @@ import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 
 export function requirePermission(
   permissionCode,
-  getScope = (req) => req.query.scopeKey ?? req.body?.scopeKey ?? 'global'
+  getScope = (req) => req.auth?.schoolId ?? req.auth?.tenantId ?? 'school'
 ) {
   return async function permissionMiddleware(req, _res, next) {
     if (!req.user?.id)

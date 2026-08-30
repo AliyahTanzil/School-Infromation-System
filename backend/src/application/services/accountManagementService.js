@@ -1,5 +1,4 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
-import passwordService from '../../infrastructure/hash/passwordService.js';
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import ConflictError from '../../shared/errors/ConflictError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
