@@ -64,7 +64,10 @@ const isV0 =
   process.env.V0 ||
   process.env.V0_RUNTIME_URL ||
   process.env.V0_DEV_APP_URL;
-const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || (isV0 ? 44555 : 4000));
+// Keep the backend off the first preview port. v0 may not expose its runtime
+// marker to child processes, so relying on `isV0` here can make the preview
+// open the API health response instead of the Vite application.
+const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || 44555);
 if (!(await backendIsReady(backendPort))) {
   start('npm', ['run', 'dev', '-w', 'backend'], { PORT: backendPort });
   for (let attempt = 0; attempt < 40 && !(await backendIsReady(backendPort)); attempt += 1) {
@@ -80,8 +83,10 @@ if (!(await backendIsReady(backendPort))) {
   process.exit(1);
 }
 
+// v0 exposes port 4000 as the preview entrypoint in this project. Keep the
+// Vite app on that port unless an explicit port or generated manifest exists.
 const frontendPort =
-  process.env.FRONTEND_PORT || String(manifest?.frontend || 3000);
+  process.env.FRONTEND_PORT || String(manifest?.frontend || 4000);
 const reuseFrontend = await frontendIsReady(frontendPort);
 if (reuseFrontend) {
   console.log(`[SAIS] Frontend is already running on port ${frontendPort}; reusing it.`);
