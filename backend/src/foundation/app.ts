@@ -58,6 +58,8 @@ import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import quizRouter from '../presentation/http/routes/quizRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import gradebookRouter from '../presentation/http/routes/gradebookRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import billingRouter from '../presentation/http/routes/billingRoutes.js';
 // @ts-expect-error Single-school route is implemented in the active JavaScript module layer.
 import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.js';
@@ -140,6 +142,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/submissions', submissionRouter);
   app.use('/api/lms/quizzes', quizRouter);
   app.use('/api/v1/lms/quizzes', quizRouter);
+  app.use('/api/lms/gradebook', gradebookRouter);
+  app.use('/api/v1/lms/gradebook', gradebookRouter);
   app.get('/', (_request, response) => {
     response.status(200).json({
       success: true,

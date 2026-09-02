@@ -35,6 +35,7 @@ import assignmentRoutes from './assignmentRoutes.js';
 import materialRoutes from './materialRoutes.js';
 import submissionRoutes from './submissionRoutes.js';
 import billingRoutes from './billingRoutes.js';
+import gradebookRoutes from './gradebookRoutes.js';
 
 const router = Router();
 
@@ -76,6 +77,7 @@ router.use('/smart-identity', featureUnavailableRoutes('Smart identity', 'BIO-00
 router.use('/iot', featureUnavailableRoutes('IoT', 'IOT-001'));
 router.use('/tenant-admin', tenantAdminRoutes);
 router.use('/billing', billingRoutes);
+router.use('/lms/gradebook', gradebookRoutes);
 router.use('/platform-admin', platformAdminRoutes);
 router.use('/security-admin', featureUnavailableRoutes('Security administration', 'SEC-001'));
 router.use('/ai-academic', featureUnavailableRoutes('AI academic assistant', 'AI-001'));

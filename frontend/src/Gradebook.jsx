@@ -1,289 +1,248 @@
-import { useMemo, useState } from 'react';
-import {
-  Archive,
-  BarChart3,
-  Check,
-  ChevronDown,
-  Download,
-  Lock,
-  MoreHorizontal,
-  Search,
-  ShieldCheck,
-  Unlock,
-  Users,
-} from 'lucide-react';
-
-const students = [
-  {
-    id: 1,
-    name: 'Maya Johnson',
-    initials: 'MJ',
-    algebra: 92,
-    quiz: 88,
-    project: 96,
-    status: 'On track',
-  },
-  {
-    id: 2,
-    name: 'Daniel Mensah',
-    initials: 'DM',
-    algebra: 78,
-    quiz: 72,
-    project: 84,
-    status: 'Needs attention',
-  },
-  {
-    id: 3,
-    name: 'Ava Williams',
-    initials: 'AW',
-    algebra: 98,
-    quiz: 94,
-    project: 91,
-    status: 'On track',
-  },
-  {
-    id: 4,
-    name: 'Noah Chen',
-    initials: 'NC',
-    algebra: 85,
-    quiz: 81,
-    project: 88,
-    status: 'On track',
-  },
-  {
-    id: 5,
-    name: 'Sofia Rivera',
-    initials: 'SR',
-    algebra: null,
-    quiz: 76,
-    project: 80,
-    status: 'Missing work',
-  },
-];
-const columns = [
-  { key: 'algebra', label: 'Algebraic expressions', weight: '30%' },
-  { key: 'quiz', label: 'Fractions checkpoint', weight: '25%' },
-  { key: 'project', label: 'Unit project', weight: '45%' },
-];
-const score = (student) =>
-  Math.round((student.algebra ?? 0) * 0.3 + student.quiz * 0.25 + student.project * 0.45);
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Check, Search, Send } from 'lucide-react';
+import toast from 'react-hot-toast';
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 export default function Gradebook() {
+  const [classrooms, setClassrooms] = useState([]);
+  const [classroomId, setClassroomId] = useState('');
+  const [assignments, setAssignments] = useState([]);
+  const [assignmentId, setAssignmentId] = useState('');
+  const [rows, setRows] = useState([]);
+  const [drafts, setDrafts] = useState({});
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [locked, setLocked] = useState(false);
-  const [finalized, setFinalized] = useState(false);
-  const [view, setView] = useState('Teacher view');
-  const [grades, setGrades] = useState(students);
-  const visible = useMemo(
-    () => grades.filter((student) => student.name.toLowerCase().includes(query.toLowerCase())),
-    [grades, query]
-  );
-  const average = Math.round(
-    visible.reduce((sum, student) => sum + score(student), 0) / Math.max(visible.length, 1)
-  );
-  function updateGrade(id, key, value) {
-    setGrades((items) =>
-      items.map((student) =>
-        student.id === id
-          ? { ...student, [key]: value === '' ? null : Math.max(0, Math.min(100, Number(value))) }
-          : student
+  const [busy, setBusy] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api
+      .get('/lms/classrooms')
+      .then(({ data }) => {
+        if (!active) return;
+        const items = data.data ?? [];
+        setClassrooms(items);
+        setClassroomId(items[0]?.id || '');
+      })
+      .catch((requestError) => setError(getApiErrorMessage(requestError, 'Unable to load classes')))
+      .finally(() => setBusy(false));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!classroomId) return setAssignments([]);
+    setBusy(true);
+    api
+      .get('/lms/assignments', { params: { classroomId } })
+      .then(({ data }) => {
+        const items = data.data ?? [];
+        setAssignments(items);
+        setAssignmentId(items[0]?.id || '');
+      })
+      .catch((requestError) =>
+        setError(getApiErrorMessage(requestError, 'Unable to load assignments'))
       )
-    );
+      .finally(() => setBusy(false));
+  }, [classroomId]);
+
+  const loadGrades = useCallback(async () => {
+    if (!assignmentId) return setRows([]);
+    setBusy(true);
+    try {
+      const { data } = await api.get('/lms/gradebook/grades', { params: { assignmentId } });
+      const items = data.data ?? [];
+      setRows(items);
+      setDrafts(
+        Object.fromEntries(
+          items.map((row) => [
+            row.id,
+            {
+              score: row.grade?.score ?? '',
+              maxScore: row.grade?.maxScore ?? 100,
+              summary: row.grade?.summary ?? '',
+            },
+          ])
+        )
+      );
+      setError('');
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Unable to load gradebook'));
+    } finally {
+      setBusy(false);
+    }
+  }, [assignmentId]);
+
+  useEffect(() => {
+    loadGrades();
+  }, [loadGrades]);
+  const visible = useMemo(
+    () =>
+      rows.filter((row) =>
+        `${row.student.firstName} ${row.student.lastName}`
+          .toLowerCase()
+          .includes(query.toLowerCase())
+      ),
+    [query, rows]
+  );
+  const update = (id, field, value) =>
+    setDrafts((current) => ({
+      ...current,
+      [id]: { ...current[id], [field]: value },
+    }));
+
+  async function save(row) {
+    const draft = drafts[row.id];
+    try {
+      await api.put(`/lms/gradebook/submissions/${row.id}/grade`, {
+        score: Number(draft.score),
+        maxScore: Number(draft.maxScore),
+        summary: draft.summary || undefined,
+        rubricScores: [],
+      });
+      toast.success('Draft grade saved');
+      await loadGrades();
+    } catch (requestError) {
+      toast.error(getApiErrorMessage(requestError, 'Unable to save grade'));
+    }
   }
+
+  async function release(row) {
+    try {
+      await api.post(`/lms/gradebook/grades/${row.grade.id}/release`);
+      toast.success('Grade released to student');
+      await loadGrades();
+    } catch (requestError) {
+      toast.error(getApiErrorMessage(requestError, 'Unable to release grade'));
+    }
+  }
+
   return (
     <main className="gradebook-shell">
       <header className="gradebook-header">
         <div>
           <p className="eyebrow">Academic records</p>
           <h1>Gradebook</h1>
-          <p>
-            One trustworthy view of learning progress, calculated weights, exceptions, and final
-            results.
-          </p>
-        </div>
-        <div className="gradebook-actions">
-          <button
-            className="secondary-action"
-            onClick={() => setView(view === 'Teacher view' ? 'Student view' : 'Teacher view')}
-          >
-            <Users /> {view}
-          </button>
-          <button className="secondary-action">
-            <Download /> Export
-          </button>
-          <button
-            className={locked ? 'secondary-action active' : 'secondary-action'}
-            onClick={() => setLocked(!locked)}
-          >
-            {locked ? <Unlock /> : <Lock />} {locked ? 'Unlock' : 'Lock'} term
-          </button>
+          <p>Review submitted work, save draft marks, and release feedback securely.</p>
         </div>
       </header>
-      <nav className="gradebook-tabs">
-        <button className="active">Term 1 · Algebra</button>
-        <button>Categories</button>
-        <button>Standards</button>
-        <button>History</button>
-      </nav>
-      <section className="gradebook-metrics">
-        <div>
-          <BarChart3 />
-          <span>
-            <strong>{average}%</strong>
-            <small>Class average</small>
-          </span>
-        </div>
-        <div>
-          <Check />
-          <span>
-            <strong>
-              {visible.filter((s) => score(s) >= 70).length}/{visible.length}
-            </strong>
-            <small>On track</small>
-          </span>
-        </div>
-        <div>
-          <Archive />
-          <span>
-            <strong>{visible.filter((s) => s.algebra === null).length}</strong>
-            <small>Missing work</small>
-          </span>
-        </div>
-        <div>
-          <ShieldCheck />
-          <span>
-            <strong>{finalized ? 'Finalized' : 'Open'}</strong>
-            <small>Gradebook state</small>
-          </span>
-        </div>
-      </section>
-      <div className="gradebook-toolbar">
+      <section className="gradebook-toolbar">
+        <select
+          aria-label="Classroom"
+          value={classroomId}
+          onChange={(event) => setClassroomId(event.target.value)}
+        >
+          <option value="">Select classroom</option>
+          {classrooms.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
+            </option>
+          ))}
+        </select>
+        <select
+          aria-label="Assignment"
+          value={assignmentId}
+          onChange={(event) => setAssignmentId(event.target.value)}
+        >
+          <option value="">Select assignment</option>
+          {assignments.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.title}
+            </option>
+          ))}
+        </select>
         <label className="gradebook-search">
           <Search />
           <input
-            aria-label="Search students"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search students..."
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search students"
           />
         </label>
-        <button className="filter-chip active">
-          All students <ChevronDown />
-        </button>
-        <span className="gradebook-sync">Last saved just now</span>
-      </div>
-      <section className="gradebook-table-wrap">
-        <table className="gradebook-table">
-          <thead>
-            <tr>
-              <th>Student</th>
-              {columns.map((column) => (
-                <th key={column.key}>
-                  {column.label}
-                  <small>{column.weight}</small>
-                </th>
-              ))}
-              <th>Term grade</th>
-              <th aria-label="Actions" />
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((student) => (
-              <tr key={student.id}>
-                <td>
-                  <div className="grade-student">
-                    <span>{student.initials}</span>
-                    <strong>{student.name}</strong>
-                    <small className={student.status === 'Needs attention' ? 'attention' : ''}>
-                      {student.status}
-                    </small>
-                  </div>
-                </td>
-                {columns.map((column) => (
-                  <td key={column.key}>
+      </section>
+      {error && (
+        <p className="error-state" role="alert">
+          {error}
+        </p>
+      )}
+      {busy && <p className="loading-state">Loading gradebook…</p>}
+      {!busy && !visible.length && (
+        <p className="empty-state">
+          {assignmentId
+            ? 'No submissions are ready for grading.'
+            : 'Select a classroom and assignment to begin.'}
+        </p>
+      )}
+      {!!visible.length && (
+        <section className="gradebook-table-wrap">
+          <table className="gradebook-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Score</th>
+                <th>Maximum</th>
+                <th>Feedback summary</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <strong>
+                      {row.student.firstName} {row.student.lastName}
+                    </strong>
+                  </td>
+                  <td>
                     <input
-                      disabled={locked || view === 'Student view'}
-                      aria-label={`${student.name} ${column.label}`}
-                      value={student[column.key] ?? ''}
-                      placeholder="—"
-                      onChange={(e) => updateGrade(student.id, column.key, e.target.value)}
+                      aria-label={`${row.student.firstName} score`}
+                      type="number"
+                      min="0"
+                      value={drafts[row.id]?.score ?? ''}
+                      onChange={(event) => update(row.id, 'score', event.target.value)}
                     />
                   </td>
-                ))}
-                <td>
-                  <strong className={score(student) < 70 ? 'grade-low' : 'grade-good'}>
-                    {score(student)}%
-                  </strong>
-                </td>
-                <td>
-                  <button
-                    className="table-action"
-                    aria-label={`Open ${student.name}`}
-                    onClick={() => setSelected(student)}
-                  >
-                    <MoreHorizontal />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
-      <section className="gradebook-footer">
-        <div>
-          <strong>
-            {finalized
-              ? 'Term grades are finalized.'
-              : locked
-                ? 'Term is locked for review.'
-                : 'Changes save automatically.'}
-          </strong>
-          <span>Missing, late, excused, and exempt states remain visible in History.</span>
-        </div>
-        <button className="primary-action" disabled={locked} onClick={() => setFinalized(true)}>
-          <Lock /> Finalize term
-        </button>
-      </section>
-      {selected && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="create-modal grade-detail-modal" role="dialog" aria-modal="true">
-            <button
-              className="modal-close"
-              onClick={() => setSelected(null)}
-              aria-label="Close grade details"
-            >
-              ×
-            </button>
-            <p className="eyebrow">Student record</p>
-            <h2>{selected.name}</h2>
-            <p className="modal-copy">Term 1 · Algebra · {selected.status}</p>
-            <div className="grade-detail-grid">
-              <strong>
-                {score(selected)}%<small>Weighted grade</small>
-              </strong>
-              <strong>
-                {selected.algebra ?? '—'}
-                <small>Algebra</small>
-              </strong>
-              <strong>
-                {selected.quiz}
-                <small>Quiz</small>
-              </strong>
-              <strong>
-                {selected.project}
-                <small>Project</small>
-              </strong>
-            </div>
-            <div className="security-card">
-              <ShieldCheck />
-              <div>
-                <strong>Audit-safe override history</strong>
-                <p>Grade changes, missing work, and finalization events are retained for review.</p>
-              </div>
-            </div>
-          </section>
-        </div>
+                  <td>
+                    <input
+                      aria-label={`${row.student.firstName} maximum`}
+                      type="number"
+                      min="1"
+                      value={drafts[row.id]?.maxScore ?? 100}
+                      onChange={(event) => update(row.id, 'maxScore', event.target.value)}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      aria-label={`${row.student.firstName} feedback`}
+                      value={drafts[row.id]?.summary ?? ''}
+                      onChange={(event) => update(row.id, 'summary', event.target.value)}
+                      placeholder="Actionable feedback"
+                    />
+                  </td>
+                  <td>
+                    <span className="status-pill">{row.grade?.status || 'UNGRADED'}</span>
+                  </td>
+                  <td className="gradebook-row-actions">
+                    <button type="button" className="secondary-action" onClick={() => save(row)}>
+                      <Check /> Save
+                    </button>
+                    <button
+                      type="button"
+                      className="primary-action"
+                      disabled={!row.grade || row.grade.status === 'RELEASED'}
+                      onClick={() => release(row)}
+                    >
+                      <Send /> Release
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
     </main>
   );

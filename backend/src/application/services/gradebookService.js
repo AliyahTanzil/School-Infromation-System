@@ -1,0 +1,185 @@
+import prisma from '../../infrastructure/orm/prismaClient.js';
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
+import NotFoundError from '../../shared/errors/NotFoundError.js';
+import ValidationError from '../../shared/errors/ValidationError.js';
+
+const owned = (scope) => ({ tenantId: scope.tenantId, schoolId: scope.schoolId });
+const isAdmin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const isStaff = (roles = []) => isAdmin(roles) || roles.includes('TEACHER');
+
+async function requireClassroom(scope, classroomId, userId, roles, staffOnly = false, db = prisma) {
+  const classroom = await db.digitalClassroom.findFirst({
+    where: { id: classroomId, ...owned(scope), status: { not: 'ARCHIVED' } },
+    include: { memberships: { where: { userId, status: 'ACTIVE' } } },
+  });
+  if (!classroom) throw new NotFoundError('Classroom not found');
+  const membership = classroom.memberships[0];
+  const manages = isAdmin(roles) || classroom.ownerId === userId || membership?.role === 'TEACHER';
+  if (staffOnly && !manages)
+    throw new AuthorizationError('Only classroom teachers can manage grades');
+  if (!staffOnly && !manages && !membership)
+    throw new AuthorizationError('You are not a member of this classroom');
+  return classroom;
+}
+
+async function requireSubmission(
+  scope,
+  submissionId,
+  userId,
+  roles,
+  staffOnly = false,
+  db = prisma
+) {
+  const submission = await db.studentSubmission.findFirst({
+    where: { id: submissionId, ...owned(scope) },
+    include: { assignment: true },
+  });
+  if (!submission) throw new NotFoundError('Submission not found');
+  await requireClassroom(scope, submission.assignment.classroomId, userId, roles, staffOnly, db);
+  if (!staffOnly && !isStaff(roles) && submission.studentId !== userId)
+    throw new AuthorizationError('You cannot view this grade');
+  return submission;
+}
+
+const gradeInclude = {
+  rubricScores: { include: { criterion: true } },
+  feedback: {
+    include: { author: { select: { id: true, firstName: true, lastName: true } } },
+    orderBy: { createdAt: 'asc' },
+  },
+};
+
+export async function listRubrics(scope, classroomId, userId, roles) {
+  await requireClassroom(scope, classroomId, userId, roles);
+  return prisma.rubric.findMany({
+    where: {
+      ...owned(scope),
+      classroomId,
+      ...(isStaff(roles) ? {} : { status: 'PUBLISHED' }),
+    },
+    include: { criteria: { orderBy: { position: 'asc' } } },
+    orderBy: { updatedAt: 'desc' },
+  });
+}
+
+export async function createRubric(scope, userId, roles, data) {
+  await requireClassroom(scope, data.classroomId, userId, roles, true);
+  return prisma.rubric.create({
+    data: {
+      ...owned(scope),
+      classroomId: data.classroomId,
+      authorId: userId,
+      title: data.title,
+      description: data.description,
+      criteria: {
+        create: data.criteria.map((criterion, position) => ({ ...criterion, position })),
+      },
+    },
+    include: { criteria: { orderBy: { position: 'asc' } } },
+  });
+}
+
+export async function changeRubricStatus(scope, id, userId, roles, status) {
+  const rubric = await prisma.rubric.findFirst({ where: { id, ...owned(scope) } });
+  if (!rubric) throw new NotFoundError('Rubric not found');
+  await requireClassroom(scope, rubric.classroomId, userId, roles, true);
+  if (rubric.status === 'ARCHIVED') throw new ValidationError('Archived rubrics cannot be changed');
+  return prisma.rubric.update({ where: { id }, data: { status } });
+}
+
+export async function listGrades(scope, assignmentId, userId, roles) {
+  const assignment = await prisma.assignment.findFirst({
+    where: { id: assignmentId, ...owned(scope) },
+  });
+  if (!assignment) throw new NotFoundError('Assignment not found');
+  await requireClassroom(scope, assignment.classroomId, userId, roles, isStaff(roles));
+  return prisma.studentSubmission.findMany({
+    where: {
+      ...owned(scope),
+      assignmentId,
+      ...(isStaff(roles) ? {} : { studentId: userId }),
+      ...(isStaff(roles) ? {} : { grade: { is: { status: 'RELEASED' } } }),
+    },
+    include: {
+      student: { select: { id: true, firstName: true, lastName: true, email: true } },
+      versions: { orderBy: { version: 'desc' }, take: 1 },
+      grade: { include: gradeInclude },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+}
+
+export async function saveGrade(scope, submissionId, userId, roles, data) {
+  const submission = await requireSubmission(scope, submissionId, userId, roles, true);
+  if (data.score > data.maxScore) throw new ValidationError('Score cannot exceed maximum score');
+  const assignment = await prisma.assignment.findUnique({
+    where: { id: submission.assignmentId },
+    include: { rubric: { include: { criteria: true } } },
+  });
+  const criteria = new Map((assignment.rubric?.criteria ?? []).map((item) => [item.id, item]));
+  for (const rubricScore of data.rubricScores) {
+    const criterion = criteria.get(rubricScore.criterionId);
+    if (!criterion || rubricScore.points > criterion.maxPoints)
+      throw new ValidationError('Rubric score is outside the assigned rubric');
+  }
+  return prisma.$transaction(async (tx) => {
+    const grade = await tx.submissionGrade.upsert({
+      where: { submissionId },
+      create: {
+        ...owned(scope),
+        submissionId,
+        graderId: userId,
+        score: data.score,
+        maxScore: data.maxScore,
+        summary: data.summary,
+      },
+      update: {
+        graderId: userId,
+        score: data.score,
+        maxScore: data.maxScore,
+        summary: data.summary,
+        status: 'DRAFT',
+        releasedAt: null,
+      },
+    });
+    await tx.rubricScore.deleteMany({ where: { gradeId: grade.id } });
+    if (data.rubricScores.length) {
+      await tx.rubricScore.createMany({
+        data: data.rubricScores.map((item) => ({ ...item, gradeId: grade.id })),
+      });
+    }
+    return tx.submissionGrade.findUnique({ where: { id: grade.id }, include: gradeInclude });
+  });
+}
+
+export async function releaseGrade(scope, id, userId, roles) {
+  const grade = await prisma.submissionGrade.findFirst({
+    where: { id, ...owned(scope) },
+    include: { submission: { include: { assignment: true } } },
+  });
+  if (!grade) throw new NotFoundError('Grade not found');
+  await requireClassroom(scope, grade.submission.assignment.classroomId, userId, roles, true);
+  return prisma.submissionGrade.update({
+    where: { id },
+    data: { status: 'RELEASED', releasedAt: new Date() },
+    include: gradeInclude,
+  });
+}
+
+export async function addFeedback(scope, id, userId, roles, body) {
+  const grade = await prisma.submissionGrade.findFirst({
+    where: { id, ...owned(scope) },
+    include: { submission: { include: { assignment: true } } },
+  });
+  if (!grade) throw new NotFoundError('Grade not found');
+  await requireClassroom(
+    scope,
+    grade.submission.assignment.classroomId,
+    userId,
+    roles,
+    isStaff(roles)
+  );
+  if (!isStaff(roles) && (grade.status !== 'RELEASED' || grade.submission.studentId !== userId))
+    throw new AuthorizationError('Feedback is not available');
+  return prisma.gradeFeedback.create({ data: { gradeId: id, authorId: userId, body } });
+}
