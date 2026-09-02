@@ -26,6 +26,22 @@ npm run lint -w backend
 npm run format:check -w backend
 ```
 
+For local development, provision or refresh only the configured application owner after migrations are applied:
+
+```bash
+npm run db:seed:owner -w backend
+```
+
+This command reads `SAIS_OWNER_EMAIL`, `SAIS_OWNER_PASSWORD`, `SAIS_OWNER_FIRST_NAME`, and `SAIS_OWNER_LAST_NAME` from `backend/.env`, refuses to run with `NODE_ENV=production`, and is idempotent. The legacy aggregate seed pipeline is not the single-school bootstrap contract and must not be used until its older Prisma delegate assumptions are reconciled.
+
+Create or refresh the four role-specific development accounts and their current-schema school relationships with:
+
+```bash
+npm run db:seed:development -w backend
+```
+
+The command creates `school-admin@example.test`, `teacher@example.test`, `student@example.test`, and `parent@example.test` with the development-only fallback password `ChangeMe!2026`. Override all credentials with the `SAIS_DEV_*` variables documented in `backend/.env.example`. The command refuses production, runs transactionally, and is safe to repeat.
+
 Required runtime secrets are `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET`; they must be supplied by the deployment environment and must not be committed. Local development may use the project-provided development values, but production must use independently generated high-entropy secrets.
 
 Backend 7 adds the authorization and tenant-administration boundary. Authenticated requests resolve a database-backed tenant context, role codes, account type, and platform scope before handlers run. Tenant-scoped account routes live under `/api/account`; platform-owner tenant lifecycle routes live under `/api/tenants`.

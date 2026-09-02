@@ -1,5 +1,7 @@
 # School Information System
 
+See [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) for the current product-development plan and milestone order.
+
 This repository contains a production-oriented information and administration system for one
 school. It is being migrated from an earlier multi-tenant SAAS design. The target deployment has
 one configured `School`, optional campuses, server-enforced roles and permissions, and no

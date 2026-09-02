@@ -1,6 +1,18 @@
 # SAIS Project Development Progress
 
-Last updated: 2026-08-27
+## Phase 0 environment recovery — 2026-09-01
+
+- Prisma CLI and Client upgraded together from 5.22.0 to 6.19.0.
+- Prisma Client generation and schema validation pass.
+- Runtime connectivity to the configured Neon PostgreSQL database is verified.
+- All 29 checked-in migrations are applied successfully.
+- The configured application owner is provisioned idempotently and real authentication succeeds as `APPLICATION_MANAGER` / `OWNER`.
+- The transactional single-school development bootstrap creates current-schema school-admin, teacher, student, and parent accounts plus teacher/parent/student domain links.
+- All four development roles authenticate successfully with their expected role claims.
+- Verification baseline remains green: lint passes, backend tests report 182 passed and 1 intentional live-database skip, frontend tests report 2 passed, and backend/frontend production builds pass.
+- Remaining Phase 0 gap: verify refresh, logout, password recovery, and protected-route navigation through browser-level tests and consolidate the setup/recovery runbook.
+
+Last updated: 2026-09-01
 
 This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO.md` remains the authoritative execution queue; update both files whenever a task status changes.
 
