@@ -1,6 +1,6 @@
 import service from '../../../application/services/studentDomainService.js';
 
-const tenantId = (req) => req.auth?.tenantId || req.user?.tenantId;
+const tenantId = (req) => req.schoolContext?.tenantId || req.auth?.tenantId || req.user?.tenantId;
 const body = (req) => req.body || {};
 
 export async function list(req, res, next) {

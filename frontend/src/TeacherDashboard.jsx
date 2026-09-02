@@ -1,6 +1,13 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, ArrowLeft, BookOpen, BriefcaseBusiness, UserRound } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import {
+  AlertTriangle,
+  BookOpen,
+  BriefcaseBusiness,
+  CalendarDays,
+  ClipboardCheck,
+  GraduationCap,
+  UserRound,
+} from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
@@ -26,9 +33,6 @@ export default function TeacherDashboard() {
 
   return (
     <main className="teacher-shell">
-      <Link className="teacher-ghost" to="/">
-        <ArrowLeft size={15} /> Back to main page
-      </Link>
       <header className="teacher-header">
         <div>
           <p className="eyebrow">SAIS · Teacher workspace</p>
@@ -67,10 +71,37 @@ export default function TeacherDashboard() {
       )}
       <section className="teacher-panel">
         <h2>Teaching workspace</h2>
-        <p>
-          Classes, schedules, attendance, gradebook, and classroom activity will appear here after
-          their roadmap modules are connected to persisted data.
-        </p>
+        <p>Open the tools used for daily teaching, assessment, and learner support.</p>
+        <div className="teacher-action-grid">
+          <a href="/classes">
+            <GraduationCap size={18} />
+            <span>
+              <strong>My classes</strong>
+              <small>Class groups and learners</small>
+            </span>
+          </a>
+          <a href="/timetables">
+            <CalendarDays size={18} />
+            <span>
+              <strong>Timetable</strong>
+              <small>Lessons and schedules</small>
+            </span>
+          </a>
+          <a href="/attendance">
+            <ClipboardCheck size={18} />
+            <span>
+              <strong>Attendance</strong>
+              <small>Open and mark registers</small>
+            </span>
+          </a>
+          <a href="/gradebook">
+            <BookOpen size={18} />
+            <span>
+              <strong>Gradebook</strong>
+              <small>Marks, rubrics, and feedback</small>
+            </span>
+          </a>
+        </div>
       </section>
     </main>
   );

@@ -4,7 +4,7 @@ import { resolveSingleSchool } from '../../application/services/singleSchoolCont
 export default async function singleSchoolContext(req, _res, next) {
   if (!req.user) throw new AuthorizationError('Authentication required');
 
-  const school = await resolveSingleSchool();
+  const school = await resolveSingleSchool({ tenantId: req.user.tenantId || undefined });
   if (req.user.tenantId && school.tenantId && req.user.tenantId !== school.tenantId) {
     throw new AuthorizationError('Account does not belong to this school');
   }

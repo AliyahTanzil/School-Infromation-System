@@ -11,7 +11,18 @@ import {
 
 /* eslint-disable react/prop-types */
 
-import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  CalendarDays,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  GraduationCap,
+  LayoutDashboard,
+  Users,
+} from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import toast, { Toaster } from 'react-hot-toast';
@@ -698,8 +709,8 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <div className="mx-auto max-w-5xl">
+    <div className="workspace-overview min-h-screen p-6">
+      <div className="mx-auto max-w-6xl">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
@@ -718,7 +729,7 @@ function Dashboard() {
           </button>
         </header>
 
-        <div className="mt-16 rounded-3xl bg-indigo-600 p-8 text-white">
+        <div className="mt-10 rounded-3xl bg-indigo-600 p-8 text-white">
           <p className="text-sm text-indigo-200">Good to see you</p>
 
           <h1 className="mt-2 text-3xl font-bold">{displayName}</h1>
@@ -728,6 +739,36 @@ function Dashboard() {
             assigned workspace.
           </p>
         </div>
+        <section
+          className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          aria-label="Workspace shortcuts"
+        >
+          {[
+            ['/admin', 'Administration', 'Manage school operations', LayoutDashboard],
+            ['/students', 'Students', 'Admissions and records', GraduationCap],
+            ['/teachers', 'Teachers', 'Staff and teaching profiles', Users],
+            ['/academic-calendar', 'Calendar', 'Terms and school events', CalendarDays],
+          ].map(([href, label, description, Icon]) => (
+            <Link key={href} to={href} className="overview-shortcut">
+              <Icon size={20} />
+              <strong>{label}</strong>
+              <span>{description}</span>
+              <ArrowRight size={16} />
+            </Link>
+          ))}
+        </section>
+        <section className="overview-next-steps">
+          <div>
+            <BookOpen size={20} />
+            <span>
+              <strong>Development environment ready</strong>
+              <small>Database migrations and authenticated role accounts are available.</small>
+            </span>
+          </div>
+          <Link to="/admin">
+            Open full administration <ArrowRight size={16} />
+          </Link>
+        </section>
       </div>
     </div>
   );

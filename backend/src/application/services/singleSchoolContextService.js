@@ -10,12 +10,15 @@ const configurationError = (message, details) =>
     details,
   });
 
-export async function resolveSingleSchool({ refresh = false } = {}) {
-  if (!refresh && cachedSchool) return cachedSchool;
+export async function resolveSingleSchool({ refresh = false, tenantId } = {}) {
+  if (!refresh && cachedSchool && (!tenantId || cachedSchool.tenantId === tenantId)) {
+    return cachedSchool;
+  }
 
   const configuredId = process.env.SINGLE_SCHOOL_ID?.trim();
+  const where = tenantId ? { tenantId } : configuredId ? { id: configuredId } : {};
   const schools = await prisma.school.findMany({
-    where: configuredId ? { id: configuredId } : {},
+    where,
     select: {
       id: true,
       tenantId: true,
@@ -33,7 +36,7 @@ export async function resolveSingleSchool({ refresh = false } = {}) {
       settings: true,
       isConfigured: true,
     },
-    take: configuredId ? 1 : 2,
+    take: tenantId || configuredId ? 1 : 2,
     orderBy: { createdAt: 'asc' },
   });
 
@@ -45,7 +48,7 @@ export async function resolveSingleSchool({ refresh = false } = {}) {
       configuredId ? { configuredSchoolId: configuredId } : undefined
     );
   }
-  if (!configuredId && schools.length !== 1) {
+  if (!tenantId && !configuredId && schools.length !== 1) {
     throw configurationError(
       'SINGLE_SCHOOL_ID is required while the database contains more than one school',
       { discoveredSchools: schools.length }

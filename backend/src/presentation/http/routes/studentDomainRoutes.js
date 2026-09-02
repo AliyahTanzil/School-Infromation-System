@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
+import singleSchoolContext from '../../../middleware/auth/singleSchoolContext.js';
 import { requirePermission } from '../../../middleware/auth/authorization.js';
 import * as controller from '../controllers/studentDomainController.js';
 
 const router = Router();
-router.use(authenticate);
+router.use(authenticate, singleSchoolContext);
 router.get('/', requirePermission('student.read'), controller.list);
 router.get('/:id', requirePermission('student.read'), controller.get);
 router.post('/', requirePermission('student.create'), controller.create);
