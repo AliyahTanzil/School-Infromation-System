@@ -87,6 +87,26 @@ export async function changeRubricStatus(scope, id, userId, roles, status) {
   return prisma.rubric.update({ where: { id }, data: { status } });
 }
 
+export async function assignRubric(scope, assignmentId, userId, roles, rubricId) {
+  const assignment = await prisma.assignment.findFirst({
+    where: { id: assignmentId, ...owned(scope) },
+  });
+  if (!assignment) throw new NotFoundError('Assignment not found');
+  await requireClassroom(scope, assignment.classroomId, userId, roles, true);
+  if (rubricId) {
+    const rubric = await prisma.rubric.findFirst({
+      where: {
+        id: rubricId,
+        classroomId: assignment.classroomId,
+        ...owned(scope),
+        status: { not: 'ARCHIVED' },
+      },
+    });
+    if (!rubric) throw new ValidationError('Rubric is outside the assignment classroom');
+  }
+  return prisma.assignment.update({ where: { id: assignmentId }, data: { rubricId } });
+}
+
 export async function listGrades(scope, assignmentId, userId, roles) {
   const assignment = await prisma.assignment.findFirst({
     where: { id: assignmentId, ...owned(scope) },
@@ -102,6 +122,7 @@ export async function listGrades(scope, assignmentId, userId, roles) {
     },
     include: {
       student: { select: { id: true, firstName: true, lastName: true, email: true } },
+      assignment: { select: { id: true, title: true, points: true, rubricId: true } },
       versions: { orderBy: { version: 'desc' }, take: 1 },
       grade: { include: gradeInclude },
     },
@@ -117,6 +138,10 @@ export async function saveGrade(scope, submissionId, userId, roles, data) {
     include: { rubric: { include: { criteria: true } } },
   });
   const criteria = new Map((assignment.rubric?.criteria ?? []).map((item) => [item.id, item]));
+  if (new Set(data.rubricScores.map((item) => item.criterionId)).size !== data.rubricScores.length)
+    throw new ValidationError('Each rubric criterion may be scored only once');
+  if (criteria.size && data.rubricScores.length !== criteria.size)
+    throw new ValidationError('Every rubric criterion requires a score');
   for (const rubricScore of data.rubricScores) {
     const criterion = criteria.get(rubricScore.criterionId);
     if (!criterion || rubricScore.points > criterion.maxPoints)

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 
 export default function UserManagement() {
@@ -42,137 +43,166 @@ export default function UserManagement() {
     }
   };
 
+  const metrics = [
+    { label: 'Total users', value: users.length },
+    { label: 'Active', value: users.filter((user) => user.status === 'ACTIVE').length },
+    {
+      label: 'Pending',
+      value: users.filter((user) => user.status === 'PENDING_VERIFICATION').length,
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 sm:px-10">
-      <div className="mx-auto max-w-6xl">
-        <header>
-          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
-            SAIS / Administration
-          </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">User management</h1>
-          <p className="mt-2 text-sm text-slate-400">
+    <main className="page-shell">
+      <header className="page-header">
+        <div>
+          <p className="eyebrow">SAIS / Administration</p>
+          <h1 className="page-header__title">User management</h1>
+          <p className="page-header__subtitle">
             Create accounts through the frontend and verify they persist in the backend.
           </p>
-        </header>
-        <section className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-          <form
-            onSubmit={createUser}
-            className="rounded-2xl border border-slate-800 bg-slate-900 p-6"
-          >
-            <h2 className="text-lg font-semibold">Create user</h2>
-            <div className="mt-5 grid gap-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="text-sm text-slate-400">
-                  First name
-                  <input
-                    required
-                    value={form.firstName}
-                    onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                  />
-                </label>
-                <label className="text-sm text-slate-400">
-                  Last name
-                  <input
-                    required
-                    value={form.lastName}
-                    onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-                    className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                  />
-                </label>
-              </div>
-              <label className="text-sm text-slate-400">
-                Email
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
-                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                />
-              </label>
-              <label className="text-sm text-slate-400">
-                Temporary password
-                <input
-                  required
-                  minLength={12}
-                  type="password"
-                  value={form.password}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })}
-                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                />
-              </label>
-              <label className="text-sm text-slate-400">
-                Account type
-                <select
-                  value={form.accountType}
-                  onChange={(e) => setForm({ ...form, accountType: e.target.value })}
-                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                >
-                  <option value="APPLICATION_MANAGER">Application manager</option>
-                  <option value="TENANT_ADMIN">Tenant administrator</option>
-                  <option value="STAFF">Staff</option>
-                  <option value="TEACHER">Teacher</option>
-                  <option value="PARENT">Parent</option>
-                  <option value="STUDENT">Student</option>
-                </select>
-              </label>
-              <label className="text-sm text-slate-400">
-                Status
-                <select
-                  value={form.status}
-                  onChange={(e) => setForm({ ...form, status: e.target.value })}
-                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                >
-                  <option value="ACTIVE">Active</option>
-                  <option value="PENDING_VERIFICATION">Pending verification</option>
-                </select>
-              </label>
-              <button
-                disabled={saving}
-                className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
-              >
-                {saving ? 'Saving…' : 'Create user'}
-              </button>
-              {message && (
-                <p className="text-sm text-emerald-300" role="status">
-                  {message}
-                </p>
-              )}
-              {error && (
-                <p className="text-sm text-rose-300" role="alert">
-                  {error}
-                </p>
-              )}
-            </div>
-          </form>
-          <section className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold">Backend users</h2>
-            <div className="mt-5 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-slate-500">
-                  <tr>
-                    <th className="pb-3">Email</th>
-                    <th className="pb-3">Status</th>
-                    <th className="pb-3">Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user.id} className="border-t border-slate-800">
-                      <td className="py-3">{user.email}</td>
-                      <td className="py-3 text-emerald-300">{user.status}</td>
-                      <td className="py-3 text-slate-400">
-                        {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </section>
-      </div>
+        </div>
+        <Link className="primary-button" to="/admin">
+          Back to administration
+        </Link>
+      </header>
+
+      <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        {metrics.map((item) => (
+          <div key={item.label} className="stat-card">
+            <div className="stat-card__label">{item.label}</div>
+            <div className="stat-card__value">{item.value}</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>Create user</h2>
+            <p>Provision staff or stakeholder accounts with the correct role and status.</p>
+          </div>
+        </div>
+
+        <form onSubmit={createUser} className="form-grid">
+          <label className="form-field">
+            <span className="form-field__label">First name</span>
+            <input
+              required
+              value={form.firstName}
+              onChange={(event) => setForm({ ...form, firstName: event.target.value })}
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Last name</span>
+            <input
+              required
+              value={form.lastName}
+              onChange={(event) => setForm({ ...form, lastName: event.target.value })}
+            />
+          </label>
+
+          <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="form-field__label">Email</span>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(event) => setForm({ ...form, email: event.target.value })}
+            />
+          </label>
+
+          <label className="form-field" style={{ gridColumn: '1 / -1' }}>
+            <span className="form-field__label">Temporary password</span>
+            <input
+              required
+              minLength={12}
+              type="password"
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Account type</span>
+            <select
+              value={form.accountType}
+              onChange={(event) => setForm({ ...form, accountType: event.target.value })}
+            >
+              <option value="APPLICATION_MANAGER">Application manager</option>
+              <option value="TENANT_ADMIN">Tenant administrator</option>
+              <option value="STAFF">Staff</option>
+              <option value="TEACHER">Teacher</option>
+              <option value="PARENT">Parent</option>
+              <option value="STUDENT">Student</option>
+            </select>
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Status</span>
+            <select
+              value={form.status}
+              onChange={(event) => setForm({ ...form, status: event.target.value })}
+            >
+              <option value="ACTIVE">Active</option>
+              <option value="PENDING_VERIFICATION">Pending verification</option>
+            </select>
+          </label>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <button className="primary-button" disabled={saving} type="submit">
+              {saving ? 'Saving…' : 'Create user'}
+            </button>
+          </div>
+
+          {message && (
+            <p className="inline-alert" role="status" style={{ gridColumn: '1 / -1' }}>
+              {message}
+            </p>
+          )}
+          {error && (
+            <p className="inline-alert" role="alert" style={{ gridColumn: '1 / -1' }}>
+              {error}
+            </p>
+          )}
+        </form>
+      </section>
+
+      <section className="data-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Backend users</h2>
+            <p>Review recently created identities and their current account state.</p>
+          </div>
+          <span className="status-chip">{users.length} total</span>
+        </div>
+
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td>{user.email}</td>
+                  <td>{user.accountType ?? '—'}</td>
+                  <td>
+                    <span className="status-chip">{user.status}</span>
+                  </td>
+                  <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </main>
   );
 }

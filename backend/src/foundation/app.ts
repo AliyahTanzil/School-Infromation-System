@@ -67,7 +67,25 @@ import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.j
 export const createApp = () => {
   const app = express();
   app.disable('x-powered-by');
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          frameAncestors: ["'none'"],
+          objectSrc: ["'none'"],
+          imgSrc: ["'self'", 'data:'],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          connectSrc: ["'self'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'same-origin' },
+    })
+  );
   app.use(cors({ origin: config.corsOrigins, credentials: true }));
   app.use(
     express.json({

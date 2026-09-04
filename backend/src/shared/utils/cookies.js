@@ -45,7 +45,17 @@ export function clearRefreshCookie(res) {
  * @returns {string | undefined}
  */
 export function readRefreshToken(req) {
-  return req.cookies?.[config.auth.refreshCookieName] ?? req.body?.refreshToken;
+  const cookieToken = req.cookies?.[config.auth.refreshCookieName];
+  if (cookieToken) return cookieToken;
+
+  const allowBodyRefreshToken =
+    String(process.env.ALLOW_BODY_REFRESH_TOKEN ?? '').toLowerCase() === 'true';
+
+  if (allowBodyRefreshToken) {
+    return req.body?.refreshToken;
+  }
+
+  return undefined;
 }
 
 export default { setRefreshCookie, clearRefreshCookie, readRefreshToken };

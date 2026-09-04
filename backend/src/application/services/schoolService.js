@@ -2,6 +2,14 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
 import repo from '../../infrastructure/repositories/schoolRepository.js';
 import { ConflictError, NotFoundError } from '../../shared/errors/index.js';
 const normalize = (v) => v.trim().toLowerCase();
+const getUmbrellaTenantCode = () =>
+  (process.env.SINGLE_SCHOOL_CODE || process.env.SINGLE_SCHOOL_UMBRELLA_CODE || 'UMBRELLA')
+    .trim()
+    .toUpperCase();
+const getUmbrellaTenantName = () =>
+  process.env.SINGLE_SCHOOL_NAME?.trim() ||
+  process.env.SINGLE_SCHOOL_UMBRELLA_NAME?.trim() ||
+  'Umbrella School';
 const dto = (s) =>
   s && {
     ...s,
@@ -15,6 +23,30 @@ const ensure = async (id, tenantId, tx) => {
   if (!school) throw new NotFoundError('School not found');
   return school;
 };
+const resolveTenantId = async (requestedTenantId, tx = prisma) => {
+  if (requestedTenantId) return requestedTenantId;
+
+  const code = getUmbrellaTenantCode();
+  const tenant = await tx.tenant.findFirst({
+    where: { code, deletedAt: null },
+    select: { id: true },
+  });
+
+  if (tenant) return tenant.id;
+
+  const created = await tx.tenant.create({
+    data: {
+      name: getUmbrellaTenantName(),
+      code,
+      timezone: process.env.SINGLE_SCHOOL_TIMEZONE || 'UTC',
+      currency: process.env.SINGLE_SCHOOL_CURRENCY || 'USD',
+      status: 'ACTIVE',
+    },
+    select: { id: true },
+  });
+
+  return created.id;
+};
 export async function list(input) {
   return repo.list(input);
 }
@@ -23,17 +55,18 @@ export async function get(id, tenantId) {
 }
 export async function create(input) {
   return prisma.$transaction(async (tx) => {
+    const tenantId = await resolveTenantId(input.tenantId, tx);
     const data = {
       ...input,
       normalizedName: normalize(input.name),
-      tenantId: input.tenantId,
+      tenantId,
       profile: { create: {} },
       setting: { create: { settings: {} } },
       configuration: { create: { featureFlags: {} } },
     };
     const existing = await tx.school.findFirst({
       where: {
-        tenantId: input.tenantId,
+        tenantId,
         OR: [{ slug: input.slug }, { normalizedName: data.normalizedName }],
         deletedAt: null,
       },

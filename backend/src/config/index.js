@@ -8,6 +8,24 @@ const toInt = (value, fallback) => {
 const toBool = (value, fallback) =>
   value === undefined ? fallback : String(value).toLowerCase() === 'true';
 
+const assertRequiredProductionEnvironment = () => {
+  if (process.env.NODE_ENV !== 'production') return;
+
+  const missing = [
+    ['DATABASE_URL', process.env.DATABASE_URL],
+    ['JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET],
+    ['JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET],
+  ]
+    .filter(([, value]) => !value || !String(value).trim())
+    .map(([name]) => name);
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+  }
+};
+
+assertRequiredProductionEnvironment();
+
 const config = {
   env: process.env.NODE_ENV ?? 'development',
   // 0 delegates port selection to the operating system when no port is supplied.

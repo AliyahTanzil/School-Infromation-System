@@ -71,7 +71,7 @@ Exit criteria: a school can configure a term, enroll learners, teach classes, re
 
 Target: learning-management milestone
 
-- [ ] LMS-007: persisted gradebook, rubrics, grading workflow, feedback, and release controls.
+- [x] LMS-007: persisted gradebook, rubrics, grading workflow, feedback, and release controls.
 - [ ] LMS-008: calendar integration and classroom notification delivery.
 - [ ] Connect teacher, student, and parent dashboards to real LMS data.
 - [ ] Complete classroom discussions, moderation, live-learning sessions, recordings, and attendance linkage.

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Check, Search, Send } from 'lucide-react';
+import { Check, Plus, Search, Send, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
@@ -8,12 +8,19 @@ export default function Gradebook() {
   const [classrooms, setClassrooms] = useState([]);
   const [classroomId, setClassroomId] = useState('');
   const [assignments, setAssignments] = useState([]);
+  const [rubrics, setRubrics] = useState([]);
   const [assignmentId, setAssignmentId] = useState('');
   const [rows, setRows] = useState([]);
   const [drafts, setDrafts] = useState({});
   const [query, setQuery] = useState('');
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
+  const [showRubric, setShowRubric] = useState(false);
+  const [rubric, setRubric] = useState({
+    title: '',
+    description: '',
+    criteria: [{ title: '', maxPoints: 10 }],
+  });
 
   useEffect(() => {
     let active = true;
@@ -35,11 +42,14 @@ export default function Gradebook() {
   useEffect(() => {
     if (!classroomId) return setAssignments([]);
     setBusy(true);
-    api
-      .get('/lms/assignments', { params: { classroomId } })
-      .then(({ data }) => {
-        const items = data.data ?? [];
+    Promise.all([
+      api.get('/lms/assignments', { params: { classroomId } }),
+      api.get('/lms/gradebook/rubrics', { params: { classroomId } }),
+    ])
+      .then(([assignmentResponse, rubricResponse]) => {
+        const items = assignmentResponse.data.data ?? [];
         setAssignments(items);
+        setRubrics(rubricResponse.data.data ?? []);
         setAssignmentId(items[0]?.id || '');
       })
       .catch((requestError) =>
@@ -61,7 +71,7 @@ export default function Gradebook() {
             row.id,
             {
               score: row.grade?.score ?? '',
-              maxScore: row.grade?.maxScore ?? 100,
+              maxScore: (row.grade?.maxScore ?? row.assignment.points) || 100,
               summary: row.grade?.summary ?? '',
             },
           ])
@@ -87,6 +97,9 @@ export default function Gradebook() {
       ),
     [query, rows]
   );
+  const activeRubric = rubrics.find(
+    (item) => item.id === assignments.find((entry) => entry.id === assignmentId)?.rubricId
+  );
   const update = (id, field, value) =>
     setDrafts((current) => ({
       ...current,
@@ -100,7 +113,10 @@ export default function Gradebook() {
         score: Number(draft.score),
         maxScore: Number(draft.maxScore),
         summary: draft.summary || undefined,
-        rubricScores: [],
+        rubricScores: (activeRubric?.criteria ?? []).map((criterion) => ({
+          criterionId: criterion.id,
+          points: Number(draft.rubricScores?.[criterion.id] ?? 0),
+        })),
       });
       toast.success('Draft grade saved');
       await loadGrades();
@@ -116,6 +132,24 @@ export default function Gradebook() {
       await loadGrades();
     } catch (requestError) {
       toast.error(getApiErrorMessage(requestError, 'Unable to release grade'));
+    }
+  }
+
+  async function createRubric(event) {
+    event.preventDefault();
+    try {
+      const { data } = await api.post('/lms/gradebook/rubrics', { ...rubric, classroomId });
+      await api.patch(`/lms/gradebook/rubrics/${data.data.id}/status`, { status: 'PUBLISHED' });
+      if (assignmentId)
+        await api.patch(`/lms/gradebook/assignments/${assignmentId}/rubric`, {
+          rubricId: data.data.id,
+        });
+      setRubrics((items) => [{ ...data.data, status: 'PUBLISHED' }, ...items]);
+      setRubric({ title: '', description: '', criteria: [{ title: '', maxPoints: 10 }] });
+      setShowRubric(false);
+      toast.success('Rubric created and assigned');
+    } catch (requestError) {
+      toast.error(getApiErrorMessage(requestError, 'Unable to create rubric'));
     }
   }
 
@@ -161,6 +195,45 @@ export default function Gradebook() {
             placeholder="Search students"
           />
         </label>
+        <select
+          aria-label="Assignment rubric"
+          disabled={!assignmentId}
+          value={assignments.find((item) => item.id === assignmentId)?.rubricId || ''}
+          onChange={async (event) => {
+            try {
+              await api.patch(`/lms/gradebook/assignments/${assignmentId}/rubric`, {
+                rubricId: event.target.value || null,
+              });
+              setAssignments((items) =>
+                items.map((item) =>
+                  item.id === assignmentId
+                    ? { ...item, rubricId: event.target.value || null }
+                    : item
+                )
+              );
+              toast.success('Assignment rubric updated');
+            } catch (requestError) {
+              toast.error(getApiErrorMessage(requestError, 'Unable to assign rubric'));
+            }
+          }}
+        >
+          <option value="">No rubric</option>
+          {rubrics
+            .filter((item) => item.status !== 'ARCHIVED')
+            .map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.title}
+              </option>
+            ))}
+        </select>
+        <button
+          type="button"
+          className="secondary-action"
+          disabled={!classroomId}
+          onClick={() => setShowRubric(true)}
+        >
+          <Plus /> New rubric
+        </button>
       </section>
       {error && (
         <p className="error-state" role="alert">
@@ -221,6 +294,38 @@ export default function Gradebook() {
                       onChange={(event) => update(row.id, 'summary', event.target.value)}
                       placeholder="Actionable feedback"
                     />
+                    {activeRubric?.criteria.map((criterion) => (
+                      <label className="rubric-score-input" key={criterion.id}>
+                        <span>
+                          {criterion.title} / {criterion.maxPoints}
+                        </span>
+                        <input
+                          aria-label={`${row.student.firstName} ${criterion.title}`}
+                          type="number"
+                          min="0"
+                          max={criterion.maxPoints}
+                          value={
+                            drafts[row.id]?.rubricScores?.[criterion.id] ??
+                            row.grade?.rubricScores?.find(
+                              (item) => item.criterionId === criterion.id
+                            )?.points ??
+                            ''
+                          }
+                          onChange={(event) =>
+                            setDrafts((current) => ({
+                              ...current,
+                              [row.id]: {
+                                ...current[row.id],
+                                rubricScores: {
+                                  ...current[row.id]?.rubricScores,
+                                  [criterion.id]: event.target.value,
+                                },
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                    ))}
                   </td>
                   <td>
                     <span className="status-pill">{row.grade?.status || 'UNGRADED'}</span>
@@ -243,6 +348,103 @@ export default function Gradebook() {
             </tbody>
           </table>
         </section>
+      )}
+      {showRubric && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="create-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rubric-title"
+          >
+            <button
+              type="button"
+              className="modal-close"
+              aria-label="Close rubric form"
+              onClick={() => setShowRubric(false)}
+            >
+              <X />
+            </button>
+            <p className="eyebrow">Reusable scoring guide</p>
+            <h2 id="rubric-title">Create rubric</h2>
+            <form className="student-form" onSubmit={createRubric}>
+              <label>
+                <span>Title</span>
+                <input
+                  required
+                  value={rubric.title}
+                  onChange={(event) =>
+                    setRubric((current) => ({ ...current, title: event.target.value }))
+                  }
+                />
+              </label>
+              <label>
+                <span>Description</span>
+                <textarea
+                  value={rubric.description}
+                  onChange={(event) =>
+                    setRubric((current) => ({ ...current, description: event.target.value }))
+                  }
+                />
+              </label>
+              {rubric.criteria.map((criterion, index) => (
+                <div className="student-form-grid" key={index}>
+                  <label>
+                    <span>Criterion {index + 1}</span>
+                    <input
+                      required
+                      value={criterion.title}
+                      onChange={(event) =>
+                        setRubric((current) => ({
+                          ...current,
+                          criteria: current.criteria.map((item, position) =>
+                            position === index ? { ...item, title: event.target.value } : item
+                          ),
+                        }))
+                      }
+                    />
+                  </label>
+                  <label>
+                    <span>Maximum points</span>
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={criterion.maxPoints}
+                      onChange={(event) =>
+                        setRubric((current) => ({
+                          ...current,
+                          criteria: current.criteria.map((item, position) =>
+                            position === index
+                              ? { ...item, maxPoints: Number(event.target.value) }
+                              : item
+                          ),
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              ))}
+              <div className="gradebook-row-actions">
+                <button
+                  type="button"
+                  className="secondary-action"
+                  onClick={() =>
+                    setRubric((current) => ({
+                      ...current,
+                      criteria: [...current.criteria, { title: '', maxPoints: 10 }],
+                    }))
+                  }
+                >
+                  <Plus /> Add criterion
+                </button>
+                <button type="submit" className="primary-action">
+                  <Check /> Create and assign
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       )}
     </main>
   );

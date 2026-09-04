@@ -40,6 +40,22 @@ export async function changeRubricStatus(req, res, next) {
     next(error);
   }
 }
+export async function assignRubric(req, res, next) {
+  try {
+    respond(
+      res,
+      await service.assignRubric(
+        scope(req),
+        req.params.assignmentId,
+        req.user.id,
+        roles(req),
+        req.body.rubricId
+      )
+    );
+  } catch (error) {
+    next(error);
+  }
+}
 export async function listGrades(req, res, next) {
   try {
     respond(

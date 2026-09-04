@@ -44,13 +44,19 @@ export default function ExaminationsDashboard() {
     setForm({ name: '', code: '' });
     await load();
   };
+  const summary = [
+    { label: 'Exam cycles', value: items.length },
+    { label: 'Pending review', value: items.filter((item) => item.status === 'DRAFT').length },
+    { label: 'Locked', value: items.filter((item) => item.status === 'LOCKED').length },
+  ];
+
   return (
     <main className="page-shell">
       <header className="page-header">
         <div>
           <p className="eyebrow">Academic operations</p>
-          <h1>Examinations</h1>
-          <p>
+          <h1 className="page-header__title">Examinations</h1>
+          <p className="page-header__subtitle">
             Configure candidate registers, subject schedules, marking, moderation, approval, and
             locking.
           </p>
@@ -59,40 +65,77 @@ export default function ExaminationsDashboard() {
           Back to administration
         </Link>
       </header>
-      <section className="panel">
-        <label>
-          School ID
+
+      <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        {summary.map((item) => (
+          <div key={item.label} className="stat-card">
+            <div className="stat-card__label">{item.label}</div>
+            <div className="stat-card__value">{item.value}</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>School context</h2>
+            <p>Scope records to the active school before creating or reviewing cycle data.</p>
+          </div>
+        </div>
+        <div className="form-field" style={{ maxWidth: '26rem' }}>
+          <label className="form-field__label">School ID</label>
           <input
             value={schoolId}
             onChange={(event) => setSchoolId(event.target.value)}
             placeholder="School UUID"
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
+        </div>
+        {error && (
+          <p className="inline-alert" role="alert">
+            {error}
+          </p>
+        )}
       </section>
-      <section className="panel">
-        <h2>New examination cycle</h2>
-        <form className="space-y-3" onSubmit={create}>
-          <input
-            required
-            aria-label="Examination name"
-            placeholder="Examination name"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-          />
-          <input
-            required
-            aria-label="Examination code"
-            placeholder="Unique code"
-            value={form.code}
-            onChange={(event) => setForm({ ...form, code: event.target.value })}
-          />
-          <button className="primary-button" disabled={!schoolId}>
-            Create draft
-          </button>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>New examination cycle</h2>
+            <p>Start a draft cycle and prepare it for candidates, marks, and approval.</p>
+          </div>
+        </div>
+
+        <form className="form-grid" onSubmit={create}>
+          <label className="form-field">
+            <span className="form-field__label">Examination name</span>
+            <input
+              required
+              aria-label="Examination name"
+              placeholder="Examination name"
+              value={form.name}
+              onChange={(event) => setForm({ ...form, name: event.target.value })}
+            />
+          </label>
+          <label className="form-field">
+            <span className="form-field__label">Unique code</span>
+            <input
+              required
+              aria-label="Examination code"
+              placeholder="Unique code"
+              value={form.code}
+              onChange={(event) => setForm({ ...form, code: event.target.value })}
+            />
+          </label>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <button className="primary-button" disabled={!schoolId} type="submit">
+              Create draft
+            </button>
+          </div>
         </form>
       </section>
-      <section className="dashboard-card">
+
+      <section className="data-panel">
         <div className="section-heading">
           <div>
             <h2>Exam cycles</h2>
@@ -100,8 +143,9 @@ export default function ExaminationsDashboard() {
           </div>
           <span className="status-chip">{items.length} total</span>
         </div>
+
         {loading ? (
-          <p>Loading examinations…</p>
+          <p className="loading-state">Loading examinations…</p>
         ) : items.length === 0 ? (
           <div className="empty-state">
             <h3>No examinations configured</h3>
@@ -112,7 +156,7 @@ export default function ExaminationsDashboard() {
           </div>
         ) : (
           <div className="data-table-wrap">
-            <table>
+            <table className="data-table">
               <thead>
                 <tr>
                   <th>Name</th>

@@ -8,26 +8,32 @@ import AuthorizationError from '../../src/shared/errors/AuthorizationError.js';
 
 test('single-school context ignores client tenant selectors', () => {
   const req = {
-    user: { tenantId: 'tenant-a' },
+    user: { tenantId: 'tenant-a', schoolId: 'school-1' },
     auth: {},
     get: () => 'tenant-b',
     params: {},
     query: {},
   };
   requireTenantContext(req, {}, () => {});
-  assert.equal(req.auth.tenantId, 'tenant-a');
+  assert.equal(req.auth.schoolId, 'school-1');
 });
 
-test('tenant context resolves the authenticated tenant', () => {
-  const req = { user: { tenantId: 'tenant-a' }, auth: {}, get: () => '', params: {}, query: {} };
+test('tenant context resolves the authenticated school scope', () => {
+  const req = {
+    user: { tenantId: 'tenant-a', schoolId: 'school-1' },
+    auth: {},
+    get: () => '',
+    params: {},
+    query: {},
+  };
   requireTenantContext(req, {}, () => {});
-  assert.equal(req.auth.tenantId, 'tenant-a');
+  assert.equal(req.auth.schoolId, 'school-1');
 });
 
-test('platform owner guard rejects user-supplied role claims', () => {
-  const req = { user: { roles: ['OWNER'] } };
+test('platform guard rejects platform access in single-school mode', () => {
+  const req = { user: { roles: ['OWNER'], schoolId: 'school-1' } };
   assert.throws(
     () => requirePlatformOwner(req, {}, () => {}),
-    (error) => error instanceof AuthorizationError && error.code === 'PLATFORM_OWNER_REQUIRED'
+    (error) => error instanceof AuthorizationError && error.code === 'PLATFORM_ACCESS_DISABLED'
   );
 });

@@ -11,6 +11,7 @@ import {
   gradeSaveSchema,
   rubricCreateSchema,
   rubricListSchema,
+  rubricAssignmentSchema,
   rubricStatusSchema,
 } from '../../../application/validators/gradebookValidators.js';
 
@@ -32,6 +33,12 @@ router.patch(
   authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
   validate(rubricStatusSchema),
   controller.changeRubricStatus
+);
+router.patch(
+  '/assignments/:assignmentId/rubric',
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  validate(rubricAssignmentSchema),
+  controller.assignRubric
 );
 router.get('/grades', validate(gradeListSchema), controller.listGrades);
 router.put(

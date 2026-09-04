@@ -2,9 +2,10 @@ import js from '@eslint/js';
 import globals from 'globals';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooksPlugin from 'eslint-plugin-react-hooks';
+import tseslint from 'typescript-eslint';
 import eslintConfigPrettier from 'eslint-config-prettier';
 
-export default [
+export default tseslint.config(
   {
     ignores: ['**/node_modules/**', '**/dist/**', '**/coverage/**', '**/.vite/**'],
   },
@@ -14,6 +15,22 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
+    files: ['backend/**/*.ts', 'backend/**/*.tsx'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
       globals: {
         ...globals.node,
       },
@@ -67,5 +84,5 @@ export default [
       },
     },
   },
-  eslintConfigPrettier,
-];
+  eslintConfigPrettier
+);

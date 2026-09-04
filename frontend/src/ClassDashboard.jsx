@@ -69,82 +69,148 @@ export default function ClassDashboard() {
     }
   };
 
+  const summary = [
+    { label: 'Total classes', value: classes.length },
+    {
+      label: 'Capacity',
+      value: classes.reduce((sum, item) => sum + Number(item.capacity || 0), 0),
+    },
+    { label: 'Search results', value: classes.length },
+  ];
+
   return (
     <main className="page-shell">
       <section className="page-header">
         <div>
           <span className="eyebrow">Academic operations</span>
-          <h1>Classes & sections</h1>
-          <p>Manage persisted cohorts, rooms, lifecycle, and enrollment capacity.</p>
+          <h1 className="page-header__title">Classes & sections</h1>
+          <p className="page-header__subtitle">
+            Manage persisted cohorts, rooms, lifecycle, and enrollment capacity.
+          </p>
         </div>
         <Link className="primary-button" to="/admin">
           Back to administration
         </Link>
       </section>
-      <section className="panel">
-        <label>
-          School ID
-          <input
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="School UUID"
-          />
-        </label>
-        <label>
-          Search
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name or code"
-          />
-        </label>
-        {loading && <p>Loading classes…</p>}
-        {error && <p role="alert">{error}</p>}
+
+      <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        {summary.map((item) => (
+          <div key={item.label} className="stat-card">
+            <div className="stat-card__label">{item.label}</div>
+            <div className="stat-card__value">{item.value}</div>
+          </div>
+        ))}
       </section>
-      <section className="panel">
-        <h2>Create class section</h2>
-        <form onSubmit={create} className="space-y-3">
-          {['name', 'code', 'academicYearId', 'gradeLevelId', 'section'].map((field) => (
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>School context</h2>
+            <p>Review cohort data for the currently selected school and search by name or code.</p>
+          </div>
+        </div>
+
+        <div className="form-grid">
+          <label className="form-field">
+            <span className="form-field__label">School ID</span>
             <input
-              key={field}
-              required={field !== 'section'}
-              value={form[field]}
-              onChange={(event) => setForm({ ...form, [field]: event.target.value })}
-              placeholder={field}
+              value={schoolId}
+              onChange={(event) => setSchoolId(event.target.value)}
+              placeholder="School UUID"
             />
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Search</span>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Name or code"
+            />
+          </label>
+        </div>
+
+        {loading && <p className="loading-state">Loading classes…</p>}
+        {error && (
+          <p className="inline-alert" role="alert">
+            {error}
+          </p>
+        )}
+      </section>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>Create class section</h2>
+            <p>Set up a planned class with academic year, grade, and enrollment capacity.</p>
+          </div>
+        </div>
+
+        <form onSubmit={create} className="form-grid">
+          {['name', 'code', 'academicYearId', 'gradeLevelId', 'section'].map((field) => (
+            <label key={field} className="form-field">
+              <span className="form-field__label">{field}</span>
+              <input
+                required={field !== 'section'}
+                value={form[field]}
+                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
+                placeholder={field}
+              />
+            </label>
           ))}
-          <input
-            required
-            type="number"
-            min="1"
-            value={form.capacity}
-            onChange={(event) => setForm({ ...form, capacity: event.target.value })}
-            aria-label="Capacity"
-          />
-          <button className="primary-button" disabled={!schoolId}>
-            Create planned class
-          </button>
+
+          <label className="form-field">
+            <span className="form-field__label">Capacity</span>
+            <input
+              required
+              type="number"
+              min="1"
+              value={form.capacity}
+              onChange={(event) => setForm({ ...form, capacity: event.target.value })}
+              aria-label="Capacity"
+            />
+          </label>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <button className="primary-button" disabled={!schoolId} type="submit">
+              Create planned class
+            </button>
+          </div>
         </form>
       </section>
-      <section className="panel">
-        <h2>Current classes</h2>
-        {!loading && classes.length === 0 && schoolId && <p>No classes found.</p>}
-        {classes.map((item) => (
-          <article className="student-row" key={item.id}>
-            <span>
-              <strong>
-                {item.name}
-                {item.section ? ` · ${item.section}` : ''}
-              </strong>
-              <small>
-                {item.code} · {item.academicYear?.name}
-              </small>
-            </span>
-            <span>
-              {item._count?.enrollments ?? 0} / {item.capacity} · {item.status}
-            </span>
-          </article>
-        ))}
+
+      <section className="data-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Current classes</h2>
+            <p>Available section structures and current enrollment capacity.</p>
+          </div>
+          <span className="status-chip">{classes.length} records</span>
+        </div>
+
+        {!loading && classes.length === 0 && schoolId && (
+          <p className="empty-state">No classes found.</p>
+        )}
+        {classes.length > 0 && (
+          <div className="result-list">
+            {classes.map((item) => (
+              <article className="result-row" key={item.id}>
+                <span className="result-row__meta">
+                  <strong>
+                    {item.name}
+                    {item.section ? ` · ${item.section}` : ''}
+                  </strong>
+                  <small>
+                    {item.code} · {item.academicYear?.name}
+                  </small>
+                </span>
+                <span className="status-pill">
+                  {item._count?.enrollments ?? 0} / {item.capacity} · {item.status}
+                </span>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );

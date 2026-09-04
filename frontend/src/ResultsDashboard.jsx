@@ -44,13 +44,19 @@ export default function ResultsDashboard() {
     if (!response.ok) return setError(payload?.error?.message ?? 'Unable to process results');
     await load();
   };
+  const summary = [
+    ['Results', stats?.count ?? 0],
+    ['Pass count', stats?.passCount ?? 0],
+    ['Average', Number(stats?.average ?? 0).toFixed(2)],
+  ];
+
   return (
     <main className="page-shell">
       <header className="page-header">
         <div>
           <p className="eyebrow">Academic records</p>
-          <h1>Result management</h1>
-          <p>
+          <h1 className="page-header__title">Result management</h1>
+          <p className="page-header__subtitle">
             Process locked examination marks through review, approval, publication, and final
             locking.
           </p>
@@ -59,68 +65,103 @@ export default function ResultsDashboard() {
           Back to administration
         </Link>
       </header>
-      <section className="panel">
-        <label>
-          School ID
+
+      <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        {summary.map(([label, value]) => (
+          <div className="stat-card" key={label}>
+            <div className="stat-card__label">{label}</div>
+            <div className="stat-card__value">{value}</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>School context</h2>
+            <p>Confirm the active school before processing results or reading report summaries.</p>
+          </div>
+        </div>
+        <div className="form-field" style={{ maxWidth: '26rem' }}>
+          <label className="form-field__label">School ID</label>
           <input
             value={schoolId}
             onChange={(event) => setSchoolId(event.target.value)}
             placeholder="School UUID"
           />
-        </label>
-        {error && <p role="alert">{error}</p>}
+        </div>
+        {error && (
+          <p className="inline-alert" role="alert">
+            {error}
+          </p>
+        )}
       </section>
-      <section className="panel">
-        <h2>Process official results</h2>
-        <form className="space-y-3" onSubmit={process}>
-          <input
-            required
-            aria-label="Examination ID"
-            value={examinationId}
-            onChange={(event) => setExaminationId(event.target.value)}
-            placeholder="Locked examination UUID"
-          />
-          <input
-            required
-            aria-label="Grading scheme ID"
-            value={schemeId}
-            onChange={(event) => setSchemeId(event.target.value)}
-            placeholder="Active grading policy UUID"
-          />
-          <button className="primary-button" disabled={!schoolId}>
-            Process or recalculate
-          </button>
+
+      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <div className="section-heading">
+          <div>
+            <h2>Process official results</h2>
+            <p>Recalculate result sets using the approved exam and grading scheme.</p>
+          </div>
+        </div>
+
+        <form className="form-grid" onSubmit={process}>
+          <label className="form-field">
+            <span className="form-field__label">Examination ID</span>
+            <input
+              required
+              aria-label="Examination ID"
+              value={examinationId}
+              onChange={(event) => setExaminationId(event.target.value)}
+              placeholder="Locked examination UUID"
+            />
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Grading scheme ID</span>
+            <input
+              required
+              aria-label="Grading scheme ID"
+              value={schemeId}
+              onChange={(event) => setSchemeId(event.target.value)}
+              placeholder="Active grading policy UUID"
+            />
+          </label>
+
+          <div style={{ gridColumn: '1 / -1' }}>
+            <button className="primary-button" disabled={!schoolId} type="submit">
+              Process or recalculate
+            </button>
+          </div>
         </form>
       </section>
-      <section className="grid gap-4 sm:grid-cols-3">
-        {[
-          ['Results', stats?.count ?? 0],
-          ['Pass count', stats?.passCount ?? 0],
-          ['Average', Number(stats?.average ?? 0).toFixed(2)],
-        ].map(([label, value]) => (
-          <div className="panel" key={label}>
-            <p>{label}</p>
-            <strong>{value}</strong>
+
+      <section className="data-panel">
+        <div className="section-heading">
+          <div>
+            <h2>Official results</h2>
+            <p>Published academic outcomes and pass-rate summaries for the selected examination.</p>
           </div>
-        ))}
-      </section>
-      <section className="panel">
-        <h2>Official results</h2>
+          <span className="status-chip">{results.length} records</span>
+        </div>
+
         {results.length === 0 ? (
-          <p>No processed results found.</p>
+          <p className="empty-state">No processed results found.</p>
         ) : (
-          results.map((item) => (
-            <article className="student-row" key={item.id}>
-              <span>
-                <strong>{item.studentId}</strong>
-                <small>
-                  Total {item.total} · Average {item.average} · Grade {item.grade ?? '—'} · Position{' '}
-                  {item.position ?? '—'}
-                </small>
-              </span>
-              <span className="status-pill">{item.status}</span>
-            </article>
-          ))
+          <div className="result-list">
+            {results.map((item) => (
+              <article className="result-row" key={item.id}>
+                <span className="result-row__meta">
+                  <strong>{item.studentId}</strong>
+                  <small>
+                    Total {item.total} · Average {item.average} · Grade {item.grade ?? '—'} ·
+                    Position {item.position ?? '—'}
+                  </small>
+                </span>
+                <span className="status-pill">{item.status}</span>
+              </article>
+            ))}
+          </div>
         )}
       </section>
     </main>

@@ -9,15 +9,10 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-const accessTokenStorageKey = 'sais.accessToken';
-let accessToken =
-  typeof window !== 'undefined' ? window.sessionStorage.getItem(accessTokenStorageKey) : null;
+let accessToken = null;
 
 export const setAccessToken = (token) => {
   accessToken = token || null;
-  if (typeof window === 'undefined') return;
-  if (accessToken) window.sessionStorage.setItem(accessTokenStorageKey, accessToken);
-  else window.sessionStorage.removeItem(accessTokenStorageKey);
 };
 
 api.interceptors.request.use((config) => {

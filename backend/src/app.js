@@ -1,3 +1,3 @@
-import createApp from './bootstrap/createApp.js';
+import { createApp } from './foundation/app.js';
 
 export default createApp();

@@ -10,6 +10,7 @@ test('gradebook routes authenticate, resolve school scope and protect teacher mu
   assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/);
   assert.match(routes, /put\([\s\S]*'\/submissions\/:submissionId\/grade'/);
   assert.match(routes, /post\([\s\S]*'\/grades\/:id\/release'/);
+  assert.match(routes, /'\/assignments\/:assignmentId\/rubric'/);
 });
 
 test('gradebook service scopes persistence and hides draft grades from students', async () => {
@@ -18,6 +19,16 @@ test('gradebook service scopes persistence and hides draft grades from students'
   assert.match(service, /grade: \{ is: \{ status: 'RELEASED' \} \}/);
   assert.match(service, /Score cannot exceed maximum score/);
   assert.match(service, /Rubric score is outside the assigned rubric/);
+  assert.match(service, /Rubric is outside the assignment classroom/);
+});
+
+test('gradebook and feedback screens use persisted LMS APIs without demo rosters', async () => {
+  const gradebook = await source('../frontend/src/Gradebook.jsx');
+  const feedback = await source('../frontend/src/FeedbackWorkspace.jsx');
+  assert.match(gradebook, /api\.get\('\/lms\/gradebook\/grades'/);
+  assert.match(gradebook, /api\.post\('\/lms\/gradebook\/rubrics'/);
+  assert.match(feedback, /api\.get\('\/lms\/gradebook\/grades'/);
+  assert.doesNotMatch(feedback, /Amina Mensah|David Kim|Lena Ortiz/);
 });
 
 test('active server mounts compatibility and versioned gradebook APIs', async () => {

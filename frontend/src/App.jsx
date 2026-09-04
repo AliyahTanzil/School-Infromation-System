@@ -87,16 +87,15 @@ const BiometricManagementDashboard = lazy(() => import('./BiometricManagementDas
  * SHARED FORM COMPONENTS
  * ======================================================= */
 
-const inputClass =
-  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100';
+const inputClass = 'form-input';
 
 function Field({ label, type = 'text', value, onChange, placeholder, required = true }) {
   const [visible, setVisible] = useState(false);
   const isPassword = type === 'password';
 
   return (
-    <label className="block space-y-2">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
+    <label className="form-field">
+      <span className="form-field__label">{label}</span>
 
       <div className="relative">
         <input
@@ -112,7 +111,7 @@ function Field({ label, type = 'text', value, onChange, placeholder, required = 
           <button
             type="button"
             onClick={() => setVisible((current) => !current)}
-            className="absolute right-3 top-3 text-slate-400"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
             aria-label="Toggle password visibility"
           >
             {visible ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -129,25 +128,22 @@ function Field({ label, type = 'text', value, onChange, placeholder, required = 
 
 function AuthShell({ children, title, subtitle }) {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
-      <div className="mx-auto max-w-md">
-        <Link to="/" className="mb-8 flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
-            S
-          </div>
-
-          <span className="font-semibold tracking-tight">
-            SAIS <span className="font-normal text-slate-400">/ identity</span>
+    <div className="auth-shell">
+      <div className="auth-shell__panel">
+        <Link to="/" className="auth-shell__brand" aria-label="Return to home">
+          <div className="auth-shell__mark">S</div>
+          <span>
+            SAIS <span style={{ color: '#728196' }}> / identity</span>
           </span>
         </Link>
 
-        <div className="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/50 sm:p-9">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <div>
+          <p className="auth-shell__eyebrow">Secure access</p>
+          <h1 className="auth-shell__title">{title}</h1>
+          <p className="auth-shell__subtitle">{subtitle}</p>
+        </div>
 
-            <p className="mt-2 text-sm leading-6 text-slate-500">{subtitle}</p>
-          </div>
-
+        <div className="form-stack" style={{ marginTop: '1.75rem' }}>
           {children}
         </div>
       </div>
@@ -266,7 +262,7 @@ function Login() {
 
   return (
     <AuthShell title={roleConfig.title} subtitle={roleConfig.subtitle}>
-      <form onSubmit={submit} className="space-y-5">
+      <form onSubmit={submit} className="form-stack">
         <Field
           label="Email address"
           type="email"
@@ -294,19 +290,12 @@ function Login() {
         />
 
         <div className="flex justify-end">
-          <Link
-            to="/forgot-password"
-            className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
-          >
+          <Link to="/forgot-password" className="action-link">
             Forgot password?
           </Link>
         </div>
 
-        <button
-          type="submit"
-          disabled={busy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        <button type="submit" disabled={busy} className="primary-button">
           {busy ? 'Signing in…' : 'Sign in'}
 
           {!busy && <ArrowRight size={17} />}
@@ -709,39 +698,51 @@ function Dashboard() {
   };
 
   return (
-    <div className="workspace-overview min-h-screen p-6">
-      <div className="mx-auto max-w-6xl">
-        <header className="flex items-center justify-between">
+    <div className="app-shell">
+      <div className="page-shell" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <header className="page-header" style={{ marginBottom: '1.5rem' }}>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 font-bold text-white">
+            <div className="auth-shell__mark" style={{ width: '2.5rem', height: '2.5rem' }}>
               S
             </div>
 
-            <span className="font-semibold">SAIS workspace</span>
+            <span className="font-semibold" style={{ fontSize: '1.05rem' }}>
+              SAIS workspace
+            </span>
           </div>
 
           <button
             type="button"
             onClick={handleLogout}
-            className="text-sm font-semibold text-slate-500 hover:text-slate-900"
+            className="secondary-button"
+            style={{ minWidth: '7rem' }}
           >
             Sign out
           </button>
         </header>
 
-        <div className="mt-10 rounded-3xl bg-indigo-600 p-8 text-white">
-          <p className="text-sm text-indigo-200">Good to see you</p>
+        <div
+          className="data-panel"
+          style={{
+            marginBottom: '1.5rem',
+            background: 'linear-gradient(135deg, #2f6bff, #1f5ae9)',
+          }}
+        >
+          <p style={{ margin: 0, color: 'rgba(255,255,255,0.82)' }}>Good to see you</p>
 
-          <h1 className="mt-2 text-3xl font-bold">{displayName}</h1>
+          <h1 style={{ margin: '0.5rem 0 0', color: '#fff', fontSize: 'clamp(2rem, 3vw, 3rem)' }}>
+            {displayName}
+          </h1>
 
-          <p className="mt-3 max-w-lg text-indigo-100">
+          <p style={{ margin: '0.75rem 0 0', maxWidth: '42rem', color: 'rgba(255,255,255,0.82)' }}>
             Your identity is verified. Your authorized SAIS modules are available through your
             assigned workspace.
           </p>
         </div>
         <section
-          className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          className="stat-grid"
           aria-label="Workspace shortcuts"
+          style={{ marginBottom: '1.5rem' }}
         >
           {[
             ['/admin', 'Administration', 'Manage school operations', LayoutDashboard],
@@ -749,23 +750,78 @@ function Dashboard() {
             ['/teachers', 'Teachers', 'Staff and teaching profiles', Users],
             ['/academic-calendar', 'Calendar', 'Terms and school events', CalendarDays],
           ].map(([href, label, description, Icon]) => (
-            <Link key={href} to={href} className="overview-shortcut">
-              <Icon size={20} />
-              <strong>{label}</strong>
-              <span>{description}</span>
-              <ArrowRight size={16} />
+            <Link
+              key={href}
+              to={href}
+              className="stat-card"
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <span
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '2.2rem',
+                    height: '2.2rem',
+                    borderRadius: '0.7rem',
+                    background: '#eef3ff',
+                    color: '#2f6bff',
+                  }}
+                >
+                  <Icon size={18} />
+                </span>
+                <ArrowRight size={16} style={{ color: '#2f6bff' }} />
+              </div>
+              <strong style={{ display: 'block', marginTop: '0.9rem', fontSize: '1.05rem' }}>
+                {label}
+              </strong>
+              <span
+                style={{
+                  display: 'block',
+                  marginTop: '0.35rem',
+                  color: '#4f5e75',
+                  fontSize: '0.85rem',
+                }}
+              >
+                {description}
+              </span>
             </Link>
           ))}
         </section>
-        <section className="overview-next-steps">
-          <div>
-            <BookOpen size={20} />
+        <section
+          className="data-panel"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div
+              style={{
+                width: '2.5rem',
+                height: '2.5rem',
+                display: 'grid',
+                placeItems: 'center',
+                borderRadius: '0.8rem',
+                background: '#edf5ff',
+              }}
+            >
+              <BookOpen size={18} style={{ color: '#2f6bff' }} />
+            </div>
             <span>
-              <strong>Development environment ready</strong>
-              <small>Database migrations and authenticated role accounts are available.</small>
+              <strong style={{ display: 'block' }}>Development environment ready</strong>
+              <small style={{ color: '#4f5e75' }}>
+                Database migrations and authenticated role accounts are available.
+              </small>
             </span>
           </div>
-          <Link to="/admin">
+          <Link to="/admin" className="primary-button">
             Open full administration <ArrowRight size={16} />
           </Link>
         </section>

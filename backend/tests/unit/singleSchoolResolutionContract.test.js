@@ -23,3 +23,22 @@ test('active foundation server mounts both student API paths', async () => {
   assert.match(source, /app\.use\('\/api\/students', studentRouter\)/);
   assert.match(source, /app\.use\('\/api\/v1\/students', studentRouter\)/);
 });
+
+test('school creation schema does not require a client-supplied tenant id', async () => {
+  const source = await readFile(
+    new URL('../../src/application/validators/schoolValidators.js', import.meta.url),
+    'utf8'
+  );
+
+  assert.doesNotMatch(source, /tenantId:\s*z\.string\(\)\.uuid\(\)/);
+  assert.doesNotMatch(source, /tenantId\s*[:=]/);
+});
+
+test('school creation falls back to a hidden umbrella tenant when no tenant id is supplied', async () => {
+  const source = await readFile(
+    new URL('../../src/application/services/schoolService.js', import.meta.url),
+    'utf8'
+  );
+
+  assert.match(source, /resolve.*tenant|hidden.*tenant|SINGLE_SCHOOL_NAME|Umbrella School/i);
+});

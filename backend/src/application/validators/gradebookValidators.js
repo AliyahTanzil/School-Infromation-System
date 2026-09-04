@@ -26,6 +26,10 @@ export const rubricStatusSchema = z.object({
   params: z.object({ id }),
   body: z.object({ status: z.enum(['PUBLISHED', 'ARCHIVED']) }).strict(),
 });
+export const rubricAssignmentSchema = z.object({
+  params: z.object({ assignmentId: id }),
+  body: z.object({ rubricId: id.nullable() }).strict(),
+});
 export const gradeListSchema = z.object({ query: z.object({ assignmentId: id }) });
 export const gradeSaveSchema = z.object({
   params: z.object({ submissionId: id }),

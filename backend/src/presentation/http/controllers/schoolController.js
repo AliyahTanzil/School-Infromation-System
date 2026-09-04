@@ -1,5 +1,6 @@
 import service from '../../../application/services/schoolService.js';
-const tenant = (req) => req.user.tenantId ?? req.headers['x-tenant-id'];
+const tenant = (req) =>
+  req.schoolContext?.tenantId ?? req.user?.tenantId ?? req.headers['x-tenant-id'];
 const send = (res, data, status = 200) => res.status(status).json({ success: true, data });
 export default {
   list: async (req, res) => send(res, await service.list({ tenantId: tenant(req), ...req.query })),

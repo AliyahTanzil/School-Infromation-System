@@ -13,19 +13,19 @@ test('redacts credential-shaped request fields', () => {
 
 test('ignores caller-supplied tenant context', () => {
   const req = {
-    user: { tenantId: 'tenant-a' },
+    user: { tenantId: 'tenant-a', schoolId: 'school-1' },
     query: { tenantId: 'tenant-b' },
     params: {},
     get: () => undefined,
   };
   req.auth = {};
   requireTenantContext(req, {}, () => {});
-  assert.equal(req.auth.tenantId, 'tenant-a');
+  assert.equal(req.auth.schoolId, 'school-1');
 });
 
-test('does not accept tenant context without authentication', () => {
+test('does not accept school context without authentication', () => {
   const req = { user: undefined, query: {}, params: {}, get: () => undefined };
-  assert.throws(() => requireTenantContext(req, {}, () => {}), /Tenant context required/);
+  assert.throws(() => requireTenantContext(req, {}, () => {}), /School context required/);
 });
 
 test('pagination clamps page size in the student service source', async () => {

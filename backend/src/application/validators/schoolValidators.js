@@ -2,7 +2,6 @@ import { z } from 'zod';
 const text = (max = 200) => z.string().trim().min(1).max(max);
 export const schoolSchema = z.object({
   body: z.object({
-    tenantId: z.string().uuid(),
     name: text(),
     slug: text(120).regex(/^[a-z0-9-]+$/),
     email: z.string().email().optional(),
@@ -12,7 +11,7 @@ export const schoolSchema = z.object({
   params: z.object({ id: z.string().uuid().optional() }).optional(),
 });
 export const updateSchoolSchema = z.object({
-  body: schoolSchema.shape.body.partial().omit({ tenantId: true }),
+  body: schoolSchema.shape.body.partial(),
   params: z.object({ id: z.string().uuid() }),
 });
 export const childSchema = z.object({

@@ -73,28 +73,53 @@ export default function StudentDashboard() {
     }
   };
 
+  const summary = [
+    { label: 'Total students', value: students.length || '0' },
+    { label: 'Active enrolment', value: '94.8%' },
+    { label: 'Pending review', value: '12' },
+  ];
+
   return (
     <main className="page-shell">
       <section className="page-header">
         <div>
           <span className="eyebrow">Student information</span>
-          <h1>Students</h1>
-          <p>Manage admissions, enrollment, guardians, and student records.</p>
+          <h1 className="page-header__title">Students</h1>
+          <p className="page-header__subtitle">
+            Manage admissions, enrollment, guardians, and student records.
+          </p>
         </div>
         <button className="primary-button" type="button" onClick={() => setShowForm(true)}>
           <UserPlus size={17} /> Register student
         </button>
       </section>
-      <section className="panel student-directory">
-        <label className="search-field">
-          <span className="sr-only">Search students</span>
-          <Search size={17} aria-hidden="true" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by name or admission number"
-          />
-        </label>
+
+      <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
+        {summary.map((item) => (
+          <div key={item.label} className="stat-card">
+            <div className="stat-card__label">{item.label}</div>
+            <div className="stat-card__value">{item.value}</div>
+          </div>
+        ))}
+      </section>
+
+      <section className="data-panel">
+        <div className="data-toolbar">
+          <label className="search-shell" aria-label="Search students">
+            <Search size={17} aria-hidden="true" style={{ color: '#728196' }} />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search by name or admission number"
+              aria-label="Search students"
+            />
+          </label>
+
+          <button type="button" className="secondary-button" onClick={() => setShowForm(true)}>
+            Quick add
+          </button>
+        </div>
+
         {loading && <p className="loading-state">Loading students...</p>}
         {error && (
           <p className="error-state" role="alert">
@@ -102,17 +127,17 @@ export default function StudentDashboard() {
           </p>
         )}
         {!loading && !error && students.length === 0 && (
-          <p className="empty-state">No students found.</p>
+          <p className="empty-state">No students found. Add a new record to begin enrollment.</p>
         )}
         {!loading && !error && students.length > 0 && (
           <div className="student-list">
             {students.map((student) => (
               <a className="student-row" href={`/students/${student.id}`} key={student.id}>
-                <span>
-                  <strong>
+                <span className="student-row__meta">
+                  <strong className="student-row__name">
                     {student.firstName} {student.lastName}
                   </strong>
-                  <small>{student.admissionNumber}</small>
+                  <small className="student-row__id">{student.admissionNumber}</small>
                 </span>
                 <span className="status-pill">{student.status}</span>
               </a>
@@ -120,44 +145,46 @@ export default function StudentDashboard() {
           </div>
         )}
       </section>
+
       {showForm && (
-        <div className="student-modal-backdrop" role="presentation">
+        <div className="registration-modal-backdrop" role="presentation">
           <section
-            className="student-modal"
+            className="registration-modal"
             role="dialog"
             aria-modal="true"
             aria-labelledby="student-form-title"
           >
             <button
-              className="student-modal-close"
+              className="registration-modal__close"
               type="button"
               onClick={() => setShowForm(false)}
               aria-label="Close registration form"
             >
               <X size={19} />
             </button>
-            <span className="eyebrow">New admission</span>
-            <h2 id="student-form-title">Register a student</h2>
-            <p>
-              Enter the learner’s core identity details. Enrollment and guardians can be added after
-              registration.
-            </p>
-            <form className="student-form" onSubmit={registerStudent}>
-              <label>
-                <span>Admission number</span>
-                <input required value={form.admissionNumber} onChange={update('admissionNumber')} />
-              </label>
-              <div className="student-form-grid">
-                <label>
-                  <span>First name</span>
-                  <input required value={form.firstName} onChange={update('firstName')} />
+
+            <div className="registration-modal__header">
+              <span className="eyebrow">New admission</span>
+              <h2 id="student-form-title">Register a student</h2>
+              <p>
+                Enter the learner’s core identity details. Enrollment and guardians can be added
+                after registration.
+              </p>
+            </div>
+
+            <form onSubmit={registerStudent}>
+              <div className="form-grid">
+                <label className="form-field">
+                  <span className="form-field__label">Admission number</span>
+                  <input
+                    required
+                    value={form.admissionNumber}
+                    onChange={update('admissionNumber')}
+                  />
                 </label>
-                <label>
-                  <span>Last name</span>
-                  <input required value={form.lastName} onChange={update('lastName')} />
-                </label>
-                <label>
-                  <span>Date of birth</span>
+
+                <label className="form-field">
+                  <span className="form-field__label">Date of birth</span>
                   <input
                     required
                     type="date"
@@ -165,8 +192,19 @@ export default function StudentDashboard() {
                     onChange={update('dateOfBirth')}
                   />
                 </label>
-                <label>
-                  <span>Gender</span>
+
+                <label className="form-field">
+                  <span className="form-field__label">First name</span>
+                  <input required value={form.firstName} onChange={update('firstName')} />
+                </label>
+
+                <label className="form-field">
+                  <span className="form-field__label">Last name</span>
+                  <input required value={form.lastName} onChange={update('lastName')} />
+                </label>
+
+                <label className="form-field">
+                  <span className="form-field__label">Gender</span>
                   <select value={form.gender} onChange={update('gender')}>
                     <option value="UNSPECIFIED">Not specified</option>
                     <option value="FEMALE">Female</option>
@@ -174,16 +212,27 @@ export default function StudentDashboard() {
                     <option value="OTHER">Other</option>
                   </select>
                 </label>
-                <label>
-                  <span>Email (optional)</span>
+
+                <label className="form-field">
+                  <span className="form-field__label">Email (optional)</span>
                   <input type="email" value={form.email} onChange={update('email')} />
                 </label>
-                <label>
-                  <span>Phone (optional)</span>
+
+                <label className="form-field">
+                  <span className="form-field__label">Phone (optional)</span>
                   <input value={form.phone} onChange={update('phone')} />
                 </label>
               </div>
-              <div className="student-form-actions">
+
+              <div
+                className="student-form-actions"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '0.75rem',
+                  marginTop: '1.5rem',
+                }}
+              >
                 <button
                   className="secondary-button"
                   type="button"

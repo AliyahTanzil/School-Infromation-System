@@ -3,7 +3,7 @@ import test from 'node:test';
 import express from 'express';
 import request from 'supertest';
 import cookieParser from 'cookie-parser';
-import { setRefreshCookie } from '../../src/shared/utils/cookies.js';
+import { readRefreshToken, setRefreshCookie } from '../../src/shared/utils/cookies.js';
 
 test('sets a secure same-site refresh cookie in production', async () => {
   const previousEnv = globalThis.process.env.NODE_ENV;
@@ -25,4 +25,13 @@ test('sets a secure same-site refresh cookie in production', async () => {
 
   if (previousEnv === undefined) delete globalThis.process.env.NODE_ENV;
   else globalThis.process.env.NODE_ENV = previousEnv;
+});
+
+test('refuses body refresh tokens by default when no cookie is present', () => {
+  const req = {
+    cookies: {},
+    body: { refreshToken: 'body-refresh-token' },
+  };
+
+  assert.equal(readRefreshToken(req), undefined);
 });

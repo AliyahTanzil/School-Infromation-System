@@ -1,20 +1,22 @@
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import authorizationService from '../../application/services/authorizationService.js';
 
-function tenantFromRequest(req) {
-  return req.auth?.tenantId || req.user?.tenantId || null;
+function schoolScopeFromRequest(req) {
+  return req.schoolContext?.schoolId ?? req.auth?.schoolId ?? req.user?.schoolId ?? null;
 }
 
 export function requireTenantContext(req, _res, next) {
-  const tenantId = tenantFromRequest(req);
-  if (!tenantId) throw new AuthorizationError('Tenant context required', 'TENANT_CONTEXT_REQUIRED');
-  req.auth = { ...req.auth, tenantId };
+  const schoolId = schoolScopeFromRequest(req);
+  if (!schoolId) {
+    throw new AuthorizationError('School context required', 'SCHOOL_CONTEXT_REQUIRED');
+  }
+  req.auth = { ...req.auth, schoolId, tenantId: req.auth?.tenantId ?? req.user?.tenantId ?? null };
   next();
 }
 
 export function requirePermission(
   permissionCode,
-  scopeResolver = (req) => req.auth?.tenantId ?? 'global'
+  scopeResolver = (req) => req.auth?.schoolId ?? req.user?.schoolId ?? 'school'
 ) {
   return async (req, _res, next) => {
     const scopeKey = scopeResolver(req);
@@ -34,11 +36,11 @@ export function requireRole(...roleCodes) {
   };
 }
 
-export function requirePlatformOwner(req, _res, next) {
-  if (req.user?.platformRole !== 'OWNER') {
-    throw new AuthorizationError('Platform owner access required', 'PLATFORM_OWNER_REQUIRED');
-  }
-  next();
+export function requirePlatformOwner() {
+  throw new AuthorizationError(
+    'Platform access is not available in single-school mode',
+    'PLATFORM_ACCESS_DISABLED'
+  );
 }
 
 export default { requireTenantContext, requirePermission, requireRole, requirePlatformOwner };

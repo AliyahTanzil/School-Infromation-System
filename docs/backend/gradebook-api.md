@@ -10,6 +10,8 @@ school context; request bodies cannot select either value.
 - `POST /rubrics` creates a rubric and its ordered criteria. School administrators and classroom
   teachers may create rubrics.
 - `PATCH /rubrics/:id/status` publishes or archives a rubric.
+- `PATCH /assignments/:assignmentId/rubric` attaches or removes a rubric from an assignment after
+  confirming that both records belong to the same classroom.
 - `GET /grades?assignmentId=<uuid>` returns submission rows. Teachers see their classroom roster;
   students see only their own released grade.
 - `PUT /submissions/:submissionId/grade` creates or replaces a draft grade and optional rubric scores.
