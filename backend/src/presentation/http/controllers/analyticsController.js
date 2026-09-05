@@ -1,6 +1,6 @@
 import {
-  analyticsDemo,
   evaluateKpi,
+  getLearningAnalytics,
   getOverview,
   listKpis,
   requestExport,
@@ -8,9 +8,7 @@ import {
 
 export async function overview(req, res) {
   const tenantId = req.user?.tenantId;
-  const data = tenantId
-    ? await getOverview({ tenantId, schoolId: req.user?.schoolId })
-    : analyticsDemo;
+  const data = await getOverview({ tenantId, schoolId: req.user?.schoolId });
   return res.json({ success: true, data });
 }
 
@@ -24,6 +22,11 @@ export async function kpi(req, res) {
     success: true,
     data: evaluateKpi({ tenantId: req.user?.tenantId, metricKey: req.params.metricKey }),
   });
+}
+
+export async function learningAnalytics(req, res) {
+  const data = await getLearningAnalytics({ tenantId: req.user?.tenantId });
+  return res.json({ success: true, data });
 }
 
 export async function exportReport(req, res) {

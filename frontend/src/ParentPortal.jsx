@@ -101,6 +101,14 @@ export default function ParentPortal() {
                     </strong>
                   </div>
                 </div>
+                <div className="mt-4 flex justify-end">
+                  <a
+                    href={`/parent-classroom?studentId=${student.id}`}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 px-3.5 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+                  >
+                    Open classroom workspace →
+                  </a>
+                </div>
               </article>
             ))}
           </div>

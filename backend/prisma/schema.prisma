@@ -232,6 +232,7 @@ model User {
   authoredRubrics        Rubric[]                 @relation("RubricAuthor")
   gradedSubmissions      SubmissionGrade[]        @relation("SubmissionGrader")
   feedbackComments       GradeFeedback[]          @relation("FeedbackAuthor")
+  hostedLiveSessions     ClassroomLiveSession[]   @relation("LiveSessionHost")
 
   @@index([tenantId, status])
 }
@@ -783,6 +784,7 @@ model DigitalClassroom {
   materials      DigitalMaterial[]
   quizzes        Quiz[]
   rubrics        Rubric[]
+  liveSessions   ClassroomLiveSession[]
   academicTerm   AcademicTerm?            @relation(fields: [academicTermId], references: [id], onDelete: SetNull)
   academicTermId String?                  @db.Uuid
 
@@ -2158,4 +2160,27 @@ model ScheduleSubstitution {
   createdAt           DateTime @default(now())
 
   @@index([timetableId, startsAt, endsAt])
+}
+
+model ClassroomLiveSession {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @db.Uuid
+  schoolId       String           @db.Uuid
+  classroomId    String           @db.Uuid
+  hostId         String           @db.Uuid
+  title          String
+  description    String?
+  scheduledAt    DateTime
+  endedAt        DateTime?
+  status         String           @default("SCHEDULED")
+  meetingUrl     String?
+  roomCode       String?
+  recordingUrl   String?
+  recordingTitle String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  classroom      DigitalClassroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  host           User             @relation("LiveSessionHost", fields: [hostId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, schoolId, classroomId, status, scheduledAt])
 }

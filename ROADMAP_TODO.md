@@ -67,11 +67,11 @@ A feature task is complete only when all applicable layers exist:
 |    22 | LMS-005     | DONE    | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
 |    23 | LMS-006     | DONE    | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
 |    24 | LMS-007     | DONE    | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
-|    25 | LMS-008     | READY   | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
-|    26 | LMS-009     | BLOCKED | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
-|    27 | LMS-010     | BLOCKED | Implement classroom communication and live-learning orchestration | LMS-002, LMS-008              | Core 51.17-51.18                  |
-|    28 | ANA-001     | BLOCKED | Replace demo analytics with persisted, calculated metrics         | ATT-001, RES-001, FIN-001     | Core 26, 35, 51.19                |
-|    29 | SRCH-001    | BLOCKED | Implement permission-aware global classroom search                | LMS-001 through LMS-010       | Core 51.22                        |
+|    25 | LMS-008     | DONE    | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
+|    26 | LMS-009     | DONE    | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
+|    27 | LMS-010     | DONE    | Implement classroom communication and live-learning orchestration | LMS-002, LMS-008              | Core 51.17-51.18                  |
+|    28 | ANA-001     | DONE    | Replace demo analytics with persisted, calculated metrics         | ATT-001, RES-001, FIN-001     | Core 26, 35, 51.19                |
+|    29 | SRCH-001    | DONE    | Implement permission-aware global classroom search                | LMS-001 through LMS-010       | Core 51.22                        |
 |    30 | AI-001      | BLOCKED | Build grounded AI provider and evidence pipeline                  | ANA-001, SEC-001              | Core 27, 36-38, 51.20             |
 |    31 | AI-002      | BLOCKED | Implement academic integrity evidence workflow                    | LMS-005, LMS-006, AI-001      | Core 51.21                        |
 |    32 | PRD-001     | BLOCKED | Implement predictive analytics lifecycle                          | ANA-001, AI-001               | Core 39                           |
@@ -199,6 +199,10 @@ Update this summary whenever a task status changes.
 | 2026-08-29 | LMS-007 | Codex | CLAIMED | Auditing gradebook, rubric criteria, submission and quiz scoring, teacher feedback, publication controls, tenant scope, UI, documentation, migrations and tests. |
 | 2026-09-02 | LMS-007 | Codex | CHECKPOINT | Mounted authenticated rubric/grade/feedback APIs on both active paths, enforced classroom and school ownership, replaced the static teacher gradebook with persisted classroom/assignment/submission workflows, documented the contract, and passed lint, both builds, and the full backend suite (187 passed, 1 skipped). Rubric and released-feedback UI remain. |
 | 2026-09-02 | LMS-007 | Codex | DONE | Added rubric creation, publication, assignment and bounded criterion scoring; activated draft/release controls and persisted student feedback threads; removed demo feedback data; documented both API mounts; lint, focused contracts, production builds, and the full backend suite pass (188 passed, 1 skipped). |
+| 2026-09-05 | LMS-008 | GitHub Copilot | CLAIMED | Auditing classroom calendar event composition and assignment lifecycle notification delivery across existing LMS, timetable, and communication services. |
+| 2026-09-05 | LMS-008 | GitHub Copilot | DONE | Added authenticated calendar reads that combine published assignment availability/deadlines with published timetable lessons for linked academic classes; publishing notifies other active members via persisted in-app deliveries. Bounded to requested date window. Node dependencies installed (`npm ci`), full backend test suite, frontend tests, lint, mobile typecheck, and diff check pass. |
+| 2026-09-05 | LMS-009 | GitHub Copilot | DONE | Connected teacher, student, and parent dashboards to live LMS data (`/lms/classrooms`, `/lms/assignments`, `/lms/calendar`, `/communication/unread-count`, `/parents/me`). Removed static demo classroom data. All tests and lint pass. |
+| 2026-09-05 | LMS-010 | GitHub Copilot | DONE | Added relational `ClassroomLiveSession` model, migration, validated lifecycle service, controller, and routes (`/api/lms/live-sessions`, `/api/v1/lms/live-sessions`). Connected `LiveLearningWorkspace.jsx` to live LMS endpoints. Added unit contract tests. All tests, lint, and typecheck pass. |
 
 | 2026-08-27 | TTB-001 | Codex | DONE | Reconciled timetable persistence with the active flat Prisma schema and AcademicTerm model; added non-destructive migration, authenticated school context, active compatibility/versioned mounts, lifecycle versioning, conflict publication gate, substitutions, creation UI, back navigation, contract tests, and full build verification (109 passed, 1 skipped). |
 

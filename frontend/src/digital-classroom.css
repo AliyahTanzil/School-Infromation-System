@@ -240,6 +240,33 @@
   margin-top: 20px;
   padding-top: 20px;
 }
+.dc-classwork h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.dc-calendar {
+  display: grid;
+  gap: 8px;
+}
+.dc-calendar article {
+  display: grid;
+  grid-template-columns: minmax(108px, 0.7fr) minmax(0, 1.5fr) auto;
+  align-items: center;
+  gap: 12px;
+  border-left: 3px solid #21c4c9;
+  background: #0b1b2e;
+  padding: 11px 12px;
+}
+.dc-calendar time {
+  color: #bdd2e9;
+  font-size: 13px;
+}
+.dc-calendar small {
+  color: #21c4c9;
+  font-weight: 700;
+}
 .dc-assignment-form {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr 1.2fr 0.6fr;
@@ -290,6 +317,10 @@
   }
   .dc-material-form {
     grid-template-columns: 1fr;
+  }
+  .dc-calendar article {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
   .dc-assignment-form textarea,
   .dc-assignment-form button,

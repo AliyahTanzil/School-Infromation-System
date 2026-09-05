@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   BrowserRouter,
   Link,
@@ -7,6 +7,7 @@ import {
   Routes,
   useLocation,
   useNavigate,
+  useSearchParams,
 } from 'react-router-dom';
 
 /* eslint-disable react/prop-types */
@@ -21,6 +22,7 @@ import {
   EyeOff,
   GraduationCap,
   LayoutDashboard,
+  ShieldCheck,
   Users,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
@@ -126,10 +128,10 @@ function Field({ label, type = 'text', value, onChange, placeholder, required = 
  * AUTH SHELL
  * ======================================================= */
 
-function AuthShell({ children, title, subtitle }) {
+function AuthShell({ children, title, subtitle, wide = false }) {
   return (
     <div className="auth-shell">
-      <div className="auth-shell__panel">
+      <div className="auth-shell__panel" style={{ width: wide ? 'min(100%, 32rem)' : undefined }}>
         <Link to="/" className="auth-shell__brand" aria-label="Return to home">
           <div className="auth-shell__mark">S</div>
           <span>
@@ -143,7 +145,7 @@ function AuthShell({ children, title, subtitle }) {
           <p className="auth-shell__subtitle">{subtitle}</p>
         </div>
 
-        <div className="form-stack" style={{ marginTop: '1.75rem' }}>
+        <div className="form-stack" style={{ marginTop: '1.5rem' }}>
           {children}
         </div>
       </div>
@@ -220,118 +222,36 @@ function getDestinationForUser(user) {
 }
 
 /* =========================================================
- * LOGIN
+ * LOGIN & SIGN UP
+ * Integrated Sign In & Sign Up with Owner vs Staff accounts
  * ======================================================= */
 
-function Login() {
-  const { login } = useAuth();
+function Login({ defaultMode = 'login', defaultType = 'owner' }) {
+  const { login, register } = useAuth();
   const nav = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const roleConfig = {
-    title: 'School Information System sign in',
-    subtitle: 'Sign in with the account issued by your school administrator.',
-  };
+  const urlMode = searchParams.get('mode');
+  const urlType = searchParams.get('type');
 
-  const [form, setForm] = useState({
+  const [mode, setMode] = useState(
+    urlMode === 'signup' || defaultMode === 'signup' ? 'signup' : 'login'
+  );
+  const [accountType, setAccountType] = useState(
+    urlType === 'staff' || defaultType === 'staff' ? 'staff' : 'owner'
+  );
+
+  useEffect(() => {
+    if (urlMode) setMode(urlMode === 'signup' ? 'signup' : 'login');
+    if (urlType) setAccountType(urlType === 'staff' ? 'staff' : 'owner');
+  }, [urlMode, urlType]);
+
+  const [loginForm, setLoginForm] = useState({
     email: '',
     password: '',
   });
 
-  const [busy, setBusy] = useState(false);
-
-  const submit = async (event) => {
-    event.preventDefault();
-    setBusy(true);
-
-    try {
-      const result = await login(form);
-      const user = result.user;
-
-      const destination = getDestinationForUser(user);
-
-      toast.success('Welcome back');
-      nav(destination, {
-        replace: true,
-      });
-    } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Unable to sign in'));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <AuthShell title={roleConfig.title} subtitle={roleConfig.subtitle}>
-      <form onSubmit={submit} className="form-stack">
-        <Field
-          label="Email address"
-          type="email"
-          value={form.email}
-          onChange={(event) =>
-            setForm((current) => ({
-              ...current,
-              email: event.target.value,
-            }))
-          }
-          placeholder="you@school.edu"
-        />
-
-        <Field
-          label="Password"
-          type="password"
-          value={form.password}
-          onChange={(event) =>
-            setForm((current) => ({
-              ...current,
-              password: event.target.value,
-            }))
-          }
-          placeholder="Enter your password"
-        />
-
-        <div className="flex justify-end">
-          <Link to="/forgot-password" className="action-link">
-            Forgot password?
-          </Link>
-        </div>
-
-        <button type="submit" disabled={busy} className="primary-button">
-          {busy ? 'Signing in…' : 'Sign in'}
-
-          {!busy && <ArrowRight size={17} />}
-        </button>
-      </form>
-
-      <p className="mt-7 text-center text-xs text-slate-500">
-        Accounts are created and assigned by an authorized school administrator.
-      </p>
-    </AuthShell>
-  );
-}
-
-/* =========================================================
- * TENANT REGISTRATION
- *
- * Application Owner registration is NOT handled here.
- * The first Owner is provisioned securely by backend bootstrap.
- * ======================================================= */
-
-// Retained temporarily for migration reference; no public route renders it.
-export function Register() {
-  const { register } = useAuth();
-
-  const location = useLocation();
-  const nav = useNavigate();
-
-  const isManager =
-    location.pathname.startsWith('/manager') || location.pathname.startsWith('/owner');
-
-  const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    designation: '',
-    email: '',
-    password: '',
+  const [ownerForm, setOwnerForm] = useState({
     schoolName: '',
     schoolMotto: '',
     schoolCity: '',
@@ -339,277 +259,511 @@ export function Register() {
     primaryColor: '#4f46e5',
     secondaryColor: '#f59e0b',
     badgeUrl: '',
+    firstName: '',
+    lastName: '',
+    designation: 'School Owner',
+    email: '',
+    password: '',
+  });
+
+  const [staffForm, setStaffForm] = useState({
+    firstName: '',
+    lastName: '',
+    designation: 'Teacher',
+    schoolName: '',
+    email: '',
+    password: '',
   });
 
   const [busy, setBusy] = useState(false);
+  const [pendingActivation, setPendingActivation] = useState(false);
 
-  const update = (key, value) => {
-    setForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+  const handleModeSwitch = (newMode) => {
+    setMode(newMode);
+    setPendingActivation(false);
+    setSearchParams(newMode === 'signup' ? { mode: 'signup', type: accountType } : {});
+  };
+
+  const handleTypeSwitch = (newType) => {
+    setAccountType(newType);
+    setSearchParams({ mode: 'signup', type: newType });
+  };
+
+  const updateOwner = (key, value) => {
+    setOwnerForm((current) => ({ ...current, [key]: value }));
+  };
+
+  const updateStaff = (key, value) => {
+    setStaffForm((current) => ({ ...current, [key]: value }));
   };
 
   const handleBadge = (event) => {
     const file = event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
-
+    if (!file) return;
     if (!file.type.startsWith('image/') || file.size > 2 * 1024 * 1024) {
       toast.error('Choose an image badge smaller than 2MB');
-
       return;
     }
-
     const reader = new FileReader();
-
-    reader.onload = () => {
-      update('badgeUrl', reader.result);
-    };
-
+    reader.onload = () => updateOwner('badgeUrl', reader.result);
     reader.readAsDataURL(file);
   };
 
-  /*
-   * Owner public registration is permanently unavailable.
-   */
-  if (isManager) {
-    return (
-      <AuthShell
-        title="Application Owner registration unavailable"
-        subtitle="The SAIS Application Owner account is securely provisioned during platform initialization."
-      >
-        <div className="space-y-5">
-          <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
-            <p className="font-semibold text-indigo-950">
-              An Application Owner account already exists.
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-indigo-800">
-              Additional Application Owner accounts cannot be created from the public registration
-              interface.
-            </p>
-          </div>
-
-          <Link
-            to="/owner/login"
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700"
-          >
-            Application Owner sign in
-            <ArrowRight size={17} />
-          </Link>
-
-          <Link
-            to="/tenant/register"
-            className="block text-center text-sm font-semibold text-indigo-600"
-          >
-            Register a school tenant instead
-          </Link>
-        </div>
-      </AuthShell>
-    );
-  }
-
-  const submit = async (event) => {
+  const handleLoginSubmit = async (event) => {
     event.preventDefault();
     setBusy(true);
 
     try {
-      await register({
-        ...form,
+      const result = await login(loginForm);
+      const user = result.user;
+      const destination = getDestinationForUser(user);
+      toast.success('Welcome back');
+      nav(destination, { replace: true });
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Unable to sign in'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleOwnerSubmit = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+
+    try {
+      const result = await register({
+        ...ownerForm,
         accountType: 'TENANT_ADMIN',
       });
 
-      toast.success('Account submitted. Complete the activation process to continue.');
-
-      nav('/tenant/login', {
-        replace: true,
-      });
+      if (result?.activationPending) {
+        setPendingActivation(true);
+        toast.success('Owner account submitted for activation.');
+      } else {
+        const user = result?.user;
+        const destination = getDestinationForUser(user);
+        toast.success('Owner account created successfully');
+        nav(destination, { replace: true });
+      }
     } catch (error) {
       const status = error.response?.status;
-
       const serverMessage = error.response?.data?.error?.message;
-
       const message = !error.response
-        ? 'The registration service is unavailable. Please restart the backend or redeploy the API, then try again.'
-        : status === 404
-          ? 'Registration API route was not found. Check the deployed API function and try again.'
-          : status === 409
-            ? serverMessage || 'An account with these details already exists.'
-            : status === 422 || status === 400
-              ? serverMessage || 'Please review the information you entered.'
-              : serverMessage || 'Unable to create account';
-
+        ? 'The registration service is unavailable. Please try again.'
+        : status === 409
+          ? serverMessage || 'An account with these details already exists.'
+          : serverMessage || 'Unable to create owner account';
       toast.error(message);
     } finally {
       setBusy(false);
     }
   };
 
+  const handleStaffSubmit = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+
+    try {
+      const result = await register({
+        ...staffForm,
+        accountType: 'STAFF',
+      });
+
+      const user = result?.user;
+      const destination = getDestinationForUser(user);
+      toast.success('Staff account created successfully');
+      nav(destination, { replace: true });
+    } catch (error) {
+      const status = error.response?.status;
+      const serverMessage = error.response?.data?.error?.message;
+      const message = !error.response
+        ? 'The registration service is unavailable. Please try again.'
+        : status === 409
+          ? serverMessage || 'An account with this email already exists.'
+          : serverMessage || 'Unable to create staff account';
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const roleConfig = {
+    title:
+      mode === 'login'
+        ? 'School Information System sign in'
+        : accountType === 'owner'
+          ? 'Create Owner Account'
+          : 'Create Staff Account',
+    subtitle:
+      mode === 'login'
+        ? 'Sign in with the account issued by your school administrator or school owner.'
+        : accountType === 'owner'
+          ? 'Register a new school tenant & administrator account.'
+          : 'Register a teacher or staff account to access your school workspace.',
+  };
+
   return (
-    <AuthShell
-      title="Create your tenant account"
-      subtitle="Set up your school identity to begin the controlled tenant activation process."
-    >
-      <form onSubmit={submit} className="space-y-4">
-        <div className="rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4">
-          <p className="text-sm font-semibold text-indigo-950">Set up your school identity</p>
+    <AuthShell title={roleConfig.title} subtitle={roleConfig.subtitle} wide={mode === 'signup'}>
+      {/* Mode Switcher: Sign In vs Sign Up */}
+      <div className="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold text-slate-600">
+        <button
+          type="button"
+          onClick={() => handleModeSwitch('login')}
+          className={`flex-1 rounded-lg py-2.5 transition ${
+            mode === 'login' ? 'bg-white text-indigo-950 shadow-sm' : 'hover:text-slate-900'
+          }`}
+        >
+          Sign in
+        </button>
+        <button
+          type="button"
+          onClick={() => handleModeSwitch('signup')}
+          className={`flex-1 rounded-lg py-2.5 transition ${
+            mode === 'signup' ? 'bg-white text-indigo-950 shadow-sm' : 'hover:text-slate-900'
+          }`}
+        >
+          Sign up / Create account
+        </button>
+      </div>
 
-          <p className="mt-1 text-xs leading-5 text-indigo-800">
-            Add the details families will see across your school portal.
+      {mode === 'login' ? (
+        /* ================= SIGN IN FORM ================= */
+        <form onSubmit={handleLoginSubmit} className="form-stack mt-4">
+          <Field
+            label="Email address"
+            type="email"
+            value={loginForm.email}
+            onChange={(event) =>
+              setLoginForm((current) => ({
+                ...current,
+                email: event.target.value,
+              }))
+            }
+            placeholder="you@school.edu"
+          />
+
+          <Field
+            label="Password"
+            type="password"
+            value={loginForm.password}
+            onChange={(event) =>
+              setLoginForm((current) => ({
+                ...current,
+                password: event.target.value,
+              }))
+            }
+            placeholder="Enter your password"
+          />
+
+          <div className="flex justify-end">
+            <Link to="/forgot-password" className="action-link">
+              Forgot password?
+            </Link>
+          </div>
+
+          <button type="submit" disabled={busy} className="primary-button">
+            {busy ? 'Signing in…' : 'Sign in'}
+            {!busy && <ArrowRight size={17} />}
+          </button>
+
+          <p className="mt-5 text-center text-xs text-slate-500">
+            Don&apos;t have an account?{' '}
+            <button
+              type="button"
+              onClick={() => handleModeSwitch('signup')}
+              className="font-semibold text-indigo-600 hover:underline"
+            >
+              Sign up here
+            </button>
           </p>
-        </div>
-
-        <Field
-          label="School name"
-          value={form.schoolName}
-          onChange={(event) => update('schoolName', event.target.value)}
-          placeholder="Horizon Academy"
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field
-            label="Motto"
-            value={form.schoolMotto}
-            onChange={(event) => update('schoolMotto', event.target.value)}
-            placeholder="Learn. Lead. Serve."
-          />
-
-          <Field
-            label="City"
-            value={form.schoolCity}
-            onChange={(event) => update('schoolCity', event.target.value)}
-            placeholder="Freetown"
-          />
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field
-            label="Country"
-            value={form.schoolCountry}
-            onChange={(event) => update('schoolCountry', event.target.value)}
-            placeholder="Sierra Leone"
-          />
-
-          <label className="block text-sm font-medium text-slate-700">
-            School badge
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              onChange={handleBadge}
-              className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
-            />
-            <span className="mt-1 block text-xs text-slate-500">PNG, JPG or WEBP up to 2MB</span>
-          </label>
-        </div>
-
-        <div className="grid gap-3 rounded-2xl border border-slate-200 p-4 sm:grid-cols-2">
-          <label className="text-sm font-medium text-slate-700">
-            Primary color
-            <input
-              type="color"
-              value={form.primaryColor}
-              onChange={(event) => update('primaryColor', event.target.value)}
-              className="mt-2 h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
-            />
-          </label>
-
-          <label className="text-sm font-medium text-slate-700">
-            Secondary color
-            <input
-              type="color"
-              value={form.secondaryColor}
-              onChange={(event) => update('secondaryColor', event.target.value)}
-              className="mt-2 h-10 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
-            />
-          </label>
-        </div>
-
-        {(form.badgeUrl || form.schoolName || form.schoolMotto) && (
-          <div
-            className="flex items-center gap-3 rounded-2xl p-4 text-white"
-            style={{
-              backgroundColor: form.primaryColor,
-            }}
+        </form>
+      ) : pendingActivation ? (
+        /* ================= OWNER ACTIVATION PENDING ================= */
+        <div className="mt-4 space-y-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 text-center">
+          <CheckCircle2 className="mx-auto text-emerald-600" size={44} />
+          <div>
+            <h3 className="text-base font-bold text-emerald-950">Owner Account Submitted</h3>
+            <p className="mt-1.5 text-xs text-emerald-800 leading-relaxed">
+              Your school owner account request has been registered and is pending approval by the
+              application owner.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch('login')}
+            className="w-full rounded-xl bg-emerald-600 py-3 text-xs font-semibold text-white transition hover:bg-emerald-700"
           >
-            <div className="flex size-12 items-center justify-center overflow-hidden rounded-xl bg-white/20">
-              {form.badgeUrl ? (
-                <img
-                  src={form.badgeUrl}
-                  alt="School badge preview"
-                  className="size-full object-cover"
-                />
-              ) : (
-                <span className="text-lg font-bold">{form.schoolName?.[0] || 'S'}</span>
-              )}
-            </div>
+            Return to Sign In
+          </button>
+        </div>
+      ) : (
+        /* ================= SIGN UP FLOW ================= */
+        <div className="mt-4 space-y-4">
+          {/* Account Type Toggle: Owner vs Staff */}
+          <div>
+            <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-500">
+              Account Type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleTypeSwitch('owner')}
+                className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition ${
+                  accountType === 'owner'
+                    ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <ShieldCheck className="mb-1 size-5 text-indigo-600" />
+                <span className="text-xs font-bold">School Owner</span>
+                <span className="mt-0.5 text-[10px] text-slate-500">Tenant Administrator</span>
+              </button>
 
-            <div>
-              <p className="font-semibold">{form.schoolName || 'Your school name'}</p>
-
-              <p className="text-sm text-white/80">{form.schoolMotto || 'Your school motto'}</p>
+              <button
+                type="button"
+                onClick={() => handleTypeSwitch('staff')}
+                className={`flex flex-col items-center justify-center rounded-xl border p-3 text-center transition ${
+                  accountType === 'staff'
+                    ? 'border-indigo-600 bg-indigo-50/80 text-indigo-950 ring-2 ring-indigo-500/20'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                }`}
+              >
+                <Users className="mb-1 size-5 text-indigo-600" />
+                <span className="text-xs font-bold">Staff Member</span>
+                <span className="mt-0.5 text-[10px] text-slate-500">Teacher & Staff</span>
+              </button>
             </div>
           </div>
-        )}
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field
-            label="First name"
-            value={form.firstName}
-            onChange={(event) => update('firstName', event.target.value)}
-            placeholder="Amina"
-          />
+          {accountType === 'owner' ? (
+            /* ================= OWNER SIGNUP FORM ================= */
+            <form onSubmit={handleOwnerSubmit} className="space-y-3.5">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900">
+                <p className="font-semibold">Set up your school tenant identity</p>
+                <p className="mt-0.5 text-indigo-700 text-[11px]">
+                  This registers your school environment and primary administrator account.
+                </p>
+              </div>
 
-          <Field
-            label="Last name"
-            value={form.lastName}
-            onChange={(event) => update('lastName', event.target.value)}
-            placeholder="Yusuf"
-          />
+              <Field
+                label="School name"
+                value={ownerForm.schoolName}
+                onChange={(event) => updateOwner('schoolName', event.target.value)}
+                placeholder="Horizon Academy"
+              />
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  label="Motto"
+                  value={ownerForm.schoolMotto}
+                  onChange={(event) => updateOwner('schoolMotto', event.target.value)}
+                  placeholder="Learn. Lead. Serve."
+                />
+                <Field
+                  label="City"
+                  value={ownerForm.schoolCity}
+                  onChange={(event) => updateOwner('schoolCity', event.target.value)}
+                  placeholder="Freetown"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field
+                  label="Country"
+                  value={ownerForm.schoolCountry}
+                  onChange={(event) => updateOwner('schoolCountry', event.target.value)}
+                  placeholder="Sierra Leone"
+                />
+
+                <label className="block text-sm font-medium text-slate-700">
+                  School badge
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleBadge}
+                    className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs"
+                  />
+                </label>
+              </div>
+
+              <div className="grid gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-2">
+                <label className="text-xs font-medium text-slate-700">
+                  Primary color
+                  <input
+                    type="color"
+                    value={ownerForm.primaryColor}
+                    onChange={(event) => updateOwner('primaryColor', event.target.value)}
+                    className="mt-1 h-9 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
+                  />
+                </label>
+                <label className="text-xs font-medium text-slate-700">
+                  Secondary color
+                  <input
+                    type="color"
+                    value={ownerForm.secondaryColor}
+                    onChange={(event) => updateOwner('secondaryColor', event.target.value)}
+                    className="mt-1 h-9 w-full cursor-pointer rounded-lg border border-slate-200 bg-white"
+                  />
+                </label>
+              </div>
+
+              {(ownerForm.badgeUrl || ownerForm.schoolName || ownerForm.schoolMotto) && (
+                <div
+                  className="flex items-center gap-3 rounded-xl p-3 text-white"
+                  style={{ backgroundColor: ownerForm.primaryColor }}
+                >
+                  <div className="flex size-10 items-center justify-center overflow-hidden rounded-lg bg-white/20">
+                    {ownerForm.badgeUrl ? (
+                      <img
+                        src={ownerForm.badgeUrl}
+                        alt="Badge"
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-base font-bold">
+                        {ownerForm.schoolName?.[0] || 'S'}
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold">{ownerForm.schoolName || 'School Name'}</p>
+                    <p className="text-[11px] text-white/80">{ownerForm.schoolMotto || 'Motto'}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                <Field
+                  label="Owner First name"
+                  value={ownerForm.firstName}
+                  onChange={(event) => updateOwner('firstName', event.target.value)}
+                  placeholder="Amina"
+                />
+                <Field
+                  label="Owner Last name"
+                  value={ownerForm.lastName}
+                  onChange={(event) => updateOwner('lastName', event.target.value)}
+                  placeholder="Yusuf"
+                />
+              </div>
+
+              <Field
+                label="Role or designation"
+                value={ownerForm.designation}
+                onChange={(event) => updateOwner('designation', event.target.value)}
+                placeholder="School Owner / Director"
+              />
+
+              <Field
+                label="Work email"
+                type="email"
+                value={ownerForm.email}
+                onChange={(event) => updateOwner('email', event.target.value)}
+                placeholder="owner@school.edu"
+              />
+
+              <Field
+                label="Password"
+                type="password"
+                value={ownerForm.password}
+                onChange={(event) => updateOwner('password', event.target.value)}
+                placeholder="8+ characters"
+              />
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {busy ? 'Creating owner account…' : 'Create Owner Account'}
+                {!busy && <ArrowRight size={17} />}
+              </button>
+            </form>
+          ) : (
+            /* ================= STAFF SIGNUP FORM ================= */
+            <form onSubmit={handleStaffSubmit} className="space-y-3.5">
+              <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900">
+                <p className="font-semibold">Register as a Staff Member</p>
+                <p className="mt-0.5 text-indigo-700 text-[11px]">
+                  Create your teacher, administrative, or departmental staff account.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field
+                  label="First name"
+                  value={staffForm.firstName}
+                  onChange={(event) => updateStaff('firstName', event.target.value)}
+                  placeholder="Kofi"
+                />
+                <Field
+                  label="Last name"
+                  value={staffForm.lastName}
+                  onChange={(event) => updateStaff('lastName', event.target.value)}
+                  placeholder="Mensah"
+                />
+              </div>
+
+              <Field
+                label="Role / Designation"
+                value={staffForm.designation}
+                onChange={(event) => updateStaff('designation', event.target.value)}
+                placeholder="e.g. Teacher, HR Manager, Accountant, Librarian"
+              />
+
+              <Field
+                label="School Name"
+                value={staffForm.schoolName}
+                onChange={(event) => updateStaff('schoolName', event.target.value)}
+                placeholder="e.g. Horizon Academy"
+              />
+
+              <Field
+                label="Work email"
+                type="email"
+                value={staffForm.email}
+                onChange={(event) => updateStaff('email', event.target.value)}
+                placeholder="staff@school.edu"
+              />
+
+              <Field
+                label="Password"
+                type="password"
+                value={staffForm.password}
+                onChange={(event) => updateStaff('password', event.target.value)}
+                placeholder="8+ characters"
+              />
+
+              <button
+                type="submit"
+                disabled={busy}
+                className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {busy ? 'Creating staff account…' : 'Create Staff Account'}
+                {!busy && <ArrowRight size={17} />}
+              </button>
+            </form>
+          )}
+
+          <p className="mt-5 text-center text-xs text-slate-500">
+            Already registered?{' '}
+            <button
+              type="button"
+              onClick={() => handleModeSwitch('login')}
+              className="font-semibold text-indigo-600 hover:underline"
+            >
+              Sign in here
+            </button>
+          </p>
         </div>
-
-        <Field
-          label="Role or designation"
-          value={form.designation}
-          onChange={(event) => update('designation', event.target.value)}
-          placeholder="School administrator"
-        />
-
-        <Field
-          label="Work email"
-          type="email"
-          value={form.email}
-          onChange={(event) => update('email', event.target.value)}
-          placeholder="you@school.edu"
-        />
-
-        <Field
-          label="Password"
-          type="password"
-          value={form.password}
-          onChange={(event) => update('password', event.target.value)}
-          placeholder="8+ characters, mixed case and symbols"
-        />
-
-        <button
-          type="submit"
-          disabled={busy}
-          className="mt-2 w-full rounded-xl bg-indigo-600 py-3.5 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {busy ? 'Creating account…' : 'Create tenant account'}
-        </button>
-      </form>
-
-      <p className="mt-7 text-center text-sm text-slate-500">
-        Already registered?{' '}
-        <Link to="/tenant/login" className="font-semibold text-indigo-600">
-          Sign in
-        </Link>
-      </p>
+      )}
     </AuthShell>
   );
+}
+
+// Retained export compatibility for Register
+export function Register() {
+  return <Login defaultMode="signup" defaultType="owner" />;
 }
 
 /* =========================================================
@@ -940,23 +1094,37 @@ export default function App() {
                 AUTHENTICATION
             =============================== */}
 
-            <Route path="/login" element={<Login />} />
+            <Route path="/login" element={<Login defaultMode="login" />} />
 
-            <Route path="/register" element={<Navigate to="/login" replace />} />
+            <Route path="/register" element={<Login defaultMode="signup" defaultType="owner" />} />
 
-            <Route path="/owner/login" element={<Navigate to="/login" replace />} />
+            <Route path="/owner/login" element={<Login defaultMode="login" />} />
 
-            <Route path="/owner/register" element={<Navigate to="/owner/login" replace />} />
+            <Route
+              path="/owner/register"
+              element={<Login defaultMode="signup" defaultType="owner" />}
+            />
 
-            <Route path="/manager/login" element={<Navigate to="/login" replace />} />
+            <Route path="/manager/login" element={<Login defaultMode="login" />} />
 
-            <Route path="/manager/register" element={<Navigate to="/owner/login" replace />} />
+            <Route
+              path="/manager/register"
+              element={<Login defaultMode="signup" defaultType="owner" />}
+            />
 
-            <Route path="/tenant/login" element={<Navigate to="/login" replace />} />
+            <Route path="/tenant/login" element={<Login defaultMode="login" />} />
 
-            <Route path="/tenant/register" element={<Navigate to="/login" replace />} />
+            <Route
+              path="/tenant/register"
+              element={<Login defaultMode="signup" defaultType="owner" />}
+            />
 
-            <Route path="/staff/login" element={<Navigate to="/login" replace />} />
+            <Route path="/staff/login" element={<Login defaultMode="login" />} />
+
+            <Route
+              path="/staff/register"
+              element={<Login defaultMode="signup" defaultType="staff" />}
+            />
 
             <Route path="/forgot-password" element={<Forgot />} />
 

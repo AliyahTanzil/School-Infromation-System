@@ -31,7 +31,9 @@ export const registerSchema = z.object({
       .regex(/^#[0-9a-f]{6}$/i)
       .optional(),
     badgeUrl: z.string().max(2800000).optional(),
-    accountType: z.literal('TENANT_ADMIN').default('TENANT_ADMIN'),
+    accountType: z
+      .enum(['TENANT_ADMIN', 'STAFF', 'TEACHER', 'PARENT', 'STUDENT'])
+      .default('TENANT_ADMIN'),
   }),
 });
 

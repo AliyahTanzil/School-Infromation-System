@@ -80,11 +80,15 @@ test('platform actions use the active audit model', () => {
 });
 
 test('deferred domains return a controlled runtime response', async () => {
-  for (const path of ['/api/analytics']) {
+  for (const path of ['/api/ai-intelligence']) {
     const response = await request(app).get(path).expect(501);
     assert.equal(response.body.error.code, 'FEATURE_NOT_IMPLEMENTED');
     assert.ok(response.body.error.details.requiredTask);
   }
+});
+
+test('operational analytics routes require authentication', async () => {
+  await request(app).get('/api/analytics/overview').expect(401);
 });
 
 test('operational class routes require authentication', async () => {
