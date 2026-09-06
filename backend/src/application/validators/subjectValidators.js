@@ -6,7 +6,8 @@ const fields = {
     .trim()
     .min(1)
     .max(30)
-    .transform((value) => value.toUpperCase()),
+    .transform((value) => value.toUpperCase())
+    .optional(),
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(500).nullable().optional(),
 };

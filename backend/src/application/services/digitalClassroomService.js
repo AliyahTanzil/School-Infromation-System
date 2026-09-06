@@ -1,3 +1,4 @@
+import { generateRecordCode } from '../../shared/utils/recordCode.js';
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
@@ -46,7 +47,9 @@ export async function create(scope, userId, data) {
     data: {
       ...owned(scope),
       ...data,
-      code: data.code.toUpperCase(),
+      code:
+        data.code?.toUpperCase() ||
+        generateRecordCode('DCL', scope.schoolId, [data.name, data.classId]),
       ownerId: userId,
       memberships: {
         create: { ...owned(scope), userId, role: 'OWNER' },

@@ -3,7 +3,9 @@ const text = (max = 200) => z.string().trim().min(1).max(max);
 export const schoolSchema = z.object({
   body: z.object({
     name: text(),
-    slug: text(120).regex(/^[a-z0-9-]+$/),
+    slug: text(120)
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
     email: z.string().email().optional(),
     phone: z.string().max(40).optional(),
     website: z.string().url().optional(),

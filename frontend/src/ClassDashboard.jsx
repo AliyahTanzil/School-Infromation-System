@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const headers = (schoolId) => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
-  'x-school-id': schoolId,
-});
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 export default function ClassDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const [options, setOptions] = useState({ academicYears: [], gradeLevels: [] });
   const [classes, setClasses] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,23 +20,21 @@ export default function ClassDashboard() {
   });
 
   const load = useCallback(async () => {
-    if (!schoolId) return;
     setLoading(true);
     setError('');
     try {
-      const response = await fetch(`/api/classes?query=${encodeURIComponent(query)}`, {
-        headers: headers(schoolId),
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error?.message ?? 'Unable to load classes');
-      setClasses(payload.data?.items ?? []);
-      sessionStorage.setItem('schoolId', schoolId);
+      const [response, choices] = await Promise.all([
+        api.get('/classes', { params: { query } }),
+        api.get('/classes/options'),
+      ]);
+      setClasses(response.data.data?.items ?? []);
+      setOptions(choices.data.data);
     } catch (requestError) {
-      setError(requestError.message);
+      setError(getApiErrorMessage(requestError));
     } finally {
       setLoading(false);
     }
-  }, [query, schoolId]);
+  }, [query]);
 
   useEffect(() => {
     load();
@@ -48,13 +44,11 @@ export default function ClassDashboard() {
     event.preventDefault();
     setError('');
     try {
-      const response = await fetch('/api/classes', {
-        method: 'POST',
-        headers: { ...headers(schoolId), 'content-type': 'application/json' },
-        body: JSON.stringify({ ...form, capacity: Number(form.capacity) }),
+      await api.post('/classes', {
+        ...form,
+        code: form.code || undefined,
+        capacity: Number(form.capacity),
       });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error?.message ?? 'Unable to create class');
       setForm({
         name: '',
         code: '',
@@ -65,7 +59,7 @@ export default function ClassDashboard() {
       });
       await load();
     } catch (requestError) {
-      setError(requestError.message);
+      setError(getApiErrorMessage(requestError));
     }
   };
 
@@ -112,15 +106,6 @@ export default function ClassDashboard() {
 
         <div className="form-grid">
           <label className="form-field">
-            <span className="form-field__label">School ID</span>
-            <input
-              value={schoolId}
-              onChange={(event) => setSchoolId(event.target.value)}
-              placeholder="School UUID"
-            />
-          </label>
-
-          <label className="form-field">
             <span className="form-field__label">Search</span>
             <input
               value={query}
@@ -147,18 +132,38 @@ export default function ClassDashboard() {
         </div>
 
         <form onSubmit={create} className="form-grid">
-          {['name', 'code', 'academicYearId', 'gradeLevelId', 'section'].map((field) => (
+          {['name', 'code', 'section'].map((field) => (
             <label key={field} className="form-field">
               <span className="form-field__label">{field}</span>
               <input
-                required={field !== 'section'}
+                required={field === 'name'}
                 value={form[field]}
                 onChange={(event) => setForm({ ...form, [field]: event.target.value })}
-                placeholder={field}
+                placeholder={field === 'code' ? 'Auto-generated if left blank' : field}
               />
             </label>
           ))}
 
+          {[
+            ['academicYearId', 'Academic year', options.academicYears],
+            ['gradeLevelId', 'Grade level', options.gradeLevels],
+          ].map(([field, label, items]) => (
+            <label className="form-field" key={field}>
+              <span>{label}</span>
+              <select
+                required
+                value={form[field]}
+                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
+              >
+                <option value="">Select {label.toLowerCase()}</option>
+                {items.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
           <label className="form-field">
             <span className="form-field__label">Capacity</span>
             <input
@@ -172,7 +177,7 @@ export default function ClassDashboard() {
           </label>
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <button className="primary-button" disabled={!schoolId} type="submit">
+            <button className="primary-button" disabled={loading} type="submit">
               Create planned class
             </button>
           </div>
@@ -188,7 +193,7 @@ export default function ClassDashboard() {
           <span className="status-chip">{classes.length} records</span>
         </div>
 
-        {!loading && classes.length === 0 && schoolId && (
+        {!loading && classes.length === 0 && !error && (
           <p className="empty-state">No classes found.</p>
         )}
         {classes.length > 0 && (

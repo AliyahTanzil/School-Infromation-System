@@ -33,7 +33,7 @@ export default function SubjectManagement() {
     setError('');
     setSaving(true);
     try {
-      await api.post('/subjects', form);
+      await api.post('/subjects', { ...form, code: form.code || undefined });
       setForm({ code: '', name: '', description: '' });
       await load();
     } catch (requestError) {
@@ -94,10 +94,9 @@ export default function SubjectManagement() {
           <label className="form-field">
             <span className="form-field__label">Code</span>
             <input
-              required
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value })}
-              placeholder="Code, e.g. MATH"
+              placeholder="Auto-generated if left blank"
             />
           </label>
 

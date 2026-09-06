@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from './context/AuthContext.jsx';
 import { Building2, LoaderCircle, Plus, Save } from 'lucide-react';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
@@ -30,6 +31,7 @@ async function schoolRequest(path = '', options = {}) {
 }
 
 export default function SchoolAdmin() {
+  const { user } = useAuth();
   const [schools, setSchools] = useState([]);
   const [selectedId, setSelectedId] = useState('');
   const [form, setForm] = useState(emptyForm);
@@ -116,6 +118,11 @@ export default function SchoolAdmin() {
         <Link to="/admin" className="secondary-button mb-5 inline-flex">
           Back to administration
         </Link>
+        {user?.accountType === 'APPLICATION_MANAGER' && (
+          <Link to="/owner/activations" className="primary-button mb-5 ml-3 inline-flex">
+            Review activations
+          </Link>
+        )}
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">

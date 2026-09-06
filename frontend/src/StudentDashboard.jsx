@@ -5,7 +5,6 @@ import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
 
 const emptyForm = {
-  admissionNumber: '',
   firstName: '',
   lastName: '',
   dateOfBirth: '',
@@ -174,14 +173,7 @@ export default function StudentDashboard() {
 
             <form onSubmit={registerStudent}>
               <div className="form-grid">
-                <label className="form-field">
-                  <span className="form-field__label">Admission number</span>
-                  <input
-                    required
-                    value={form.admissionNumber}
-                    onChange={update('admissionNumber')}
-                  />
-                </label>
+                <p>Admission number is generated automatically when you register the student.</p>
 
                 <label className="form-field">
                   <span className="form-field__label">Date of birth</span>

@@ -24,5 +24,5 @@ test('class, section, and enrollment persistence is tenant and school scoped', a
   assert.match(routes, /router\.use\('\/classes', classRoutes\)/);
   assert.match(app, /app\.use\('\/api\/classes', classRouter\)/);
   assert.doesNotMatch(dashboard, /demoClasses/);
-  assert.match(dashboard, /fetch\('\/api\/classes'/);
+  assert.match(dashboard, /api\.post\('\/classes'/);
 });

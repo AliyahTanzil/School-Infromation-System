@@ -1,7 +1,7 @@
 import { z } from 'zod';
 const body = z.object({
   name: z.string().trim().min(1).max(120),
-  code: z.string().trim().min(1).max(40),
+  code: z.string().trim().min(1).max(40).optional(),
   academicYearId: z.string().uuid(),
   gradeLevelId: z.string().uuid(),
   classroomId: z.string().uuid().optional(),

@@ -1,3 +1,4 @@
+import { generateRecordCode } from '../../shared/utils/recordCode.js';
 const EnrollmentStatus = Object.freeze({ ACTIVE: 'ACTIVE' });
 const ClassStatus = Object.freeze({ ACTIVE: 'ACTIVE' });
 import { assertCapacity, assertClassTransition } from '../../domain/classLifecycle.js';
@@ -45,7 +46,14 @@ export async function list({
 }
 
 export async function create(input) {
-  const data = { ...input, tenantId: input.tenantId, schoolId: input.schoolId };
+  const data = {
+    ...input,
+    code:
+      input.code ||
+      generateRecordCode('CLS', input.schoolId, [input.name, input.section, input.academicYearId]),
+    tenantId: input.tenantId,
+    schoolId: input.schoolId,
+  };
   assertCapacity(data.capacity, 0);
   const prisma = repository.getClient();
   const [year, grade, room] = await Promise.all([
@@ -109,4 +117,21 @@ export async function enroll({ classId, studentId, tenantId, schoolId }) {
       create: { classId, studentId, tenantId, schoolId, status: EnrollmentStatus.ACTIVE },
     });
   });
+}
+
+export async function options({ tenantId, schoolId }) {
+  const db = repository.getClient();
+  const [academicYears, gradeLevels] = await Promise.all([
+    db.academicYear.findMany({
+      where: { tenantId },
+      select: { id: true, name: true },
+      orderBy: { startsOn: 'desc' },
+    }),
+    db.gradeLevel.findMany({
+      where: { tenantId, schoolId },
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    }),
+  ]);
+  return { academicYears, gradeLevels };
 }

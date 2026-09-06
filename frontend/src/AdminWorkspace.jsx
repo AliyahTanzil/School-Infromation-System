@@ -33,6 +33,7 @@ import {
   PlugZap,
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
+import { ActivationNotice } from './ActivationWorkspace.jsx';
 
 const moduleGroups = [
   {
@@ -229,7 +230,7 @@ const moduleGroups = [
 
 export default function AdminWorkspace() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const signOut = async () => {
     await logout();
     navigate('/', { replace: true });
@@ -258,6 +259,7 @@ export default function AdminWorkspace() {
           </div>
         </header>
 
+        {user?.accountType === 'APPLICATION_MANAGER' && <ActivationNotice />}
         <section className="admin-shell__metric-grid" aria-label="Administration workspace details">
           {[
             ['35', 'Modules available'],

@@ -1,3 +1,4 @@
+import { generateRecordCode } from '../../shared/utils/recordCode.js';
 import * as repository from '../../infrastructure/repositories/subjectRepository.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 
@@ -8,7 +9,12 @@ export async function get(id, context) {
   return subject;
 }
 export const create = (input, context) =>
-  repository.create({ ...input, tenantId: context.tenantId, schoolId: context.schoolId });
+  repository.create({
+    ...input,
+    code: input.code || generateRecordCode('SUB', context.schoolId, [input.name]),
+    tenantId: context.tenantId,
+    schoolId: context.schoolId,
+  });
 export async function update(id, input, context) {
   await get(id, context);
   return repository.update(id, context, input);

@@ -9,7 +9,8 @@ export const classroomCreateSchema = z.object({
         .trim()
         .min(2)
         .max(40)
-        .regex(/^[A-Za-z0-9_-]+$/),
+        .regex(/^[A-Za-z0-9_-]+$/)
+        .optional(),
       description: z.string().trim().max(1000).optional(),
       classId: z.string().uuid().optional(),
     })

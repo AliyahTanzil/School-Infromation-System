@@ -1,3 +1,4 @@
+import { generateRecordCode } from '../../shared/utils/recordCode.js';
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import repo from '../../infrastructure/repositories/schoolRepository.js';
 import { ConflictError, NotFoundError } from '../../shared/errors/index.js';
@@ -57,11 +58,15 @@ export async function get(id, tenantId) {
 export async function create(input) {
   return prisma.$transaction(async (tx) => {
     const tenantId = await resolveTenantId(input.tenantId, tx);
-    const data = { ...schoolData(input), tenantId };
+    const data = {
+      ...schoolData(input),
+      tenantId,
+      code: input.slug || generateRecordCode('SCH', tenantId, [input.name]).toLowerCase(),
+    };
     const existing = await tx.school.findFirst({
       where: {
         tenantId,
-        OR: [{ code: input.slug }, { name: { equals: input.name, mode: 'insensitive' } }],
+        OR: [{ code: data.code }, { name: { equals: input.name, mode: 'insensitive' } }],
       },
     });
     if (existing) throw new ConflictError('School name or slug already exists');

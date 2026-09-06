@@ -12,6 +12,7 @@ import {
 } from '../../../application/validators/classValidators.js';
 const router = Router();
 router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.get('/options', controller.options);
 router.get('/', validate(classQuerySchema), controller.list);
 router.post('/', validate(classCreateSchema), controller.create);
 router.patch('/:id/status', validate(classStatusSchema), controller.changeStatus);

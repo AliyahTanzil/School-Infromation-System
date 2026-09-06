@@ -10,7 +10,7 @@ const errorMessage = (error) =>
   error.response?.data?.error?.message || error.message || 'Request failed';
 
 export default function ClassroomDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
+  const [academicClasses, setAcademicClasses] = useState([]);
   const [classrooms, setClassrooms] = useState([]);
   const [selected, setSelected] = useState(null);
   const [form, setForm] = useState(emptyClassroom);
@@ -33,14 +33,11 @@ export default function ClassroomDashboard() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const headers = schoolId ? { 'x-school-id': schoolId } : {};
+  const headers = {};
   const load = useCallback(async () => {
-    if (!schoolId) return setClassrooms([]);
     setBusy(true);
     try {
-      const response = await api.get('/lms/classrooms', {
-        headers: { 'x-school-id': schoolId },
-      });
+      const response = await api.get('/lms/classrooms');
       setClassrooms(response.data.data);
       setNotice('');
     } catch (error) {
@@ -48,19 +45,22 @@ export default function ClassroomDashboard() {
     } finally {
       setBusy(false);
     }
-  }, [schoolId]);
+  }, []);
 
   useEffect(() => {
-    sessionStorage.setItem('sais.schoolId', schoolId);
     load();
-  }, [load, schoolId]);
+    api
+      .get('/classes')
+      .then(({ data }) => setAcademicClasses(data.data?.items ?? []))
+      .catch(() => {});
+  }, [load]);
 
   async function createClassroom(event) {
     event.preventDefault();
     try {
       await api.post(
         '/lms/classrooms',
-        { ...form, classId: form.classId || undefined },
+        { ...form, code: form.code || undefined, classId: form.classId || undefined },
         { headers }
       );
       setForm(emptyClassroom);
@@ -260,14 +260,6 @@ export default function ClassroomDashboard() {
       </header>
 
       <section className="dc-context">
-        <label>
-          School ID
-          <input
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="School UUID"
-          />
-        </label>
         <span>
           {classrooms.length} accessible classroom{classrooms.length === 1 ? '' : 's'}
         </span>
@@ -287,22 +279,28 @@ export default function ClassroomDashboard() {
               placeholder="Classroom name"
             />
             <input
-              required
               value={form.code}
               onChange={(event) => setForm({ ...form, code: event.target.value })}
-              placeholder="Unique code (e.g. MTH-8A)"
+              placeholder="Auto-generated if left blank"
             />
-            <input
+            <select
+              aria-label="Academic class"
               value={form.classId}
               onChange={(event) => setForm({ ...form, classId: event.target.value })}
-              placeholder="Academic class UUID (optional)"
-            />
+            >
+              <option value="">No linked academic class</option>
+              {academicClasses.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
             <textarea
               value={form.description}
               onChange={(event) => setForm({ ...form, description: event.target.value })}
               placeholder="Description"
             />
-            <button className="dc-primary" disabled={!schoolId} type="submit">
+            <button className="dc-primary" disabled={busy} type="submit">
               Create classroom
             </button>
           </form>
@@ -312,8 +310,7 @@ export default function ClassroomDashboard() {
           <h2>
             <Users size={18} /> Classroom directory
           </h2>
-          {!schoolId && <p>Enter the school UUID to load its classrooms.</p>}
-          {schoolId && !busy && !classrooms.length && (
+          {!notice && !busy && !classrooms.length && (
             <p>No classroom has been created for this school.</p>
           )}
           {classrooms.map((classroom) => (

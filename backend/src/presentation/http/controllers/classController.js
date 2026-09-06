@@ -52,3 +52,7 @@ export async function enroll(req, res, next) {
     next(error);
   }
 }
+
+export async function options(req, res) {
+  res.json({ data: await service.options(context(req)) });
+}

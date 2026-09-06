@@ -1,3 +1,4 @@
+import { generateRecordCode } from '../../shared/utils/recordCode.js';
 import { randomUUID } from 'node:crypto';
 import studentRepository from '../../infrastructure/repositories/studentDomainRepository.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
@@ -71,14 +72,23 @@ export async function create({ tenantId, input }) {
   const student = await studentRepository.createStudent({
     id: randomUUID(),
     tenantId,
-    ...studentFields(input),
+    ...studentFields({
+      ...input,
+      admissionNumber:
+        clean(input.admissionNumber) ||
+        generateRecordCode('STU', tenantId, [input.firstName, input.lastName, input.dateOfBirth]),
+    }),
   });
   return serialize(student);
 }
 
 export async function update({ tenantId, id, input }) {
-  await get({ tenantId, id });
-  const data = studentFields(input);
+  const existing = await get({ tenantId, id });
+  const data = studentFields({
+    ...existing,
+    ...input,
+    admissionNumber: input.admissionNumber || existing.admissionNumber,
+  });
   return serialize(await studentRepository.updateStudent(tenantId, id, data));
 }
 

@@ -26,6 +26,7 @@ import {
   Users,
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import SchoolSelector from './SchoolSelector.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import toast, { Toaster } from 'react-hot-toast';
 
@@ -34,6 +35,7 @@ import toast, { Toaster } from 'react-hot-toast';
  * ======================================================= */
 
 const SchoolAdmin = lazy(() => import('./SchoolAdmin.jsx'));
+const ActivationWorkspace = lazy(() => import('./ActivationWorkspace.jsx'));
 const StudentDashboard = lazy(() => import('./StudentDashboard.jsx'));
 const StudentHomeDashboard = lazy(() => import('./StudentHomeDashboard.jsx'));
 const ParentPortal = lazy(() => import('./ParentPortal.jsx'));
@@ -1076,6 +1078,7 @@ export default function App() {
       <AuthProvider>
         <Toaster position="top-right" />
         <AppBackNavigation />
+        <SchoolSelector />
 
         <Suspense
           fallback={
@@ -1146,7 +1149,14 @@ export default function App() {
 
             <Route path="/tenant-admin" element={<Navigate to="/admin" replace />} />
 
-            <Route path="/owner/activations" element={<Navigate to="/admin" replace />} />
+            <Route
+              path="/owner/activations"
+              element={
+                <Protected allowed={['APPLICATION_MANAGER']}>
+                  <ActivationWorkspace />
+                </Protected>
+              }
+            />
 
             <Route
               path="/admin"

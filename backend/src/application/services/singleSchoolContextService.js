@@ -49,10 +49,9 @@ export async function resolveSingleSchool({ refresh = false, tenantId } = {}) {
     );
   }
   if (!tenantId && !configuredId && schools.length !== 1) {
-    throw configurationError(
-      'SINGLE_SCHOOL_ID is required while the database contains more than one school',
-      { discoveredSchools: schools.length }
-    );
+    throw configurationError('Select a school from the school selector to continue', {
+      discoveredSchools: schools.length,
+    });
   }
 
   cachedSchool = schools[0];
