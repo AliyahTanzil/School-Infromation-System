@@ -3,6 +3,24 @@ const minutes = (value) => {
   return hours * 60 + mins;
 };
 
+export function teacherWorkloadIssue({ scheduledSlots, candidateSlots, settings }) {
+  const combined = [...scheduledSlots, ...candidateSlots];
+  if (combined.length > settings.maxTeacherPeriodsWeek) return 'weekly teacher workload limit';
+  const day = candidateSlots[0].weekday;
+  const daily = combined
+    .filter((slot) => slot.weekday === day)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  if (daily.length > settings.maxTeacherPeriodsDay) return 'daily teacher workload limit';
+  let consecutive = 0;
+  let previousEnd;
+  for (const slot of daily) {
+    consecutive = slot.startTime === previousEnd ? consecutive + 1 : 1;
+    if (consecutive > settings.maxConsecutivePeriods) return 'consecutive teacher workload limit';
+    previousEnd = slot.endTime;
+  }
+  return null;
+}
+
 export function validateTimeRange(startTime, endTime) {
   if (
     !/^\d{2}:\d{2}$/.test(startTime) ||

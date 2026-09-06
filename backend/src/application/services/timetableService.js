@@ -4,6 +4,7 @@ import {
   detectTimetableConflicts,
   evaluateTeacherAvailability,
   scoreTimetableCandidate,
+  teacherWorkloadIssue,
   generateTimetableSlots,
   validateTimeRange,
   validateTimetableSettings,
@@ -488,31 +489,35 @@ export async function generateCompleteSchedule({ tenantId, schoolId, timetableId
       if (await tx.scheduleEntry.count({ where: { timetableId } })) {
         throw new ValidationError('Automatic generation requires an empty timetable draft');
       }
-      const [slots, requirements, assignments, rooms, availability] = await Promise.all([
-        tx.timetableSlot.findMany({
-          where: { timetableId, ...scope },
-          orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
-        }),
-        tx.subjectPeriodRequirement.findMany({
-          where: { ...scope, termId: timetable.academicPeriodId },
-          include: { subject: true, class: true },
-          orderBy: [{ classId: 'asc' }, { subjectId: 'asc' }],
-        }),
-        tx.teacherTeachingAssignment.findMany({
-          where: { ...scope, termId: timetable.academicPeriodId, status: 'ACTIVE' },
-          orderBy: { id: 'asc' },
-        }),
-        tx.timetableRoom.findMany({
-          where: { ...scope, isActive: true },
-          orderBy: [{ capacity: 'asc' }, { code: 'asc' }],
-        }),
-        tx.teacherAvailability.findMany({ where: { teacher: { ...scope, deletedAt: null } } }),
-      ]);
+      const [slots, requirements, assignments, rooms, availability, savedSettings] =
+        await Promise.all([
+          tx.timetableSlot.findMany({
+            where: { timetableId, ...scope },
+            orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+          }),
+          tx.subjectPeriodRequirement.findMany({
+            where: { ...scope, termId: timetable.academicPeriodId },
+            include: { subject: true, class: true },
+            orderBy: [{ classId: 'asc' }, { subjectId: 'asc' }],
+          }),
+          tx.teacherTeachingAssignment.findMany({
+            where: { ...scope, termId: timetable.academicPeriodId, status: 'ACTIVE' },
+            orderBy: { id: 'asc' },
+          }),
+          tx.timetableRoom.findMany({
+            where: { ...scope, isActive: true },
+            orderBy: [{ capacity: 'asc' }, { code: 'asc' }],
+          }),
+          tx.teacherAvailability.findMany({ where: { teacher: { ...scope, deletedAt: null } } }),
+          tx.timetableSettings.findUnique({ where: { tenantId_schoolId: scope } }),
+        ]);
+      const settings = { ...defaultSettings, ...savedSettings };
       if (!requirements.length)
         throw new ValidationError('No subject period requirements exist for this timetable term');
       const teachingSlots = slots.filter((slot) => !slot.isBreak);
       const occupied = { class: new Set(), teacher: new Set(), room: new Set() };
       const dailyCounts = { subject: {}, class: {}, teacher: {} };
+      const teacherSlots = new Map();
       const entries = [];
       const issues = [];
       const slotKeys = (slotList, id) => slotList.map((slot) => `${id}:${slot.id}`);
@@ -553,6 +558,7 @@ export async function generateCompleteSchedule({ tenantId, schoolId, timetableId
         while (remaining > 0) {
           const duration = requirement.requiresDoublePeriod && remaining >= 2 ? 2 : 1;
           const candidates = [];
+          const workloadIssues = new Set();
           for (let index = 0; index < teachingSlots.length; index += 1) {
             const span = teachingSlots.slice(index, index + duration);
             if (
@@ -561,7 +567,14 @@ export async function generateCompleteSchedule({ tenantId, schoolId, timetableId
               span.some((slot, offset) => offset > 0 && slot.startTime !== span[offset - 1].endTime)
             )
               continue;
-            if (free(span, assignment, room)) candidates.push(span);
+            if (!free(span, assignment, room)) continue;
+            const workloadIssue = teacherWorkloadIssue({
+              scheduledSlots: teacherSlots.get(assignment.teacherId) ?? [],
+              candidateSlots: span,
+              settings,
+            });
+            if (workloadIssue) workloadIssues.add(workloadIssue);
+            else candidates.push(span);
           }
           candidates.sort(
             (left, right) =>
@@ -585,12 +598,16 @@ export async function generateCompleteSchedule({ tenantId, schoolId, timetableId
           const choice = candidates[0];
           if (!choice) {
             issues.push(
-              `${requirement.class.name}: ${requirement.subject.name} cannot place ${remaining} remaining period(s)`
+              `${requirement.class.name}: ${requirement.subject.name} cannot place ${remaining} remaining period(s)${workloadIssues.size ? ` (${[...workloadIssues].join(', ')})` : ''}`
             );
             break;
           }
           for (const key of slotKeys(choice, assignment.classId)) occupied.class.add(key);
           for (const key of slotKeys(choice, assignment.teacherId)) occupied.teacher.add(key);
+          teacherSlots.set(assignment.teacherId, [
+            ...(teacherSlots.get(assignment.teacherId) ?? []),
+            ...choice,
+          ]);
           for (const key of slotKeys(choice, room.id)) occupied.room.add(key);
           const day = choice[0].weekday;
           const countKeys = {

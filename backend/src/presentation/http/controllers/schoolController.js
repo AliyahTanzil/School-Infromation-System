@@ -1,9 +1,22 @@
 import service from '../../../application/services/schoolService.js';
-const tenant = (req) =>
-  req.schoolContext?.tenantId ?? req.user?.tenantId ?? req.headers['x-tenant-id'];
+import AuthorizationError from '../../../shared/errors/AuthorizationError.js';
+const tenant = (req) => {
+  if (req.user?.tenantId) return req.user.tenantId;
+  if (req.user?.platformRole === 'OWNER') return undefined;
+  throw new AuthorizationError('School account context is required');
+};
 const send = (res, data, status = 200) => res.status(status).json({ success: true, data });
 export default {
-  list: async (req, res) => send(res, await service.list({ tenantId: tenant(req), ...req.query })),
+  list: async (req, res) =>
+    send(
+      res,
+      await service.list({
+        tenantId: tenant(req),
+        search: req.query.search,
+        page: req.query.page,
+        pageSize: req.query.pageSize,
+      })
+    ),
   get: async (req, res) => send(res, await service.get(req.params.id, tenant(req))),
   create: async (req, res) =>
     send(res, await service.create({ ...req.body, tenantId: tenant(req) }, req.user.id), 201),

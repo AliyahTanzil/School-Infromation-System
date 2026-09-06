@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Building2, LoaderCircle, Plus, Save } from 'lucide-react';
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 const emptyForm = { name: '', slug: '', email: '' };
 
@@ -14,18 +17,16 @@ function slugFromName(name) {
 }
 
 async function schoolRequest(path = '', options = {}) {
-  const response = await fetch(`/api/schools${path}`, {
-    credentials: 'include',
-    ...options,
-    headers: {
-      ...(options.body ? { 'content-type': 'application/json' } : {}),
-      ...options.headers,
-    },
-  });
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok)
-    throw new Error(payload.error?.message || payload.message || 'Unable to manage schools');
-  return payload.data;
+  try {
+    const { data } = await api.request({
+      url: `/schools${path}`,
+      method: options.method ?? 'GET',
+      data: options.body,
+    });
+    return data.data;
+  } catch (error) {
+    throw new Error(getApiErrorMessage(error, 'Unable to manage schools'));
+  }
 }
 
 export default function SchoolAdmin() {
@@ -36,14 +37,17 @@ export default function SchoolAdmin() {
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
 
   async function loadSchools() {
     setLoading(true);
+    setLoadFailed(false);
     setError('');
     try {
       const result = await schoolRequest();
       setSchools(result.items ?? []);
     } catch (reason) {
+      setLoadFailed(true);
       setError(reason.message);
     } finally {
       setLoading(false);
@@ -109,6 +113,9 @@ export default function SchoolAdmin() {
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 sm:px-10">
       <div className="mx-auto max-w-6xl">
+        <Link to="/admin" className="secondary-button mb-5 inline-flex">
+          Back to administration
+        </Link>
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
@@ -145,12 +152,18 @@ export default function SchoolAdmin() {
           <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
             <h2 className="text-lg font-semibold">Schools</h2>
             <p className="mt-1 text-sm text-slate-400">
-              {schools.length} school{schools.length === 1 ? '' : 's'} configured
+              {loadFailed
+                ? 'School list unavailable'
+                : `${schools.length} school${schools.length === 1 ? '' : 's'} configured`}
             </p>
             {loading ? (
               <p className="mt-6 flex items-center gap-2 text-sm text-slate-400">
                 <LoaderCircle className="animate-spin" size={16} /> Loading schools...
               </p>
+            ) : loadFailed ? (
+              <button type="button" onClick={loadSchools} className="secondary-button mt-5">
+                Retry loading schools
+              </button>
             ) : schools.length === 0 ? (
               <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-6 text-center">
                 <Building2 className="mx-auto text-slate-500" size={28} />

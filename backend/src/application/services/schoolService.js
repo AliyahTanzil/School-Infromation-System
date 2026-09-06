@@ -10,14 +10,14 @@ const getUmbrellaTenantName = () =>
   process.env.SINGLE_SCHOOL_NAME?.trim() ||
   process.env.SINGLE_SCHOOL_UMBRELLA_NAME?.trim() ||
   'Umbrella School';
-const dto = (s) =>
-  s && {
-    ...s,
-    administrators: s.administrators?.map((a) => ({
-      ...a,
-      user: a.user && { id: a.user.id, email: a.user.email, profile: a.user.profile },
-    })),
-  };
+const dto = (school) => school && { ...school, slug: school.code };
+const schoolData = ({ name, slug, email, phone, website }) => ({
+  ...(name !== undefined ? { name } : {}),
+  ...(slug !== undefined ? { code: slug } : {}),
+  ...(email !== undefined ? { email } : {}),
+  ...(phone !== undefined ? { phone } : {}),
+  ...(website !== undefined ? { website } : {}),
+});
 const ensure = async (id, tenantId, tx) => {
   const school = await repo.find(id, tenantId, tx);
   if (!school) throw new NotFoundError('School not found');
@@ -48,7 +48,8 @@ const resolveTenantId = async (requestedTenantId, tx = prisma) => {
   return created.id;
 };
 export async function list(input) {
-  return repo.list(input);
+  const result = await repo.list(input);
+  return { ...result, items: result.items.map(dto) };
 }
 export async function get(id, tenantId) {
   return dto(await ensure(id, tenantId));
@@ -56,19 +57,11 @@ export async function get(id, tenantId) {
 export async function create(input) {
   return prisma.$transaction(async (tx) => {
     const tenantId = await resolveTenantId(input.tenantId, tx);
-    const data = {
-      ...input,
-      normalizedName: normalize(input.name),
-      tenantId,
-      profile: { create: {} },
-      setting: { create: { settings: {} } },
-      configuration: { create: { featureFlags: {} } },
-    };
+    const data = { ...schoolData(input), tenantId };
     const existing = await tx.school.findFirst({
       where: {
         tenantId,
-        OR: [{ slug: input.slug }, { normalizedName: data.normalizedName }],
-        deletedAt: null,
+        OR: [{ code: input.slug }, { name: { equals: input.name, mode: 'insensitive' } }],
       },
     });
     if (existing) throw new ConflictError('School name or slug already exists');
@@ -77,12 +70,7 @@ export async function create(input) {
 }
 export async function update(id, tenantId, input) {
   await ensure(id, tenantId);
-  return dto(
-    await repo.update(id, tenantId, {
-      ...input,
-      ...(input.name ? { normalizedName: normalize(input.name) } : {}),
-    })
-  );
+  return dto(await repo.update(id, tenantId, schoolData(input)));
 }
 export async function remove(id, tenantId) {
   await ensure(id, tenantId);

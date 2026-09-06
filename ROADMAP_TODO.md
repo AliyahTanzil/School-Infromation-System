@@ -17,6 +17,8 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+Latest continuation: TTB-001 Phase 13 — DONE, Codex, 2026-09-06. Automatic generation enforces saved teacher daily, weekly and consecutive workload limits across classes in the draft. Verification: 25 focused tests, backend build and targeted lint passed. Next: controlled manual entry editing.
+
 - `BLOCKED`: cannot safely continue because a dependency or required decision is missing.
 - `READY`: dependencies are complete and the task can be claimed.
 - `IN_PROGRESS`: claimed by one agent; other agents must not modify its scope.

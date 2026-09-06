@@ -167,7 +167,11 @@ function getDestinationForUser(user) {
   /*
    * Platform Application Owner
    */
-  if (user.platformRole === 'OWNER' || user.accountType === 'APPLICATION_MANAGER') {
+  if (
+    user.platformRole === 'OWNER' ||
+    user.accountType === 'APPLICATION_MANAGER' ||
+    roles.includes('PLATFORM_ADMIN')
+  ) {
     return '/admin';
   }
 
@@ -1245,6 +1249,7 @@ export default function App() {
               element={
                 <Protected
                   allowed={[
+                    'PLATFORM_ADMIN',
                     'APPLICATION_MANAGER',
                     'OWNER',
                     'TENANT_ADMIN',

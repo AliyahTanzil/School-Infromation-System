@@ -1,35 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const authorization = () => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
-});
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 export default function SubjectManagement() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const [saving, setSaving] = useState(false);
   const [subjects, setSubjects] = useState([]);
   const [form, setForm] = useState({ code: '', name: '', description: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
-    if (!schoolId) return;
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/subjects', {
-        headers: { ...authorization(), 'x-school-id': schoolId },
-      });
-      const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error?.message ?? 'Unable to load subjects');
-      setSubjects(payload.data ?? []);
-      sessionStorage.setItem('schoolId', schoolId);
+      const { data } = await api.get('/subjects');
+      setSubjects(data.data ?? []);
     } catch (requestError) {
-      setError(requestError.message);
+      setError(getApiErrorMessage(requestError, 'Unable to load subjects'));
     } finally {
       setLoading(false);
     }
-  }, [schoolId]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -38,15 +31,16 @@ export default function SubjectManagement() {
   const create = async (event) => {
     event.preventDefault();
     setError('');
-    const response = await fetch('/api/subjects', {
-      method: 'POST',
-      headers: { ...authorization(), 'content-type': 'application/json', 'x-school-id': schoolId },
-      body: JSON.stringify(form),
-    });
-    const payload = await response.json();
-    if (!response.ok) return setError(payload?.error?.message ?? 'Unable to create subject');
-    setForm({ code: '', name: '', description: '' });
-    await load();
+    setSaving(true);
+    try {
+      await api.post('/subjects', form);
+      setForm({ code: '', name: '', description: '' });
+      await load();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Unable to create subject'));
+    } finally {
+      setSaving(false);
+    }
   };
 
   const summary = [
@@ -80,25 +74,6 @@ export default function SubjectManagement() {
       </section>
 
       <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
-        <div className="section-heading">
-          <div>
-            <h2>School context</h2>
-            <p>Scope the catalog for the active school before creating or reviewing subjects.</p>
-          </div>
-        </div>
-        <div className="form-field" style={{ maxWidth: '26rem' }}>
-          <label className="form-field__label">School ID</label>
-          <input
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="Select or paste the school UUID"
-          />
-        </div>
-        {!schoolId && (
-          <p className="page-header__subtitle" style={{ marginTop: '0.8rem' }}>
-            Enter a school ID to load its subject catalog.
-          </p>
-        )}
         {loading && <p className="loading-state">Loading subjects…</p>}
         {error && (
           <p className="inline-alert" role="alert">
@@ -146,7 +121,7 @@ export default function SubjectManagement() {
           </label>
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <button className="primary-button" disabled={!schoolId} type="submit">
+            <button className="primary-button" disabled={saving || loading} type="submit">
               Create subject
             </button>
           </div>
@@ -162,7 +137,7 @@ export default function SubjectManagement() {
           <span className="status-chip">{subjects.length} total</span>
         </div>
 
-        {!loading && subjects.length === 0 && schoolId && (
+        {!loading && subjects.length === 0 && !error && (
           <p className="empty-state">No subjects found.</p>
         )}
         {subjects.length > 0 && (

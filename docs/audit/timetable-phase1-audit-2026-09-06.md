@@ -228,3 +228,13 @@ Next implementation boundary: generator quality improvements (preference scoring
 - Verification: 17 focused timetable tests passed, including new distribution and preference tests; targeted lint and backend build verification passed.
 
 Next implementation boundary: controlled manual entry creation/editing and stronger hard workload constraints in generation.
+
+## Phase 13 teacher workload checkpoint
+
+- `POST /api/timetables/:id/generate-schedule` and its `/api/v1` equivalent enforce `maxTeacherPeriodsDay`, `maxTeacherPeriodsWeek` and `maxConsecutivePeriods` from school settings, read within the generation transaction. Existing school defaults apply when no settings row exists.
+- Loads aggregate each teacher's periods across all classes in the draft. Double periods consume two periods. Consecutive runs require touching lesson times on the same weekday; free periods, breaks and day boundaries interrupt runs. Candidate checks include previously placed lessons on either side.
+- Candidates exceeding a limit are excluded before preference scoring. When placement fails, the existing validation error includes workload reasons when otherwise available candidates were rejected by those limits. No entries or generation audit are written on failure.
+- Scope remains automatic generation of a single empty draft. Other timetable versions and manual entry/publication workload validation are outside this checkpoint. The greedy generator does not prove that no alternative arrangement exists.
+- Verification: 25 focused tests pass, covering each limit across classes, double-period accounting, exact-limit acceptance, interruption boundaries, default settings and no partial writes. Backend build and targeted ESLint pass. Tests use database doubles; no live database changes were made.
+
+Next implementation boundary: controlled manual entry creation/editing.

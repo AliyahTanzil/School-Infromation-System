@@ -1,34 +1,22 @@
 import prisma from '../orm/prismaClient.js';
 
 const db = (tx) => tx ?? prisma;
-const clean = { deletedAt: null };
-const include = {
-  profile: true,
-  setting: true,
-  configuration: true,
-  branches: { where: clean },
-  departments: { where: clean },
-  grades: { where: clean },
-  administrators: { where: { revokedAt: null }, include: { user: { include: { profile: true } } } },
-};
-
 export const list = ({ tenantId, search, page = 1, pageSize = 25 } = {}, tx) => {
   const take = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
   const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
   const where = {
     tenantId,
-    ...clean,
     ...(search
       ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
-            { normalizedName: { contains: search.toLowerCase() } },
+            { code: { contains: search, mode: 'insensitive' } },
           ],
         }
       : {}),
   };
   return Promise.all([
-    db(tx).school.findMany({ where, include, orderBy: { name: 'asc' }, skip, take }),
+    db(tx).school.findMany({ where, orderBy: { name: 'asc' }, skip, take }),
     db(tx).school.count({ where }),
   ]).then(([items, total]) => ({
     items,
@@ -37,16 +25,14 @@ export const list = ({ tenantId, search, page = 1, pageSize = 25 } = {}, tx) => 
     pageSize: take,
   }));
 };
-export const find = (id, tenantId, tx) =>
-  db(tx).school.findFirst({ where: { id, tenantId, ...clean }, include });
-export const create = (data, tx) => db(tx).school.create({ data, include });
+export const find = (id, tenantId, tx) => db(tx).school.findFirst({ where: { id, tenantId } });
+export const create = (data, tx) => db(tx).school.create({ data });
 export const update = (id, tenantId, data, tx) =>
-  db(tx).school.update({ where: { id, tenantId }, data, include });
+  db(tx).school.update({ where: { id, tenantId }, data });
 export const remove = (id, tenantId, tx) =>
   db(tx).school.update({
     where: { id, tenantId },
     data: { deletedAt: new Date(), status: 'DELETED' },
-    include,
   });
 export const findChild = (model, id, schoolId, tx) =>
   db(tx)[model].findFirst({ where: { id, schoolId, deletedAt: null } });
