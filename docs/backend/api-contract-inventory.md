@@ -375,6 +375,33 @@ published assignment to be archived. Due dates must follow availability dates.
 - `POST /` — create a validated assignment draft.
 - `PATCH /:id/status` — publish, close, or archive according to the lifecycle.
 
+### Classroom calendar (`/api/lms/calendar`, `/api/v1/lms/calendar`)
+
+Active classroom members, owners, and administrators may query scheduled learning activity for an
+accessible classroom. The calendar is a derived, tenant- and school-scoped read model: it returns
+availability and due events for published or closed assignments, plus occurrences from the latest
+published timetable when the digital classroom is linked to an academic `Class`. No duplicate
+calendar records are persisted.
+
+- `GET /?classroomId=<uuid>&start=<ISO date>&end=<ISO date>` — list dated assignment and lesson events.
+
+Publishing an assignment creates one persisted `LMS_ASSIGNMENT_PUBLISHED` in-app notification event
+for each other active classroom member. Draft creation, closure, and archival do not notify members.
+
+### Classroom live sessions (`/api/lms/live-sessions`, `/api/v1/lms/live-sessions`)
+
+Active classroom members can view scheduled live learning sessions and access recordings for their
+classrooms. Classroom owners, administrators, and active teacher members can schedule sessions, update
+session status (`SCHEDULED` → `LIVE` → `ENDED` / `CANCELLED`), and generate secure meeting URLs.
+Transitioning a session to `LIVE` delivers an in-app `LMS_LIVE_SESSION_STARTED` notification event
+to active classroom members.
+
+- `GET /?classroomId=<uuid>&status=<status>` — list accessible live learning sessions.
+- `GET /recordings` — list published live session recordings for accessible classrooms.
+- `POST /` — schedule a new live learning session (teachers/admins only).
+- `GET /:id` — inspect session details and secure join link.
+- `PATCH /:id/status` — transition session status (`LIVE`, `ENDED`, `CANCELLED`) and set recording metadata.
+
 ### Digital materials (`/api/lms/materials`, `/api/v1/lms/materials`)
 
 All operations require authentication, a validated `x-school-id`, and active access to the selected

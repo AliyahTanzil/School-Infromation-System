@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, Archive, Plus, RefreshCw, UserPlus, Users } from 'lucide-react';
+import { ArrowLeft, Archive, CalendarDays, Plus, RefreshCw, UserPlus, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 import './digital-classroom.css';
@@ -19,6 +19,7 @@ export default function ClassroomDashboard() {
   const [announcement, setAnnouncement] = useState({ title: '', body: '', status: 'PUBLISHED' });
   const [postBody, setPostBody] = useState('');
   const [assignments, setAssignments] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [material, setMaterial] = useState({ title: '', description: '', file: null });
   const [assignment, setAssignment] = useState({
@@ -72,17 +73,34 @@ export default function ClassroomDashboard() {
 
   async function openClassroom(id) {
     try {
-      const [classroomResponse, streamResponse, assignmentResponse, materialResponse] =
-        await Promise.all([
-          api.get(`/lms/classrooms/${id}`, { headers }),
-          api.get(`/lms/classroom-stream/${id}`, { headers }),
-          api.get('/lms/assignments', { headers, params: { classroomId: id } }),
-          api.get('/lms/materials', { headers, params: { classroomId: id } }),
-        ]);
+      const calendarStart = new Date();
+      const calendarEnd = new Date(calendarStart);
+      calendarEnd.setDate(calendarEnd.getDate() + 90);
+      const [
+        classroomResponse,
+        streamResponse,
+        assignmentResponse,
+        materialResponse,
+        calendarResponse,
+      ] = await Promise.all([
+        api.get(`/lms/classrooms/${id}`, { headers }),
+        api.get(`/lms/classroom-stream/${id}`, { headers }),
+        api.get('/lms/assignments', { headers, params: { classroomId: id } }),
+        api.get('/lms/materials', { headers, params: { classroomId: id } }),
+        api.get('/lms/calendar', {
+          headers,
+          params: {
+            classroomId: id,
+            start: calendarStart.toISOString(),
+            end: calendarEnd.toISOString(),
+          },
+        }),
+      ]);
       setSelected(classroomResponse.data.data);
       setStream(streamResponse.data.data);
       setAssignments(assignmentResponse.data.data);
       setMaterials(materialResponse.data.data);
+      setCalendarEvents(calendarResponse.data.data);
       setNotice('');
     } catch (error) {
       setNotice(errorMessage(error));
@@ -411,6 +429,34 @@ export default function ClassroomDashboard() {
               </div>
             </section>
           </div>
+          <section className="dc-classwork">
+            <h3>
+              <CalendarDays size={18} /> Upcoming calendar
+            </h3>
+            <div className="dc-calendar">
+              {calendarEvents.map((item) => (
+                <article key={item.id}>
+                  <time dateTime={item.startsAt}>
+                    {new Date(item.startsAt).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </time>
+                  <strong>{item.title}</strong>
+                  <small>
+                    {item.type === 'ASSIGNMENT_DUE'
+                      ? 'Due'
+                      : item.type === 'LESSON'
+                        ? 'Lesson'
+                        : 'Available'}
+                  </small>
+                </article>
+              ))}
+              {!calendarEvents.length && <p>No upcoming assignments are scheduled.</p>}
+            </div>
+          </section>
           <section className="dc-classwork">
             <h3>Classwork and assignments</h3>
             <form className="dc-assignment-form" onSubmit={createAssignment}>

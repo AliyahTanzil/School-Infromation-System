@@ -52,6 +52,10 @@ import classroomStreamRouter from '../presentation/http/routes/classroomStreamRo
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import assignmentRouter from '../presentation/http/routes/assignmentRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import classroomCalendarRouter from '../presentation/http/routes/classroomCalendarRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import classroomLiveSessionRouter from '../presentation/http/routes/classroomLiveSessionRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import materialRouter from '../presentation/http/routes/materialRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import submissionRouter from '../presentation/http/routes/submissionRoutes.js';
@@ -61,8 +65,40 @@ import quizRouter from '../presentation/http/routes/quizRoutes.js';
 import gradebookRouter from '../presentation/http/routes/gradebookRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import billingRouter from '../presentation/http/routes/billingRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import analyticsRouter from '../presentation/http/routes/analyticsRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import searchRouter from '../presentation/http/routes/searchRoutes.js';
 // @ts-expect-error Single-school route is implemented in the active JavaScript module layer.
 import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.js';
+
+export function isCorsOriginAllowed(origin?: string): boolean {
+  if (!origin) return true;
+  const normalizedOrigin = String(origin).replace(/\/$/, '');
+  if ((config.corsOrigins as string[]).includes(normalizedOrigin)) return true;
+
+  try {
+    const url = new URL(normalizedOrigin);
+    const hostname = url.hostname.toLowerCase();
+    const projects = new Set([
+      'school-administration-information-system-frontend',
+      ...String(process.env.VERCEL_PREVIEW_PROJECT ?? '').split(','),
+    ]);
+    const belongsToFrontendProject = [...projects]
+      .map((project) => project.trim().toLowerCase())
+      .filter(Boolean)
+      .some(
+        (project) =>
+          hostname === `${project}.vercel.app` ||
+          (hostname.startsWith(`${project}-`) && hostname.endsWith('.vercel.app')) ||
+          (hostname.startsWith(`${project}--`) && hostname.endsWith('.vercel.app'))
+      );
+
+    return url.protocol === 'https:' && !url.port && belongsToFrontendProject;
+  } catch {
+    return false;
+  }
+}
 
 export const createApp = () => {
   const app = express();
@@ -128,6 +164,8 @@ export const createApp = () => {
   app.use('/api/v1/results', resultRouter);
   app.use('/api/timetables', timetableRouter);
   app.use('/api/v1/timetables', timetableRouter);
+  app.use('/api/lms/calendar', classroomCalendarRouter);
+  app.use('/api/v1/lms/calendar', classroomCalendarRouter);
   app.use('/api/finance', financeRouter);
   app.use('/api/v1/finance', financeRouter);
   app.use('/api/billing', billingRouter);
@@ -160,8 +198,16 @@ export const createApp = () => {
   app.use('/api/v1/lms/submissions', submissionRouter);
   app.use('/api/lms/quizzes', quizRouter);
   app.use('/api/v1/lms/quizzes', quizRouter);
+  app.use('/api/lms/live-sessions', classroomLiveSessionRouter);
+  app.use('/api/v1/lms/live-sessions', classroomLiveSessionRouter);
   app.use('/api/lms/gradebook', gradebookRouter);
   app.use('/api/v1/lms/gradebook', gradebookRouter);
+  app.use('/api/analytics', analyticsRouter);
+  app.use('/api/v1/analytics', analyticsRouter);
+  app.use('/api/lms/search', searchRouter);
+  app.use('/api/v1/lms/search', searchRouter);
+  app.use('/api/search', searchRouter);
+  app.use('/api/v1/search', searchRouter);
   app.get('/', (_request, response) => {
     response.status(200).json({
       success: true,

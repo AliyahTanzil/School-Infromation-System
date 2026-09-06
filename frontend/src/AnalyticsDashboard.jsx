@@ -1,17 +1,57 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BarChart3, Download, Filter, TrendingDown, TrendingUp } from 'lucide-react';
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
-const metrics = [
-  { label: 'Active students', value: '2,486', change: '+4.8%', positive: true },
-  { label: 'Attendance rate', value: '94.2%', change: '+1.6%', positive: true },
-  { label: 'Fee collection', value: '82.7%', change: '+6.2%', positive: true },
-  { label: 'Student / teacher', value: '18.4', change: '-0.9', positive: true },
+const defaultMetrics = [
+  { label: 'Active students', value: 'Not available' },
+  { label: 'Attendance rate', value: 'Not available' },
+  { label: 'Fee collection', value: 'Not available' },
+  { label: 'Student / teacher', value: 'Not available' },
 ];
-const series = [72, 76, 74, 81, 84, 88, 91];
+const defaultSeries = [];
 
 export default function AnalyticsDashboard() {
   const [period, setPeriod] = useState('This academic year');
-  const total = useMemo(() => series.reduce((a, b) => a + b, 0), []);
+  const [metrics, setMetrics] = useState(defaultMetrics);
+  const [series, setSeries] = useState(defaultSeries);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .get('/analytics/overview')
+      .then((res) => {
+        if (!mounted || !res.data?.data) return;
+        const data = res.data.data;
+        if (data.metrics && Array.isArray(data.metrics)) {
+          setMetrics(
+            data.metrics.map((m) => ({
+              label: m.label,
+              value: m.value,
+              change: m.change,
+              positive: m.positive ?? true,
+            }))
+          );
+        }
+        if (Array.isArray(data.series)) {
+          setSeries(data.series);
+        }
+      })
+      .catch((reason) => {
+        if (mounted) setError(getApiErrorMessage(reason, 'Unable to load analytics'));
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const total = useMemo(() => series.reduce((a, b) => a + b, 0), [series]);
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 md:px-10">
       <div className="mx-auto max-w-7xl space-y-8">
@@ -42,6 +82,8 @@ export default function AnalyticsDashboard() {
             </button>
           </div>
         </header>
+        {loading && <p role="status">Loading analytics...</p>}
+        {error && <p role="alert">{error}</p>}
         <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {metrics.map((m) => (
             <article
@@ -51,9 +93,11 @@ export default function AnalyticsDashboard() {
               <p className="text-sm text-slate-400">{m.label}</p>
               <div className="mt-4 flex items-end justify-between">
                 <strong className="text-3xl tracking-tight">{m.value}</strong>
-                <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-300">
-                  {m.positive ? <TrendingUp size={15} /> : <TrendingDown size={15} />} {m.change}
-                </span>
+                {m.change != null && (
+                  <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-300">
+                    {m.positive ? <TrendingUp size={15} /> : <TrendingDown size={15} />} {m.change}
+                  </span>
+                )}
               </div>
             </article>
           ))}
@@ -63,11 +107,12 @@ export default function AnalyticsDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-slate-400">Institution health index</p>
-                <h2 className="mt-1 text-xl font-semibold">Signals are trending upward</h2>
+                <h2 className="mt-1 text-xl font-semibold">Historical signals</h2>
               </div>
               <BarChart3 className="text-cyan-300" />
             </div>
             <div className="mt-8 flex h-52 items-end gap-3">
+              {!series.length && <p>Historical analytics are not available.</p>}
               {series.map((v, i) => (
                 <div key={i} className="flex flex-1 flex-col items-center gap-2">
                   <div
@@ -84,7 +129,7 @@ export default function AnalyticsDashboard() {
             <p className="mt-5 text-sm text-slate-400">
               Period: {period}. Aggregate score:{' '}
               <span className="font-medium text-slate-200">
-                {Math.round(total / series.length)}/100
+                {series.length ? `${Math.round(total / series.length)}/100` : 'Not available'}
               </span>
               .
             </p>
@@ -98,21 +143,7 @@ export default function AnalyticsDashboard() {
               <Filter size={18} className="text-slate-500" />
             </div>
             <div className="mt-6 space-y-4">
-              {[
-                ['Attendance', 'Grade 8 absence rate is 3.2% above baseline.', 'amber'],
-                ['Collections', 'Senior fees are pacing 8% ahead of plan.', 'emerald'],
-                ['Transport', 'Route utilization is below 70% on two corridors.', 'cyan'],
-              ].map(([title, text, tone]) => (
-                <div key={title} className="border-l-2 border-cyan-300/60 pl-4">
-                  <p className="font-medium">{title}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-400">{text}</p>
-                  <span
-                    className={`mt-2 inline-block text-xs uppercase tracking-wider text-${tone}-300`}
-                  >
-                    Open drill-down
-                  </span>
-                </div>
-              ))}
+              <p className="text-sm text-slate-400">Priority signals are not available.</p>
             </div>
           </article>
         </section>

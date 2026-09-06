@@ -1,11 +1,14 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { spawn } from 'node:child_process';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn, spawnSync } from 'node:child_process';
+import { backendStartTimeout, waitForBackend } from './backend-readiness.mjs';
+import { findAvailablePort } from './available-port.mjs';
 import { ensureWorkspaceDependencies } from './ensure-workspaces.mjs';
 
 ensureWorkspaceDependencies();
 
-const sleep = (ms) => new Promise((resolvePromise) => setTimeout(resolvePromise, ms));
+const startupTimeout = backendStartTimeout(process.env.BACKEND_START_TIMEOUT);
 
 async function backendIsReady(port) {
   try {
@@ -18,21 +21,30 @@ async function backendIsReady(port) {
   }
 }
 
-async function frontendIsReady(port) {
-  try {
-    const response = await fetch(`http://127.0.0.1:${port}/`, {
-      signal: AbortSignal.timeout(800),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
-const root = resolve(process.cwd(), '..');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const manifestPath = resolve(root, '.sais-ports.json');
 const manifest = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, 'utf8')) : null;
 const children = [];
+const spawnErrors = new WeakMap();
+let stopping = false;
+function shutdown(signal = 'SIGTERM') {
+  if (stopping) return;
+  stopping = true;
+  for (const child of children) {
+    if (!child.pid || child.exitCode !== null || child.signalCode !== null) continue;
+    if (process.platform === 'win32') {
+      // npm launches grandchildren: stopping only npm leaves the server running.
+      spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+    } else {
+      child.kill(signal);
+    }
+  }
+}
+process.once('SIGINT', () => shutdown('SIGINT'));
+process.once('SIGTERM', () => shutdown('SIGTERM'));
 
 function start(command, args, env = {}) {
   const isWindowsNpm = process.platform === 'win32' && command === 'npm';
@@ -48,6 +60,7 @@ function start(command, args, env = {}) {
   });
   children.push(child);
   child.on('error', (error) => {
+    spawnErrors.set(child, error);
     console.error(`[SAIS] Unable to start ${command}: ${error.message}`);
     process.exitCode = 1;
   });
@@ -64,48 +77,63 @@ const isV0 =
   process.env.V0 ||
   process.env.V0_RUNTIME_URL ||
   process.env.V0_DEV_APP_URL;
-const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || (isV0 ? 44555 : 4000));
+const backendPort =
+  (Number(process.env.BACKEND_PORT) !== 0 && process.env.BACKEND_PORT) ||
+  String(manifest?.backend || (isV0 ? 44555 : 4000));
 if (!(await backendIsReady(backendPort))) {
-  start('npm', ['run', 'dev', '-w', 'backend'], { PORT: backendPort });
-  for (let attempt = 0; attempt < 40 && !(await backendIsReady(backendPort)); attempt += 1) {
-    await sleep(250);
+  const backend = start('npm', ['run', 'dev', '-w', 'backend'], { PORT: backendPort });
+  console.log(
+    '[SAIS] Waiting up to ' +
+      startupTimeout / 1000 +
+      ' seconds for backend on port ' +
+      backendPort +
+      '...'
+  );
+  try {
+    const ready = await waitForBackend(() => backendIsReady(backendPort), {
+      timeoutMs: startupTimeout,
+      hasExited: () =>
+        stopping ||
+        spawnErrors.has(backend) ||
+        backend.exitCode !== null ||
+        backend.signalCode !== null,
+    });
+    if (!ready)
+      throw new Error(
+        'Backend did not become ready on port ' +
+          backendPort +
+          ' within ' +
+          startupTimeout +
+          'ms. Set BACKEND_START_TIMEOUT for a slower machine.'
+      );
+  } catch (error) {
+    console.error('[SAIS] ' + error.message + ' Frontend startup cancelled.');
+    shutdown();
+    process.exit(1);
   }
 }
 
-if (!(await backendIsReady(backendPort))) {
-  console.error(
-    `[SAIS] Backend did not become ready on port ${backendPort}; frontend startup cancelled.`
+const requestedFrontendPort = Number(process.env.FRONTEND_PORT || manifest?.frontend || 3000);
+const frontendPort = await findAvailablePort(requestedFrontendPort);
+if (frontendPort !== requestedFrontendPort) {
+  console.log(
+    '[SAIS] Port ' +
+      requestedFrontendPort +
+      ' is occupied; starting frontend on ' +
+      frontendPort +
+      '.'
   );
-  for (const child of children) child.kill('SIGTERM');
-  process.exit(1);
 }
-
-const frontendPort =
-  process.env.FRONTEND_PORT || String(manifest?.frontend || 3000);
-const reuseFrontend = await frontendIsReady(frontendPort);
-if (reuseFrontend) {
-  console.log(`[SAIS] Frontend is already running on port ${frontendPort}; reusing it.`);
-} else {
-  const vite = start(
-    'npm',
-    ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
-    {
-      FRONTEND_PORT: frontendPort,
-      BACKEND_PORT: backendPort,
-      SAIS_LOCAL_DEV: 'true',
-    }
-  );
-
-  let stopping = false;
-  function shutdown(signal) {
-    if (stopping) return;
-    stopping = true;
-    for (const child of children) {
-      if (!child.killed) child.kill(signal);
-    }
+const vite = start(
+  'npm',
+  ['run', 'dev:server', '--workspace', 'frontend', '--', '--host', '0.0.0.0'],
+  {
+    FRONTEND_PORT: String(frontendPort),
+    BACKEND_PORT: backendPort,
+    VITE_BACKEND_URL: 'http://127.0.0.1:' + backendPort,
+    SAIS_LOCAL_DEV: 'true',
   }
-  process.once('SIGINT', () => shutdown('SIGINT'));
-  process.once('SIGTERM', () => shutdown('SIGTERM'));
-  vite.once('exit', () => shutdown('SIGTERM'));
-  await new Promise(() => {});
-}
+);
+vite.once('exit', () => shutdown('SIGTERM'));
+vite.once('error', () => shutdown('SIGTERM'));
+await new Promise(() => {});

@@ -2,12 +2,354 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
 import {
   canTransitionTimetable,
   detectTimetableConflicts,
+  generateTimetableSlots,
   validateTimeRange,
+  validateTimetableSettings,
+  validateSubjectPeriodCapacity,
 } from '../../domain/timetableEngine.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import { validateEntryTeacherAvailability } from './teacherAvailabilityService.js';
+import { validateEntryRoom } from './timetableRoomService.js';
 
 const scopeWhere = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+
+export async function getTimetableOptions(scope) {
+  const [school, academicYears, classes, subjects] = await Promise.all([
+    prisma.school.findFirst({
+      where: { id: scope.schoolId, tenantId: scope.tenantId },
+      select: { id: true, name: true },
+    }),
+    prisma.academicYear.findMany({
+      where: { tenantId: scope.tenantId },
+      include: { terms: true },
+      orderBy: { startsOn: 'desc' },
+    }),
+    prisma.class.findMany({
+      where: { ...scopeWhere(scope), deletedAt: null },
+      select: { id: true, name: true, academicYearId: true },
+    }),
+    prisma.subject.findMany({
+      where: { ...scopeWhere(scope), deletedAt: null },
+      select: { id: true, name: true, code: true },
+    }),
+  ]);
+  return { school, academicYears, classes, subjects };
+}
+
+const defaultSettings = {
+  workingDays: [1, 2, 3, 4, 5],
+  schoolStartsAt: '08:00',
+  schoolEndsAt: '16:00',
+  lessonDurationMinutes: 60,
+  breakStartsAt: null,
+  breakEndsAt: null,
+  lunchStartsAt: null,
+  lunchEndsAt: null,
+  maxPeriodsPerDay: 8,
+  maxTeacherPeriodsDay: 6,
+  maxTeacherPeriodsWeek: 30,
+  maxConsecutivePeriods: 3,
+  allowDoublePeriods: false,
+  allowSaturday: false,
+};
+
+export async function getTimetableSettings(scope) {
+  const row = await prisma.timetableSettings.findUnique({
+    where: { tenantId_schoolId: scopeWhere(scope) },
+  });
+  return row || { ...defaultSettings, ...scope };
+}
+
+export async function upsertTimetableSettings({ tenantId, schoolId, ...input }) {
+  const settings = { ...defaultSettings, ...input };
+  try {
+    validateTimetableSettings(settings);
+  } catch (error) {
+    throw new ValidationError(error.message);
+  }
+  return prisma.$transaction(
+    async (tx) => {
+      const requirements = await tx.subjectPeriodRequirement.findMany({
+        where: { tenantId, schoolId },
+      });
+      checkSubjectCapacity(settings, requirements);
+      return tx.timetableSettings.upsert({
+        where: { tenantId_schoolId: { tenantId, schoolId } },
+        create: { tenantId, schoolId, ...settings },
+        update: settings,
+      });
+    },
+    { isolationLevel: 'Serializable' }
+  );
+}
+
+function checkSubjectCapacity(settings, requirements) {
+  try {
+    return validateSubjectPeriodCapacity(settings, requirements);
+  } catch (error) {
+    throw new ValidationError(error.message);
+  }
+}
+
+const subjectPeriodInclude = { subject: true, class: true, academicYear: true, term: true };
+
+export async function listSubjectPeriodRequirements(scope, filters = {}) {
+  const where = scopeWhere(scope);
+  for (const key of ['subjectId', 'classId', 'academicYearId', 'termId']) {
+    if (filters[key]) where[key] = filters[key];
+  }
+  return prisma.subjectPeriodRequirement.findMany({
+    where,
+    include: subjectPeriodInclude,
+    orderBy: [{ classId: 'asc' }, { subjectId: 'asc' }],
+  });
+}
+
+async function saveSubjectPeriodRequirement({ tenantId, schoolId, id, ...input }) {
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const scope = { tenantId, schoolId };
+        const existing = id
+          ? await tx.subjectPeriodRequirement.findFirst({ where: { id, ...scope } })
+          : null;
+        if (id && !existing) throw new NotFoundError('Subject period requirement not found');
+        const merged = { ...existing, ...input };
+        const [subject, academicClass, year, term] = await Promise.all([
+          tx.subject.findFirst({ where: { id: merged.subjectId, ...scope, deletedAt: null } }),
+          tx.class.findFirst({ where: { id: merged.classId, ...scope, deletedAt: null } }),
+          tx.academicYear.findFirst({ where: { id: merged.academicYearId, tenantId } }),
+          tx.academicTerm.findFirst({
+            where: {
+              id: merged.termId,
+              academicYearId: merged.academicYearId,
+              academicYear: { tenantId },
+            },
+          }),
+        ]);
+        if (!subject) throw new NotFoundError('Subject not found in this school');
+        if (!academicClass) throw new NotFoundError('Class not found in this school');
+        if (!year) throw new NotFoundError('Academic year not found');
+        if (!term) throw new ValidationError('Academic term does not belong to the selected year');
+        const settings =
+          (await tx.timetableSettings.findUnique({ where: { tenantId_schoolId: scope } })) ??
+          defaultSettings;
+        const requirements = await tx.subjectPeriodRequirement.findMany({
+          where: {
+            ...scope,
+            classId: merged.classId,
+            academicYearId: merged.academicYearId,
+            termId: merged.termId,
+            ...(id ? { id: { not: id } } : {}),
+          },
+        });
+        checkSubjectCapacity(settings, [...requirements, merged]);
+        return id
+          ? tx.subjectPeriodRequirement.update({
+              where: { id },
+              data: input,
+              include: subjectPeriodInclude,
+            })
+          : tx.subjectPeriodRequirement.create({
+              data: { ...input, ...scope },
+              include: subjectPeriodInclude,
+            });
+      },
+      { isolationLevel: 'Serializable' }
+    );
+  } catch (error) {
+    if (error.code === 'P2002')
+      throw new ValidationError(
+        'A requirement already exists for this subject, class, year and term'
+      );
+    if (error.code === 'P2034')
+      throw new ValidationError('Timetable requirements changed concurrently; retry this request');
+    throw error;
+  }
+}
+
+export const createSubjectPeriodRequirement = (input) => saveSubjectPeriodRequirement(input);
+export const updateSubjectPeriodRequirement = (input) => saveSubjectPeriodRequirement(input);
+export async function removeSubjectPeriodRequirement({ tenantId, schoolId, id }) {
+  const result = await prisma.subjectPeriodRequirement.deleteMany({
+    where: { tenantId, schoolId, id },
+  });
+  if (!result.count) throw new NotFoundError('Subject period requirement not found');
+}
+
+export async function generateSlotsFromSettings(scope) {
+  const settings = await getTimetableSettings(scope);
+  try {
+    return generateTimetableSlots(settings);
+  } catch (error) {
+    throw new ValidationError(error.message);
+  }
+}
+
+export async function generateSlotsForTimetable({ tenantId, schoolId, timetableId, actorId }) {
+  const timetable = await prisma.timetable.findFirst({
+    where: { id: timetableId, ...scopeWhere({ tenantId, schoolId }) },
+  });
+  if (!timetable) throw new NotFoundError('Timetable not found');
+  if (!['DRAFT', 'REVIEW'].includes(timetable.status)) {
+    throw new ValidationError('Only draft or review timetables can regenerate slots');
+  }
+
+  const entryCount = await prisma.scheduleEntry.count({ where: { timetableId } });
+  if (entryCount > 0) {
+    throw new ValidationError('Remove existing schedule entries before regenerating slots');
+  }
+
+  const settings = await getTimetableSettings({ tenantId, schoolId });
+  let slots;
+  try {
+    slots = generateTimetableSlots(settings);
+  } catch (error) {
+    throw new ValidationError(error.message);
+  }
+
+  return prisma.$transaction(async (tx) => {
+    await tx.timetableSlot.deleteMany({ where: { timetableId } });
+    await tx.timetableSlot.createMany({
+      data: slots.map((slot) => ({
+        tenantId,
+        schoolId,
+        timetableId,
+        weekday: slot.weekday,
+        startTime: slot.startTime,
+        endTime: slot.endTime,
+        label: slot.label,
+        isBreak: slot.isBreak,
+      })),
+    });
+    await tx.timetableAudit.create({
+      data: {
+        tenantId,
+        schoolId,
+        timetableId,
+        actorId,
+        action: 'SLOTS_GENERATED',
+        metadata: { slotCount: slots.length },
+      },
+    });
+    return slots;
+  });
+}
+
+async function validateTeachingAssignmentScope({
+  tenantId,
+  schoolId,
+  teacherId,
+  subjectId,
+  classId,
+  academicYearId,
+  termId,
+}) {
+  const [teacher, subject, academicClass, academicYear, term] = await Promise.all([
+    prisma.teacher.findFirst({ where: { id: teacherId, tenantId, schoolId, deletedAt: null } }),
+    prisma.subject.findFirst({ where: { id: subjectId, tenantId, schoolId, deletedAt: null } }),
+    prisma.class.findFirst({ where: { id: classId, tenantId, schoolId, deletedAt: null } }),
+    prisma.academicYear.findFirst({ where: { id: academicYearId, tenantId } }),
+    prisma.academicTerm.findFirst({ where: { id: termId, academicYear: { tenantId } } }),
+  ]);
+  if (!teacher) throw new NotFoundError('Teacher not found in this school');
+  if (!subject) throw new NotFoundError('Subject not found in this school');
+  if (!academicClass) throw new NotFoundError('Class not found in this school');
+  if (!academicYear) throw new NotFoundError('Academic year not found');
+  if (!term || term.academicYearId !== academicYearId) {
+    throw new ValidationError('Academic term does not belong to the selected year');
+  }
+}
+
+export async function listTeachingAssignments(scope, filters = {}) {
+  return prisma.teacherTeachingAssignment.findMany({
+    where: {
+      ...scopeWhere(scope),
+      ...(filters.teacherId ? { teacherId: filters.teacherId } : {}),
+      ...(filters.classId ? { classId: filters.classId } : {}),
+      ...(filters.academicYearId ? { academicYearId: filters.academicYearId } : {}),
+      ...(filters.termId ? { termId: filters.termId } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+    },
+    include: {
+      teacher: { include: { profile: true } },
+      subject: true,
+      class: true,
+      academicYear: true,
+      term: true,
+    },
+    orderBy: [{ teacherId: 'asc' }, { createdAt: 'desc' }],
+  });
+}
+
+export async function createTeachingAssignment({ tenantId, schoolId, ...input }) {
+  await validateTeachingAssignmentScope({ tenantId, schoolId, ...input });
+  const assignment = await prisma.teacherTeachingAssignment.create({
+    data: { tenantId, schoolId, ...input },
+    include: {
+      teacher: { include: { profile: true } },
+      subject: true,
+      class: true,
+      academicYear: true,
+      term: true,
+    },
+  });
+  return assignment;
+}
+
+export async function updateTeachingAssignment({ tenantId, schoolId, id, ...input }) {
+  const existing = await prisma.teacherTeachingAssignment.findFirst({
+    where: { id, ...scopeWhere({ tenantId, schoolId }) },
+  });
+  if (!existing) throw new NotFoundError('Teaching assignment not found');
+  await validateTeachingAssignmentScope({ tenantId, schoolId, ...input });
+  return prisma.teacherTeachingAssignment.update({
+    where: { id },
+    data: input,
+    include: {
+      teacher: { include: { profile: true } },
+      subject: true,
+      class: true,
+      academicYear: true,
+      term: true,
+    },
+  });
+}
+
+export async function removeTeachingAssignment({ tenantId, schoolId, id }) {
+  const existing = await prisma.teacherTeachingAssignment.findFirst({
+    where: { id, ...scopeWhere({ tenantId, schoolId }) },
+    select: { id: true },
+  });
+  if (!existing) throw new NotFoundError('Teaching assignment not found');
+  return prisma.teacherTeachingAssignment.delete({ where: { id } });
+}
+
+export async function getTeacherWorkload(scope, teacherId, filters = {}) {
+  const assignments = await listTeachingAssignments(scope, { ...filters, teacherId });
+  const totalPeriods = assignments.reduce((sum, item) => sum + item.periodsPerWeek, 0);
+  const bySubject = Object.values(
+    assignments.reduce((groups, item) => {
+      const key = item.subjectId;
+      groups[key] ??= { subjectId: key, subject: item.subject, periodsPerWeek: 0, classes: [] };
+      groups[key].periodsPerWeek += item.periodsPerWeek;
+      groups[key].classes.push({
+        id: item.classId,
+        name: item.class.name,
+        periodsPerWeek: item.periodsPerWeek,
+      });
+      return groups;
+    }, {})
+  );
+  return {
+    teacherId,
+    totalPeriodsPerWeek: totalPeriods,
+    assignmentCount: assignments.length,
+    subjects: bySubject,
+    assignments,
+  };
+}
 async function hydrate(row, db = prisma) {
   const [academicPeriod, slots, entries, conflicts, substitutions] = await Promise.all([
     db.academicTerm.findFirst({
@@ -17,7 +359,11 @@ async function hydrate(row, db = prisma) {
       where: { timetableId: row.id },
       orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
     }),
-    db.scheduleEntry.findMany({ where: { timetableId: row.id }, orderBy: { createdAt: 'asc' } }),
+    db.scheduleEntry.findMany({
+      where: { timetableId: row.id },
+      include: { timeSlot: true, class: true, room: true, subject: true },
+      orderBy: { createdAt: 'asc' },
+    }),
     db.schedulingConflict.findMany({
       where: { timetableId: row.id },
       orderBy: { createdAt: 'asc' },
@@ -78,84 +424,102 @@ export async function createTimetable({
   });
 }
 export async function addEntry({ tenantId, schoolId, timetableId, actorId, data }) {
-  const row = await prisma.timetable.findFirst({
-    where: { id: timetableId, ...scopeWhere({ tenantId, schoolId }) },
-  });
-  if (!row) throw new NotFoundError('Timetable not found');
-  if (!['DRAFT', 'REVIEW'].includes(row.status))
-    throw new ValidationError('Timetable is not editable');
-  const slot = await prisma.timetableSlot.findFirst({
-    where: { id: data.timeSlotId, timetableId, tenantId, schoolId },
-  });
-  if (!slot) throw new ValidationError('Time slot does not belong to this timetable');
-  const created = await prisma.scheduleEntry.create({
-    data: { ...data, tenantId, schoolId, timetableId },
-  });
-  const [entries, slots] = await Promise.all([
-    prisma.scheduleEntry.findMany({ where: { timetableId } }),
-    prisma.timetableSlot.findMany({ where: { timetableId } }),
-  ]);
-  const conflicts = detectTimetableConflicts(entries, slots);
-  await prisma.$transaction([
-    prisma.schedulingConflict.deleteMany({ where: { timetableId } }),
-    ...conflicts.map((conflict) =>
-      prisma.schedulingConflict.create({ data: { ...conflict, tenantId, schoolId, timetableId } })
-    ),
-    prisma.timetableAudit.create({
-      data: {
-        tenantId,
-        schoolId,
-        timetableId,
-        actorId,
-        action: 'ENTRY_ADDED',
-        metadata: { entryId: created.id, conflicts: conflicts.length },
-      },
-    }),
-  ]);
-  return created;
+  return prisma.$transaction(
+    async (tx) => {
+      const row = await tx.timetable.findFirst({
+        where: { id: timetableId, ...scopeWhere({ tenantId, schoolId }) },
+      });
+      if (!row) throw new NotFoundError('Timetable not found');
+      if (!['DRAFT', 'REVIEW'].includes(row.status))
+        throw new ValidationError('Timetable is not editable');
+      const slots = await tx.timetableSlot.findMany({ where: { timetableId, tenantId, schoolId } });
+      const slot = slots.find((item) => item.id === data.timeSlotId);
+      if (!slot) throw new ValidationError('Time slot does not belong to this timetable');
+      await validateEntryTeacherAvailability(tx, { tenantId, schoolId }, data, slots);
+      await validateEntryRoom(tx, { tenantId, schoolId }, data, slots, timetableId);
+      const created = await tx.scheduleEntry.create({
+        data: { ...data, tenantId, schoolId, timetableId },
+      });
+      const entries = await tx.scheduleEntry.findMany({ where: { timetableId } });
+      const teacherAvailability = await tx.teacherAvailability.findMany({
+        where: {
+          teacherId: { in: entries.map((entry) => entry.teacherId).filter(Boolean) },
+          teacher: { tenantId, schoolId },
+        },
+      });
+      const conflicts = detectTimetableConflicts(entries, slots, { teacherAvailability });
+      await tx.schedulingConflict.deleteMany({ where: { timetableId } });
+      for (const conflict of conflicts) {
+        await tx.schedulingConflict.create({
+          data: { ...conflict, tenantId, schoolId, timetableId },
+        });
+      }
+      await tx.timetableAudit.create({
+        data: {
+          tenantId,
+          schoolId,
+          timetableId,
+          actorId,
+          action: 'ENTRY_ADDED',
+          metadata: { entryId: created.id, conflicts: conflicts.length },
+        },
+      });
+      return created;
+    },
+    { isolationLevel: 'Serializable' }
+  );
 }
 export async function changeStatus({ tenantId, schoolId, timetableId, actorId, status }) {
-  const row = await prisma.timetable.findFirst({
-    where: { id: timetableId, ...scopeWhere({ tenantId, schoolId }) },
-  });
-  if (!row) throw new NotFoundError('Timetable not found');
-  const [conflicts, entries, slots] = await Promise.all([
-    prisma.schedulingConflict.findMany({ where: { timetableId } }),
-    prisma.scheduleEntry.findMany({ where: { timetableId } }),
-    prisma.timetableSlot.findMany({ where: { timetableId } }),
-  ]);
-  let next;
-  try {
-    next = canTransitionTimetable(row.status, status, conflicts);
-  } catch (error) {
-    throw new ValidationError(error.message);
-  }
-  return prisma.$transaction(async (tx) => {
-    const version = row.version + 1;
-    const updated = await tx.timetable.update({
-      where: { id: timetableId },
-      data: {
-        status: next,
-        version,
-        ...(next === 'PUBLISHED' ? { publishedAt: new Date() } : {}),
-        ...(next === 'LOCKED' ? { lockedAt: new Date() } : {}),
-      },
-    });
-    await tx.timetableVersion.create({
-      data: { timetableId, number: version, snapshot: { entries, slots }, createdBy: actorId },
-    });
-    await tx.timetableAudit.create({
-      data: {
-        tenantId,
-        schoolId,
-        timetableId,
-        actorId,
-        action: `STATUS_${next}`,
-        metadata: { from: row.status, to: next },
-      },
-    });
-    return hydrate(updated, tx);
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      const row = await tx.timetable.findFirst({
+        where: { id: timetableId, ...scopeWhere({ tenantId, schoolId }) },
+      });
+      if (!row) throw new NotFoundError('Timetable not found');
+      const [conflicts, entries, slots] = await Promise.all([
+        tx.schedulingConflict.findMany({ where: { timetableId } }),
+        tx.scheduleEntry.findMany({ where: { timetableId } }),
+        tx.timetableSlot.findMany({ where: { timetableId } }),
+      ]);
+      if (status === 'PUBLISHED' || status === 'LOCKED') {
+        for (const entry of entries) {
+          await validateEntryTeacherAvailability(tx, { tenantId, schoolId }, entry, slots);
+          await validateEntryRoom(tx, { tenantId, schoolId }, entry, slots, timetableId);
+        }
+      }
+      let next;
+      try {
+        next = canTransitionTimetable(row.status, status, conflicts);
+      } catch (error) {
+        throw new ValidationError(error.message);
+      }
+      const version = row.version + 1;
+      const updated = await tx.timetable.update({
+        where: { id: timetableId },
+        data: {
+          status: next,
+          version,
+          ...(next === 'PUBLISHED' ? { publishedAt: new Date() } : {}),
+          ...(next === 'LOCKED' ? { lockedAt: new Date() } : {}),
+        },
+      });
+      await tx.timetableVersion.create({
+        data: { timetableId, number: version, snapshot: { entries, slots }, createdBy: actorId },
+      });
+      await tx.timetableAudit.create({
+        data: {
+          tenantId,
+          schoolId,
+          timetableId,
+          actorId,
+          action: `STATUS_${next}`,
+          metadata: { from: row.status, to: next },
+        },
+      });
+      return hydrate(updated, tx);
+    },
+    { isolationLevel: 'Serializable' }
+  );
 }
 export async function createSubstitution({ tenantId, schoolId, timetableId, createdBy, ...data }) {
   const row = await prisma.timetable.findFirst({

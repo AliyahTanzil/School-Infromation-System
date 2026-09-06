@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowUpRight,
   BellRing,
@@ -19,15 +19,16 @@ import {
   UsersRound,
   X,
 } from 'lucide-react';
+import api from './api/auth.js';
 
 const audiences = ['School overview', 'Teaching teams', 'Student support', 'Family view'];
-const subjects = [
+const defaultSubjects = [
   { name: 'Mathematics', score: 84, completion: 92, color: 'mint' },
   { name: 'English language arts', score: 79, completion: 88, color: 'violet' },
   { name: 'Science', score: 76, completion: 83, color: 'blue' },
   { name: 'Social studies', score: 73, completion: 80, color: 'amber' },
 ];
-const learners = [
+const defaultLearners = [
   {
     name: 'Year 8 · Cedar group',
     detail: '28 learners · 3 need review',
@@ -75,9 +76,33 @@ export default function LearningAnalyticsWorkspace() {
   const [selectedSubject, setSelectedSubject] = useState(null);
   const [query, setQuery] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const [subjects, setSubjects] = useState(defaultSubjects);
+  const [learners, setLearners] = useState(defaultLearners);
+
+  useEffect(() => {
+    let mounted = true;
+    api
+      .get('/analytics/learning')
+      .then((res) => {
+        if (!mounted || !res.data?.data) return;
+        const data = res.data.data;
+        if (data.subjects && Array.isArray(data.subjects) && data.subjects.length > 0) {
+          setSubjects(data.subjects);
+        }
+        if (data.learners && Array.isArray(data.learners) && data.learners.length > 0) {
+          setLearners(data.learners);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const filteredGroups = useMemo(
     () => learners.filter((item) => item.name.toLowerCase().includes(query.toLowerCase())),
-    [query]
+    [query, learners]
   );
   const announce = (message) => {
     setToast(message);
@@ -149,9 +174,31 @@ export default function LearningAnalyticsWorkspace() {
       {showFilters && (
         <div className="analytics-filter-panel">
           <strong>Report filters</strong>
-          <label>Year groups <select aria-label="Filter by year group"><option>All year groups</option><option>Year 8</option><option>Year 9</option><option>Year 10</option></select></label>
-          <label>Attendance <select aria-label="Filter by attendance"><option>All learners</option><option>Below 90%</option><option>Below 80%</option></select></label>
-          <label>Assessment status <select aria-label="Filter by assessment status"><option>Released only</option><option>All statuses</option><option>Needs review</option></select></label>
+          <label>
+            Year groups{' '}
+            <select aria-label="Filter by year group">
+              <option>All year groups</option>
+              <option>Year 8</option>
+              <option>Year 9</option>
+              <option>Year 10</option>
+            </select>
+          </label>
+          <label>
+            Attendance{' '}
+            <select aria-label="Filter by attendance">
+              <option>All learners</option>
+              <option>Below 90%</option>
+              <option>Below 80%</option>
+            </select>
+          </label>
+          <label>
+            Assessment status{' '}
+            <select aria-label="Filter by assessment status">
+              <option>Released only</option>
+              <option>All statuses</option>
+              <option>Needs review</option>
+            </select>
+          </label>
           <button onClick={() => setShowFilters(false)} aria-label="Close filters">
             <X size={14} />
           </button>
@@ -199,7 +246,11 @@ export default function LearningAnalyticsWorkspace() {
                 View details <TrendingUp size={13} />
               </button>
             </div>
-            {showDetails && <div className="analytics-detail-banner" role="status">Showing weekly progress and engagement detail for {period.toLowerCase()}.</div>}
+            {showDetails && (
+              <div className="analytics-detail-banner" role="status">
+                Showing weekly progress and engagement detail for {period.toLowerCase()}.
+              </div>
+            )}
             <div className="analytics-chart">
               <div className="chart-y">
                 <span>100</span>

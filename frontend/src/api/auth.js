@@ -10,6 +10,7 @@ const api = axios.create({
 });
 
 let accessToken = null;
+let refreshRequest = null;
 
 export const setAccessToken = (token) => {
   accessToken = token || null;
@@ -53,10 +54,19 @@ export async function register(values) {
   setAccessToken(data.data.accessToken);
   return data.data;
 }
-export async function refresh() {
-  const { data } = await api.post('/auth/refresh');
-  setAccessToken(data.data.accessToken);
-  return data.data;
+export function refresh() {
+  if (!refreshRequest) {
+    refreshRequest = api
+      .post('/auth/refresh')
+      .then(({ data }) => {
+        setAccessToken(data.data.accessToken);
+        return data.data;
+      })
+      .finally(() => {
+        refreshRequest = null;
+      });
+  }
+  return refreshRequest;
 }
 export async function logout() {
   await api.post('/auth/logout');

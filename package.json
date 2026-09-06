@@ -14,7 +14,7 @@
     "dev:backend": "npm run dev -w backend",
     "dev:frontend": "npm run dev -w frontend",
     "dev": "npm run dev:frontend",
-    "dev:all": "node scripts/ensure-workspaces.mjs && node scripts/allocate-ports.mjs && concurrently -k -n backend,frontend -c blue,green \"node scripts/start-backend.mjs\" \"node scripts/wait-for-backend.mjs\"",
+    "dev:all": "node scripts/ensure-workspaces.mjs && node scripts/allocate-ports.mjs && node scripts/start-frontend.mjs",
     "build:frontend": "npm run build -w frontend",
     "build": "npm run build -w backend && npm run build -w frontend",
     "lint": "eslint .",
@@ -39,8 +39,11 @@
     "prettier": "^3.3.3"
   },
   "lint-staged": {
-    "*.{js,jsx,mjs,cjs,json,md,yaml,yml}": [
+    "*.{js,jsx,mjs,cjs}": [
       "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yaml,yml}": [
       "prettier --write"
     ]
   },

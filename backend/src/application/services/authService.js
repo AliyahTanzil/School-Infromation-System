@@ -119,7 +119,7 @@ export async function register({
   const user = await userRepository.create({
     email,
     passwordHash,
-    status: 'PENDING_VERIFICATION',
+    status: accountType === 'TENANT_ADMIN' ? 'PENDING_VERIFICATION' : 'ACTIVE',
     accountType,
     firstName,
     lastName,

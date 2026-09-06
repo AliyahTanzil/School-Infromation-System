@@ -1,23 +1,6 @@
-import { createServer } from 'node:net';
+import { findAvailablePort as findPort } from './available-port.mjs';
 import { unlinkSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-
-function findPort(start) {
-  return new Promise((resolvePort, reject) => {
-    const tryPort = (port) => {
-      const server = createServer();
-      server.once('error', (error) => {
-        if (error.code === 'EADDRINUSE') return tryPort(port + 1);
-        reject(error);
-      });
-      server.listen(port, '127.0.0.1', () => {
-        const address = server.address();
-        server.close(() => resolvePort(address.port));
-      });
-    };
-    tryPort(start);
-  });
-}
 
 // The v0 preview auto-detects the lowest common dev port, so the user-facing
 // frontend must own it. The frontend proxies /api to the backend, which lives
@@ -32,7 +15,7 @@ const isV0 =
   process.env.V0_DEV_APP_URL;
 const frontendStart = process.env.FRONTEND_PORT || 3000;
 const frontend = await findPort(Number(frontendStart));
-const backend = await findPort(Number(process.env.BACKEND_PORT || (isV0 ? 44555 : 0)));
+const backend = await findPort(Number(process.env.BACKEND_PORT || (isV0 ? 44555 : 0)), [frontend]);
 const manifest = resolve(process.cwd(), '.sais-ports.json');
 try {
   unlinkSync(resolve(process.cwd(), 'backend/.sais-port'));

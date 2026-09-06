@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CalendarDays,
   Check,
@@ -8,11 +8,11 @@ import {
   FileText,
   Headphones,
   Info,
-  Link2,
   LockKeyhole,
   MessageCircle,
   PlayCircle,
   Radio,
+  RefreshCw,
   Search,
   ShieldCheck,
   Sparkles,
@@ -20,50 +20,15 @@ import {
   Video,
   X,
 } from 'lucide-react';
-
-const sessions = [
-  {
-    id: 'biology',
-    time: '10:00',
-    period: 'AM',
-    title: 'Biology Lab: Cell Division',
-    teacher: 'Dr. Maya Patel',
-    meta: 'Grade 10 Biology · Room virtual-204',
-    state: 'live',
-    count: 24,
-    accent: 'mint',
-  },
-  {
-    id: 'history',
-    time: '11:30',
-    period: 'AM',
-    title: 'Modern History Seminar',
-    teacher: 'Mr. Daniel Okafor',
-    meta: 'Grade 10 History · Room virtual-118',
-    state: 'next',
-    count: 18,
-    accent: 'violet',
-  },
-  {
-    id: 'office',
-    time: '2:00',
-    period: 'PM',
-    title: 'Office hours and review',
-    teacher: 'Ms. Elena Rossi',
-    meta: 'Open study room · Drop-in access',
-    state: 'scheduled',
-    count: 8,
-    accent: 'blue',
-  },
-];
-
-const recordingItems = [
-  ['Photosynthesis: light reactions', 'Biology · 42 min', 'Yesterday', 'mint'],
-  ['Algebra II exam review', 'Mathematics · 55 min', 'Monday', 'violet'],
-  ['Writing a historical argument', 'History · 31 min', 'Monday', 'blue'],
-];
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 function SessionRow({ session, selected, onSelect }) {
+  const timeStr = session.scheduledAt
+    ? new Date(session.scheduledAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : session.time || '10:00 AM';
+  const state = session.status ? session.status.toLowerCase() : session.state || 'scheduled';
+
   return (
     <button
       className={`live-session-row ${selected ? 'selected' : ''}`}
@@ -71,39 +36,91 @@ function SessionRow({ session, selected, onSelect }) {
       type="button"
     >
       <span className="live-session-time">
-        <b>{session.time}</b>
-        <small>{session.period}</small>
+        <b>{timeStr}</b>
       </span>
-      <span className={`live-session-line ${session.accent}`} />
+      <span className={`live-session-line ${session.accent || 'mint'}`} />
       <span className="live-session-copy">
         <strong>{session.title}</strong>
         <small>
-          {session.teacher} · {session.count} enrolled
+          {session.host
+            ? `${session.host.firstName} ${session.host.lastName}`
+            : session.teacher || 'Host'}{' '}
+          · {session.classroom?.name || session.meta || 'Virtual Room'}
         </small>
       </span>
-      <span className={`live-badge ${session.state}`}>
-        {session.state === 'live' ? 'Live now' : session.state === 'next' ? 'Next' : 'Scheduled'}
+      <span className={`live-badge ${state}`}>
+        {state === 'live' ? 'Live now' : state === 'next' ? 'Next' : 'Scheduled'}
       </span>
     </button>
   );
 }
 
 export default function LiveLearningWorkspace() {
-  const [selected, setSelected] = useState(sessions[0]);
+  const [sessions, setSessions] = useState([]);
+  const [recordings, setRecordings] = useState([]);
+  const [selected, setSelected] = useState(null);
   const [tab, setTab] = useState('sessions');
   const [joined, setJoined] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [toast, setToast] = useState('');
   const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [schoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
+
+  const loadData = useCallback(async () => {
+    const headers = schoolId ? { 'x-school-id': schoolId } : {};
+    setLoading(true);
+    setError('');
+    try {
+      const [sessionsRes, recordingsRes] = await Promise.allSettled([
+        api.get('/lms/live-sessions', { headers }),
+        api.get('/lms/live-sessions/recordings', { headers }),
+      ]);
+
+      if (sessionsRes.status === 'fulfilled') {
+        const items = sessionsRes.value.data.data || [];
+        setSessions(items);
+        if (items.length > 0 && !selected) {
+          setSelected(items[0]);
+        }
+      }
+
+      if (recordingsRes.status === 'fulfilled') {
+        setRecordings(recordingsRes.value.data.data || []);
+      }
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Unable to load live learning data'));
+    } finally {
+      setLoading(false);
+    }
+  }, [schoolId, selected]);
+
+  useEffect(() => {
+    sessionStorage.setItem('sais.schoolId', schoolId);
+    loadData();
+  }, [loadData, schoolId]);
 
   const filteredRecordings = useMemo(
-    () => recordingItems.filter((item) => item[0].toLowerCase().includes(search.toLowerCase())),
-    [search]
+    () =>
+      recordings.filter((item) =>
+        (item.recordingTitle || item.title || '').toLowerCase().includes(search.toLowerCase())
+      ),
+    [recordings, search]
   );
 
   const announce = (message) => {
     setToast(message);
     window.setTimeout(() => setToast(''), 2600);
+  };
+
+  const handleJoin = (session) => {
+    if (!session) return;
+    setJoined(true);
+    if (session.meetingUrl) {
+      window.open(session.meetingUrl, '_blank', 'noopener,noreferrer');
+    }
+    announce(`Joined ${session.title}`);
   };
 
   return (
@@ -148,67 +165,115 @@ export default function LiveLearningWorkspace() {
             type="button"
           >
             {item[0].toUpperCase() + item.slice(1)}
-            {item === 'sessions' && <b>3</b>}
+            {item === 'sessions' && <b>{sessions.length}</b>}
+            {item === 'recordings' && <b>{recordings.length}</b>}
           </button>
         ))}
-        <span className="live-sync">
-          <Check size={13} /> Synced just now
-        </span>
+        <button
+          onClick={loadData}
+          disabled={loading}
+          className="live-sync"
+          style={{
+            background: 'transparent',
+            border: 0,
+            cursor: 'pointer',
+            color: '#9cb2cb',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+          }}
+          type="button"
+        >
+          <RefreshCw size={13} /> {loading ? 'Loading...' : 'Synced just now'}
+        </button>
       </nav>
+
+      {error && (
+        <div
+          style={{
+            background: '#3c181c',
+            color: '#ffb3ba',
+            padding: '12px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          {error}
+        </div>
+      )}
 
       {tab === 'sessions' && (
         <>
-          <section className="live-hero-card">
-            <div className="live-hero-copy">
-              <span className="live-now-label">
-                <span /> Happening now
-              </span>
-              <h2>{selected.title}</h2>
-              <p>
-                {selected.teacher} · {selected.meta}
-              </p>
-              <div className="live-hero-meta">
-                <span>
-                  <UsersRound size={14} /> {selected.count} students
+          {selected ? (
+            <section className="live-hero-card">
+              <div className="live-hero-copy">
+                <span className="live-now-label">
+                  <span /> {selected.status === 'LIVE' ? 'Happening now' : 'Scheduled session'}
                 </span>
-                <span>
-                  <Headphones size={14} /> Captions enabled
-                </span>
-                <span>
-                  <ShieldCheck size={14} /> School account verified
-                </span>
+                <h2>{selected.title}</h2>
+                <p>
+                  {selected.host ? `${selected.host.firstName} ${selected.host.lastName}` : 'Host'}{' '}
+                  · {selected.classroom?.name || 'Digital Classroom'}
+                </p>
+                <div className="live-hero-meta">
+                  <span>
+                    <UsersRound size={14} /> {selected.classroom?.code || 'Virtual Room'}
+                  </span>
+                  <span>
+                    <Headphones size={14} /> Captions enabled
+                  </span>
+                  <span>
+                    <ShieldCheck size={14} /> School account verified
+                  </span>
+                </div>
               </div>
-            </div>
-            <div className="live-hero-actions">
-              <div className="live-preview">
-                <Radio size={22} />
-                <span>
-                  Classroom
-                  <br />
-                  <b>virtual-{selected.id === 'biology' ? '204' : '118'}</b>
-                </span>
+              <div className="live-hero-actions">
+                <div className="live-preview">
+                  <Radio size={22} />
+                  <span>
+                    Classroom
+                    <br />
+                    <b>{selected.roomCode || selected.classroom?.code || 'virtual-204'}</b>
+                  </span>
+                </div>
+                <button className="live-primary" onClick={() => handleJoin(selected)} type="button">
+                  <Video size={16} /> {joined ? 'Joined classroom' : 'Join classroom'}
+                </button>
+                <button
+                  className="live-hero-link"
+                  onClick={() => setShowDetails(true)}
+                  type="button"
+                >
+                  View session details <ChevronRight size={14} />
+                </button>
               </div>
-              <button
-                className="live-primary"
-                onClick={() => {
-                  setJoined(true);
-                  announce(`Joined ${selected.title}`);
-                }}
-                type="button"
-              >
-                <Video size={16} /> {joined ? 'Joined classroom' : 'Join classroom'}
-              </button>
-              <button className="live-hero-link" onClick={() => setShowDetails(true)} type="button">
-                View session details <ChevronRight size={14} />
-              </button>
-            </div>
-          </section>
+            </section>
+          ) : (
+            <section className="live-hero-card">
+              <div className="live-hero-copy">
+                <span className="live-now-label">
+                  <span /> No active live sessions
+                </span>
+                <h2>Live Learning Sessions</h2>
+                <p>
+                  Scheduled live sessions and virtual classrooms will appear here when created by
+                  classroom teachers.
+                </p>
+              </div>
+            </section>
+          )}
 
           <div className="live-main-grid">
             <section className="live-panel live-schedule-panel">
               <div className="live-section-heading">
                 <div>
-                  <span className="section-kicker">Tuesday, September 16</span>
+                  <span className="section-kicker">
+                    {new Date().toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </span>
                   <h2>Today&apos;s classrooms</h2>
                 </div>
                 <button
@@ -220,11 +285,16 @@ export default function LiveLearningWorkspace() {
                 </button>
               </div>
               <div className="live-session-list">
+                {sessions.length === 0 && !loading && (
+                  <p style={{ color: '#9aabc0', fontSize: '13px', padding: '12px 0' }}>
+                    No live sessions found for your accessible classrooms.
+                  </p>
+                )}
                 {sessions.map((session) => (
                   <SessionRow
                     key={session.id}
                     session={session}
-                    selected={selected.id === session.id}
+                    selected={selected?.id === session.id}
                     onSelect={setSelected}
                   />
                 ))}
@@ -232,7 +302,9 @@ export default function LiveLearningWorkspace() {
               <div className="live-schedule-footer">
                 <Clock3 size={14} />
                 <span>
-                  <strong>Next class starts in 28 minutes</strong>
+                  <strong>
+                    Classroom sessions are synchronized with live timetable schedules.
+                  </strong>
                   <small>Allow microphone and camera access before joining.</small>
                 </span>
               </div>
@@ -247,10 +319,10 @@ export default function LiveLearningWorkspace() {
                   <Sparkles size={18} className="live-spark" />
                 </div>
                 <div className="live-participation">
-                  <strong>96%</strong>
-                  <span>attendance rate</span>
+                  <strong>100%</strong>
+                  <span>active status</span>
                   <b>
-                    +4.2% <small>vs last month</small>
+                    Verified <small>student account</small>
                   </b>
                 </div>
                 <div className="live-progress">
@@ -258,46 +330,11 @@ export default function LiveLearningWorkspace() {
                 </div>
                 <div className="live-attendance-footer">
                   <span>
-                    <span className="live-dot mint" /> 8 of 8 attended
+                    <span className="live-dot mint" /> {sessions.length} sessions scheduled
                   </span>
                   <span>
-                    <span className="live-dot blue" /> 2 recordings watched
+                    <span className="live-dot blue" /> {recordings.length} recordings available
                   </span>
-                </div>
-              </section>
-              <section className="live-panel live-upcoming-card">
-                <div className="live-section-heading">
-                  <div>
-                    <span className="section-kicker">Classroom queue</span>
-                    <h2>Up next</h2>
-                  </div>
-                  <button
-                    className="live-link"
-                    onClick={() => announce('Schedule opened')}
-                    type="button"
-                  >
-                    See all
-                  </button>
-                </div>
-                <div className="live-upcoming">
-                  <div className="live-upcoming-icon violet">
-                    <FileText size={16} />
-                  </div>
-                  <span>
-                    <strong>Algebra II review clinic</strong>
-                    <small>Tomorrow · 9:00 AM · 48 students</small>
-                  </span>
-                  <ChevronRight size={15} />
-                </div>
-                <div className="live-upcoming">
-                  <div className="live-upcoming-icon blue">
-                    <Link2 size={16} />
-                  </div>
-                  <span>
-                    <strong>Study group: exam prep</strong>
-                    <small>Tomorrow · 3:30 PM · Optional</small>
-                  </span>
-                  <ChevronRight size={15} />
                 </div>
               </section>
             </div>
@@ -324,20 +361,30 @@ export default function LiveLearningWorkspace() {
               </div>
             </div>
             <div className="live-recording-list">
+              {filteredRecordings.length === 0 && (
+                <p style={{ color: '#9aabc0', fontSize: '13px', padding: '12px' }}>
+                  No session recordings found.
+                </p>
+              )}
               {filteredRecordings.map((item) => (
                 <button
                   className="live-recording-row"
-                  key={item[0]}
-                  onClick={() => announce(`Opening ${item[0]}`)}
+                  key={item.id}
+                  onClick={() => {
+                    if (item.recordingUrl)
+                      window.open(item.recordingUrl, '_blank', 'noopener,noreferrer');
+                    announce(`Opening ${item.recordingTitle || item.title}`);
+                  }}
                   type="button"
                 >
-                  <span className={`live-recording-icon ${item[3]}`}>
+                  <span className="live-recording-icon mint">
                     <PlayCircle size={18} />
                   </span>
                   <span>
-                    <strong>{item[0]}</strong>
+                    <strong>{item.recordingTitle || item.title}</strong>
                     <small>
-                      {item[1]} · {item[2]}
+                      {item.classroom?.name || 'Classroom'} ·{' '}
+                      {new Date(item.updatedAt).toLocaleDateString()}
                     </small>
                   </span>
                   <ChevronRight size={15} />
