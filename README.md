@@ -21,6 +21,17 @@ the current architecture, migration constraints, known issues, and staged conver
 5. Set `SINGLE_SCHOOL_ID` if the migrated database contains more than one legacy School row.
 6. Run `npm run dev:all` for the web and backend applications.
 
+`npm run dev` also starts the backend when needed before launching the frontend.
+Both commands use one supervisor. If the frontend port is occupied, a new frontend
+starts on the next free port with the correct backend proxy; use the URL printed by Vite.
+Both launchers allow 60 seconds for backend startup. For slower cold starts in PowerShell,
+set `$env:BACKEND_START_TIMEOUT = "120000"` before running the command (milliseconds).
+
+For PostgreSQL installed inside Ubuntu WSL on Windows, set `SAIS_WSL_DATABASE=Ubuntu`
+in `backend/.env`. The backend development command keeps that distribution alive until
+the backend stops. PostgreSQL must already be installed and its service enabled inside WSL.
+If necessary, start it with `wsl -d Ubuntu -u root -- service postgresql start`.
+
 Useful verification commands are `npm test`, `npm run lint`, `npm run build:frontend`,
 `npm run build -w backend`, and `npm run typecheck --prefix mobile`.
 
