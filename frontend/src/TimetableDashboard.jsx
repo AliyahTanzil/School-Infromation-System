@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import ScienceTimetableDraft from './ScienceTimetableDraft.jsx';
+import WeeklyTimetableGrid from './WeeklyTimetableGrid.jsx';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -20,44 +22,49 @@ const requestHeaders = (schoolId) => ({
 export default function TimetableDashboard() {
   const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
   const [timetables, setTimetables] = useState([]);
+  const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState(null);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({
     academicPeriodId: '',
     name: '',
     academicYear: '',
-    weekday: 1,
-    startTime: '08:00',
-    endTime: '09:00',
-    label: 'Period 1',
   });
   const load = useCallback(async () => {
-    if (!schoolId) return;
     const { data } = await api.get('/timetables', { headers: requestHeaders(schoolId) });
     setTimetables(data.data);
-    setSelected((current) => current || data.data[0] || null);
+    setSelected(
+      (current) => data.data.find((item) => item.id === current?.id) || data.data[0] || null
+    );
     sessionStorage.setItem('schoolId', schoolId);
   }, [schoolId]);
   useEffect(() => {
     load().catch(() => setMessage('Unable to load timetables.'));
   }, [load]);
+  useEffect(() => {
+    api
+      .get('/timetables/options', { headers: requestHeaders(schoolId) })
+      .then(({ data }) => {
+        setOptions(data.data);
+        if (data.data.school?.id) setSchoolId(data.data.school.id);
+      })
+      .catch(() =>
+        setMessage('School records are unavailable. The planning preview below is not saved.')
+      );
+  }, [schoolId]);
   const create = async (event) => {
     event.preventDefault();
     try {
+      const generated = await api.get('/timetables/generated-slots', {
+        headers: requestHeaders(schoolId),
+      });
       await api.post(
         '/timetables',
         {
           academicPeriodId: form.academicPeriodId,
           name: form.name,
           academicYear: form.academicYear,
-          slots: [
-            {
-              weekday: Number(form.weekday),
-              startTime: form.startTime,
-              endTime: form.endTime,
-              label: form.label,
-            },
-          ],
+          slots: generated.data.data,
         },
         { headers: requestHeaders(schoolId) }
       );
@@ -79,6 +86,20 @@ export default function TimetableDashboard() {
       await load();
     } catch (error) {
       setMessage(error.response?.data?.error?.message || 'Status change failed.');
+    }
+  };
+  const generateSlots = async () => {
+    if (!selected) return;
+    try {
+      await api.post(
+        `/timetables/${selected.id}/generate-slots`,
+        {},
+        { headers: requestHeaders(schoolId) }
+      );
+      setMessage('Slots generated from school settings.');
+      await load();
+    } catch (error) {
+      setMessage(error.response?.data?.error?.message || 'Unable to generate timetable slots.');
     }
   };
   return (
@@ -118,18 +139,43 @@ export default function TimetableDashboard() {
         <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
           <h2 className="font-semibold">Create timetable draft</h2>
           <form className="mt-4 grid gap-3 md:grid-cols-4" onSubmit={create}>
-            <input
-              required
-              placeholder="School UUID"
-              value={schoolId}
-              onChange={(event) => setSchoolId(event.target.value)}
-            />
-            <input
-              required
-              placeholder="Academic term UUID"
-              value={form.academicPeriodId}
-              onChange={(event) => setForm({ ...form, academicPeriodId: event.target.value })}
-            />
+            <label className="text-sm">
+              School
+              <input
+                aria-label="School"
+                readOnly
+                value={options?.school?.name || 'Set up school records first'}
+                className="mt-1 w-full"
+              />
+            </label>
+            <label className="text-sm">
+              Academic term
+              <select
+                required
+                aria-label="Academic term"
+                value={form.academicPeriodId}
+                className="mt-1 w-full rounded-lg border p-3"
+                onChange={(event) => {
+                  const year = options?.academicYears.find((item) =>
+                    item.terms.some((term) => term.id === event.target.value)
+                  );
+                  setForm({
+                    ...form,
+                    academicPeriodId: event.target.value,
+                    academicYear: year?.name || '',
+                  });
+                }}
+              >
+                <option value="">Select an academic term</option>
+                {options?.academicYears.flatMap((year) =>
+                  year.terms.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {year.name} - {term.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </label>
             <input
               required
               placeholder="Timetable name"
@@ -142,41 +188,21 @@ export default function TimetableDashboard() {
               value={form.academicYear}
               onChange={(event) => setForm({ ...form, academicYear: event.target.value })}
             />
-            <input
-              required
-              type="number"
-              min="1"
-              max="7"
-              aria-label="Weekday"
-              value={form.weekday}
-              onChange={(event) => setForm({ ...form, weekday: event.target.value })}
-            />
-            <input
-              required
-              type="time"
-              value={form.startTime}
-              onChange={(event) => setForm({ ...form, startTime: event.target.value })}
-            />
-            <input
-              required
-              type="time"
-              value={form.endTime}
-              onChange={(event) => setForm({ ...form, endTime: event.target.value })}
-            />
-            <input
-              required
-              placeholder="Slot label"
-              value={form.label}
-              onChange={(event) => setForm({ ...form, label: event.target.value })}
-            />
+            <p className="text-sm text-slate-500 md:col-span-4">
+              Creates an empty draft with all periods from saved school settings. The SSS Science 3A
+              planning preview below is separate and is not imported by this button.
+            </p>
             <button
-              disabled={!schoolId}
+              disabled={!options?.school || !form.academicPeriodId}
               className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white"
             >
               Create draft
             </button>
           </form>
         </section>
+        {!timetables.some((item) => item.name.startsWith('SSS Science 3A - First Term')) && (
+          <ScienceTimetableDraft />
+        )}
         <section className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-2xl bg-indigo-950 p-5 text-white">
             <p className="text-sm text-indigo-200">Timetables</p>
@@ -231,6 +257,14 @@ export default function TimetableDashboard() {
                 </p>
               </div>
               <div className="flex gap-2">
+                {(selected?.status === 'DRAFT' || selected?.status === 'REVIEW') && (
+                  <button
+                    onClick={generateSlots}
+                    className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700"
+                  >
+                    Generate slots
+                  </button>
+                )}
                 {selected?.status === 'DRAFT' && (
                   <button
                     onClick={() => transition('REVIEW')}
@@ -258,32 +292,10 @@ export default function TimetableDashboard() {
               </div>
             </div>
             <div className="mt-5 overflow-x-auto">
-              <table className="w-full min-w-[620px] text-left text-sm">
-                <thead className="border-b border-slate-100 text-xs uppercase tracking-wider text-slate-400">
-                  <tr>
-                    <th className="px-3 py-3">Day / slot</th>
-                    <th className="px-3 py-3">Subject</th>
-                    <th className="px-3 py-3">Class</th>
-                    <th className="px-3 py-3">Room</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selected?.entries?.map((entry) => (
-                    <tr key={entry.id} className="border-b border-slate-50">
-                      <td className="px-3 py-3 font-medium">
-                        {entry.timeSlot?.label || 'Scheduled slot'}
-                      </td>
-                      <td className="px-3 py-3">{entry.subjectCode}</td>
-                      <td className="px-3 py-3 text-slate-500">
-                        {entry.class?.name || 'Unassigned'}
-                      </td>
-                      <td className="px-3 py-3 text-slate-500">
-                        {entry.classroom?.name || 'Unassigned'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <WeeklyTimetableGrid
+                slots={selected?.slots || []}
+                entries={selected?.entries || []}
+              />
               {selected?.conflicts?.length > 0 && (
                 <div className="mt-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
                   <strong>{selected.conflicts.length} conflict(s) detected.</strong> Resolve hard

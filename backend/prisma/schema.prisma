@@ -176,6 +176,10 @@ model Tenant {
   gradeSchemeHistory GradeSchemeHistory[]
   digitalClassrooms  DigitalClassroom[]
   classroomMembers   DigitalClassroomMember[]
+  timetableSettings  TimetableSettings[]
+  timetableRooms     TimetableRoom[]
+  teachingAssignments TeacherTeachingAssignment[]
+  periodRequirements SubjectPeriodRequirement[]
 
   @@index([status])
 }
@@ -271,6 +275,10 @@ model School {
   gradeSchemeHistory GradeSchemeHistory[]
   digitalClassrooms  DigitalClassroom[]
   classroomMembers   DigitalClassroomMember[]
+  timetableSettings  TimetableSettings[]
+  timetableRooms     TimetableRoom[]
+  teachingAssignments TeacherTeachingAssignment[]
+  periodRequirements SubjectPeriodRequirement[]
 
   @@unique([tenantId, code])
 }
@@ -371,6 +379,9 @@ model AcademicYear {
   terms       AcademicTerm[]
   enrollments Enrollment[]
   classes     Class[]
+  timetables Timetable[]
+  teachingAssignments TeacherTeachingAssignment[]
+  periodRequirements SubjectPeriodRequirement[]
 
   @@unique([tenantId, name])
 }
@@ -384,6 +395,9 @@ model AcademicTerm {
   academicYear       AcademicYear        @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
   attendanceSessions AttendanceSession[]
   digitalClassrooms  DigitalClassroom[]
+  timetables Timetable[]
+  teachingAssignments TeacherTeachingAssignment[]
+  periodRequirements SubjectPeriodRequirement[]
 
   @@unique([academicYearId, name])
 }
@@ -513,6 +527,8 @@ model Teacher {
   availability   TeacherAvailability[]
   history        TeacherHistory[]
   classes        ClassTeacher[]
+  teachingAssignments TeacherTeachingAssignment[]
+  scheduleEntries ScheduleEntry[]
 
   @@unique([tenantId, employeeNumber])
   @@index([tenantId, schoolId, status])
@@ -569,14 +585,18 @@ model TeacherDepartment {
 }
 
 model TeacherAvailability {
-  id        String  @id @default(uuid()) @db.Uuid
-  teacherId String  @db.Uuid
-  dayOfWeek Int
-  startsAt  String
-  endsAt    String
-  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  id          String  @id @default(uuid()) @db.Uuid
+  teacherId   String  @db.Uuid
+  dayOfWeek   Int
+  startsAt    String
+  endsAt      String
+  kind        String  @default("AVAILABLE")
+  isRecurring Boolean @default(true)
+  priority    Int     @default(0)
+  teacher     Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
 
   @@index([teacherId, dayOfWeek])
+  @@index([teacherId, dayOfWeek, kind, startsAt])
 }
 
 model TeacherHistory {
@@ -608,6 +628,9 @@ model Subject {
   classes           ClassSubject[]
   assessmentWeights AssessmentWeight[]
   assignments       Assignment[]
+  teachingAssignments TeacherTeachingAssignment[]
+  periodRequirements SubjectPeriodRequirement[]
+  scheduleEntries ScheduleEntry[]
 
   @@unique([tenantId, schoolId, code])
   @@index([tenantId, schoolId, status, name])
@@ -738,6 +761,9 @@ model Class {
   history            ClassHistory[]
   attendanceSessions AttendanceSession[]
   DigitalClassroom   DigitalClassroom[]
+  timetableEntries ScheduleEntry[]
+  periodRequirements SubjectPeriodRequirement[]
+  teachingAssignments TeacherTeachingAssignment[]
 
   @@unique([tenantId, schoolId, academicYearId, code])
   @@index([tenantId, schoolId, status])
@@ -2055,11 +2081,114 @@ model ResultAudit {
   createdAt DateTime @default(now())
 }
 
+model TimetableSettings {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  schoolId              String   @db.Uuid
+  workingDays           Json     @default("[1,2,3,4,5]")
+  schoolStartsAt        String   @default("08:00")
+  schoolEndsAt          String   @default("16:00")
+  lessonDurationMinutes Int      @default(60)
+  breakStartsAt         String?
+  breakEndsAt           String?
+  lunchStartsAt         String?
+  lunchEndsAt           String?
+  maxPeriodsPerDay      Int      @default(8)
+  maxTeacherPeriodsDay  Int      @default(6)
+  maxTeacherPeriodsWeek Int      @default(30)
+  maxConsecutivePeriods Int      @default(3)
+  allowDoublePeriods    Boolean  @default(false)
+  allowSaturday         Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  tenant                Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school                School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, schoolId])
+}
+
+model TimetableRoom {
+  id        String          @id @default(uuid()) @db.Uuid
+  tenantId  String          @db.Uuid
+  schoolId  String          @db.Uuid
+  name      String
+  code      String
+  kind      String          @default("CLASSROOM")
+  capacity  Int
+  isActive  Boolean         @default(true)
+  resources Json            @default("[]")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school    School          @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  entries   ScheduleEntry[]
+
+  @@unique([tenantId, schoolId, code])
+  @@index([tenantId, schoolId, kind, isActive])
+}
+
+model TeacherTeachingAssignment {
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @db.Uuid
+  schoolId       String       @db.Uuid
+  teacherId      String       @db.Uuid
+  subjectId      String       @db.Uuid
+  classId        String       @db.Uuid
+  academicYearId String       @db.Uuid
+  termId         String       @db.Uuid
+  periodsPerWeek Int          @default(1)
+  maxPeriodsDay  Int?
+  status         String       @default("ACTIVE")
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school         School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  teacher        Teacher      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject        Subject      @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  class          Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  term           AcademicTerm @relation(fields: [termId], references: [id], onDelete: Restrict)
+  entries        ScheduleEntry[]
+
+  @@unique([tenantId, schoolId, teacherId, subjectId, classId, academicYearId, termId])
+  @@index([tenantId, schoolId, teacherId, academicYearId, termId, status])
+  @@index([tenantId, schoolId, classId, subjectId, academicYearId, termId])
+}
+
+model SubjectPeriodRequirement {
+  id                   String       @id @default(uuid()) @db.Uuid
+  tenantId             String       @db.Uuid
+  schoolId             String       @db.Uuid
+  classId              String       @db.Uuid
+  subjectId            String       @db.Uuid
+  academicYearId       String       @db.Uuid
+  termId               String       @db.Uuid
+  periodsPerWeek       Int
+  minimumPeriods       Int          @default(0)
+  maximumPeriods       Int?
+  preferredPeriodsDay  Int          @default(1)
+  requiresDoublePeriod Boolean      @default(false)
+  requiresLaboratory   Boolean      @default(false)
+  streamRestriction    String?
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  tenant               Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  school               School       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  class                Class        @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject              Subject      @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  academicYear         AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  term                 AcademicTerm @relation(fields: [termId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, schoolId, classId, subjectId, academicYearId, termId])
+  @@index([tenantId, schoolId, academicYearId, termId, classId])
+}
+
 model Timetable {
   id               String    @id @default(uuid()) @db.Uuid
   tenantId         String    @db.Uuid
   schoolId         String    @db.Uuid
   academicPeriodId String    @db.Uuid
+  academicYearId   String?   @db.Uuid
   name             String
   academicYear     String
   status           String    @default("DRAFT")
@@ -2068,6 +2197,14 @@ model Timetable {
   lockedAt         DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+  academicPeriod   AcademicTerm  @relation(fields: [academicPeriodId], references: [id], onDelete: Restrict)
+  academicYearRef  AcademicYear? @relation(fields: [academicYearId], references: [id], onDelete: Restrict)
+  slots            TimetableSlot[]
+  entries          ScheduleEntry[]
+  conflicts        SchedulingConflict[]
+  versions         TimetableVersion[]
+  audits           TimetableAudit[]
+  substitutions    ScheduleSubstitution[]
 
   @@index([tenantId, schoolId, updatedAt])
 }
@@ -2083,6 +2220,8 @@ model TimetableSlot {
   label       String
   isBreak     Boolean  @default(false)
   createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  entries     ScheduleEntry[]
 
   @@index([timetableId, weekday, startTime])
 }
@@ -2096,14 +2235,27 @@ model ScheduleEntry {
   classId     String?  @db.Uuid
   teacherId   String?  @db.Uuid
   classroomId String?  @db.Uuid
+  subjectId   String?  @db.Uuid
+  roomId      String?  @db.Uuid
+  teachingAssignmentId String? @db.Uuid
   subjectCode String
   kind        String   @default("LESSON")
   duration    Int      @default(1)
   notes       String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
+  timeSlot    TimetableSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+  class       Class? @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacher     Teacher? @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  subject     Subject? @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  room        TimetableRoom? @relation(fields: [roomId], references: [id], onDelete: SetNull)
+  teachingAssignment TeacherTeachingAssignment? @relation(fields: [teachingAssignmentId], references: [id], onDelete: SetNull)
 
   @@index([timetableId, timeSlotId])
+  @@unique([timetableId, timeSlotId, classId])
+  @@unique([timetableId, timeSlotId, teacherId])
+  @@index([tenantId, schoolId, teacherId, timeSlotId])
 }
 
 model SchedulingConflict {
@@ -2117,6 +2269,7 @@ model SchedulingConflict {
   message     String
   resolvedAt  DateTime?
   createdAt   DateTime  @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
 
   @@index([timetableId, severity, resolvedAt])
 }
@@ -2128,6 +2281,7 @@ model TimetableVersion {
   snapshot    Json
   createdBy   String?  @db.Uuid
   createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
 
   @@unique([timetableId, number])
 }
@@ -2141,6 +2295,7 @@ model TimetableAudit {
   action      String
   metadata    Json     @default("{}")
   createdAt   DateTime @default(now())
+  timetable   Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
 
   @@index([timetableId, createdAt])
 }
@@ -2158,6 +2313,7 @@ model ScheduleSubstitution {
   endsAt              DateTime
   createdBy           String?  @db.Uuid
   createdAt           DateTime @default(now())
+  timetable           Timetable @relation(fields: [timetableId], references: [id], onDelete: Cascade)
 
   @@index([timetableId, startsAt, endsAt])
 }

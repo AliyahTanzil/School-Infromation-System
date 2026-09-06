@@ -69,6 +69,18 @@ This file tracks the implementation progress of the SAIS platform. `ROADMAP_TODO
 
 Tasks 1 through 29 (DB-001 through SRCH-001) are complete. Remaining tasks 30-46 are currently BLOCKED by SEC-001 / AI-001 dependencies.
 
+Timetable follow-up checkpoint (2026-09-06): Phase 2 domain reconciliation is complete as an extension of TTB-001. Added timetable settings, rooms/resources, teaching assignments, subject period requirements, expanded availability, normalized timetable references, additive migration `20260906100000_timetable_domain_reconciliation`, and contract coverage. Prisma validation and 4 focused timetable tests pass. The timetable generator, settings APIs, teacher-derived views, classroom/student authorization views, notifications, and final audit remain unfinished.
+
+Phase 3 checkpoint (2026-09-06): Added school-scoped timetable settings read/upsert endpoints and deterministic settings-driven slot generation with validation for hours, working days, lesson duration, break/lunch boundaries, overlap, and workload limits. Focused timetable tests: 7 passed; Prisma validation and backend build pass. Prisma client generation is blocked by a Windows EPERM lock on the Prisma query-engine DLL, likely held by a running backend process; no source failure was reported.
+
+Phase 4 checkpoint (2026-09-06): Persisted settings-generated slots into draft/review timetables through `POST /api/timetables/:id/generate-slots` and `/api/v1`, blocked regeneration when entries exist, added audit logging and an admin dashboard action. Timetable tests (7), frontend tests (10), backend build, and frontend build pass.
+
+Phase 5 checkpoint (2026-09-06): Added teacher teaching-assignment CRUD with tenant/school-scoped validation across teacher, subject, class, academic year, and term; composite uniqueness prevents duplicate assignments; `GET /api/timetables/teachers/:teacherId/workload` reports total periods per week by subject and class. Focused timetable tests (7) and backend build pass. Next timetable stage: subject period requirements.
+
+Phase 6 checkpoint (2026-09-06): Added subject period requirements CRUD, partial updates, school/tenant and academic term validation, period bounds and per-class/year/term capacity checks against generated teaching slots. Settings changes revalidate requirements; serializable transactions protect concurrent capacity writes. Fixed generated slots to respect daily limits, breaks and complete lesson durations, and corrected the settings compound-key lookup. Focused timetable tests (14) and backend build pass. Scheduling feasibility, laboratory/stream placement and UI management remain later work; no live database migration was applied.
+
+Phase 7 checkpoint (2026-09-06): Added scoped recurring teacher availability CRUD with AVAILABLE/UNAVAILABLE/PREFERRED rules, partial updates and weekly window validation. Manual lessons enforce availability over their complete duration; publication/locking revalidate current rules; availability edits protect non-archived lessons. Related writes run in serializable transactions. Focused timetable tests (22), full backend suite (238 passed, 1 skipped), backend build and targeted lint pass. No migration applied; one-off dates, substitutions and availability UI remain later work. Next: Phase 8 room/resource management, then global generation.
+
 ## Verification baseline
 
 Completed vertical slices have been checked with Prisma validation/generation, JavaScript syntax checks, backend tests, and `git diff --check` where applicable. Before declaring future work complete, run the relevant focused tests plus the full project validation suite.
@@ -82,3 +94,9 @@ Whenever implementation proceeds:
 3. Record verification evidence.
 4. Commit and push both tracking and implementation changes together.
 5. Keep this file synchronized with the authoritative roadmap.
+
+Phase 8 checkpoint: Added scoped room/resource CRUD and room capacity, active-state, laboratory and overlap checks for lesson creation/publication. Added readable timetable options and an editable SSS Science 3A weekly preview (40 periods, nine subjects, five core subjects at six periods each). Configured database read returned no schools/classes/academic years, so the draft remains explicitly unsaved and additional subjects provisional pending user details. Backend: 241 passed, 1 skipped; frontend: 12 passed; builds and targeted lint pass. No migration applied. See docs/drafts/sss-science-3a-timetable.md.
+
+School setup checkpoint: User confirmed Aunty Isha Internation School and First Term and authorized setup. Applied the pending additive timetable migration, then saved tenant/school, 2026/27 academic year, First Term, SSS Science 3A, nine subjects and requirements, 50 slots (40 lessons plus breaks/lunch), version and audit in one transaction. Read-back verified core subjects at six periods each and additional subjects at 3/3/2/2. Draft remains unpublished, with teachers/rooms unassigned; dates and capacity are documented planning assumptions. Reusable setup: backend/scripts/setup-aunty-isha-timetable.mjs.
+
+Timetable revision: removed the separate break from the saved SSS Science 3A draft and school settings. Lunch is now 12:00-12:40; 40 lessons retained, 45 total slots, school day unchanged at 08:00-14:00. Version snapshot and audit saved. Preview/document updated; frontend build, 12 tests and targeted lint pass.
