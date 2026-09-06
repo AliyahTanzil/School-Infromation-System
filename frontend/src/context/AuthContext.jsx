@@ -3,12 +3,6 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import * as authApi from '../api/auth.js';
 
 const AuthContext = createContext(null);
-// Demo access is opt-in and requires an explicitly isolated development data mode.
-// Never enable this merely because the build is development or against real data.
-const adminDemoEnabled =
-  import.meta.env.DEV &&
-  import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true' &&
-  import.meta.env.VITE_DEMO_DATA_MODE === 'isolated';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -35,18 +29,6 @@ export function AuthProvider({ children }) {
     () => ({
       user,
       loading,
-      adminDemoEnabled,
-      enterAdminDemo() {
-        if (!adminDemoEnabled) return null;
-        const demoUser = {
-          id: 'demo-admin',
-          email: 'admin-demo@localhost.test',
-          roles: ['PLATFORM_ADMIN'],
-          displayName: 'Development Admin',
-        };
-        setUser(demoUser);
-        return demoUser;
-      },
       async login(values) {
         const result = await authApi.login(values);
         setUser(result.user);
@@ -58,11 +40,6 @@ export function AuthProvider({ children }) {
         return result;
       },
       async logout() {
-        // Demo users have no server session; do not call the protected logout API.
-        if (user?.id === 'demo-admin') {
-          setUser(null);
-          return;
-        }
         try {
           await authApi.logout();
         } finally {

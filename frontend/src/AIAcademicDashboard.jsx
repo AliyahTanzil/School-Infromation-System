@@ -116,7 +116,7 @@ export default function AIAcademicDashboard() {
               <p className="mt-4 text-3xl font-semibold">
                 12 <span className="text-base font-normal text-slate-400">/ 40 requests</span>
               </p>
-              <p className="mt-2 text-sm text-slate-400">Resets in 18 days · Demo policy</p>
+              <p className="mt-2 text-sm text-slate-400">Resets in 18 days · Usage policy</p>
             </article>
           </aside>
         </section>

@@ -1,18 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
 
-const demoPortal = {
-  profile: { firstName: 'Development', lastName: 'Parent' },
-  notifications: [],
-  children: [],
-};
-
 export default function ParentPortal() {
   const { user } = useAuth();
-  const [portal, setPortal] = useState(user?.id === 'demo-admin' ? demoPortal : null);
+  const [portal, setPortal] = useState(null);
   const [error, setError] = useState('');
   useEffect(() => {
-    if (user?.id === 'demo-admin') return undefined;
     const controller = new AbortController();
     fetch('/api/parents/me', {
       credentials: 'include',

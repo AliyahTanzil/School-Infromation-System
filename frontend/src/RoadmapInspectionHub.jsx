@@ -176,9 +176,9 @@ export default function RoadmapInspectionHub() {
               Roadmap V51.1 → V51.25
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
-              A development-only inspection map for the demo account. Open any available workspace,
-              review its current state, and separate shipped surfaces from integration-dependent
-              work.
+              A development-only inspection map for authorized accounts. Open any available
+              workspace, review its current state, and separate shipped surfaces from
+              integration-dependent work.
             </p>
           </div>
           <Link

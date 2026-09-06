@@ -103,6 +103,7 @@ router.get(
 router.get('/', controller.list);
 router.post('/', validate(createTimetableSchema), controller.create);
 router.post('/:id/generate-slots', controller.generateSlots);
+router.post('/:id/generate-schedule', controller.generateSchedule);
 router.post('/:id/entries', validate(entrySchema), controller.addEntry);
 router.patch('/:id/status', validate(statusSchema), controller.changeStatus);
 router.post('/:id/substitutions', validate(substitutionSchema), controller.createSubstitution);

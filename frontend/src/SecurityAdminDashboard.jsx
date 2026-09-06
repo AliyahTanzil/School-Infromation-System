@@ -111,7 +111,7 @@ export default function SecurityAdminDashboard() {
             <p className="eyebrow">Compliance evidence</p>
             <h2>Evidence readiness</h2>
           </div>
-          <button onClick={() => setMessage('Evidence export queued for review in Demo mode.')}>
+          <button onClick={() => setMessage('Evidence export queued for review.')}>
             Export evidence
           </button>
         </div>

@@ -1,69 +1,109 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Building2, LoaderCircle, Plus, Save } from 'lucide-react';
 
-const sections = ['Overview', 'Branches', 'Departments', 'Grade levels', 'Administrators'];
-const seed = [{ name: 'Main Campus', code: 'MAIN', status: 'Active' }];
+const emptyForm = { name: '', slug: '', email: '' };
+
+function slugFromName(name) {
+  return name
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
+}
+
+async function schoolRequest(path = '', options = {}) {
+  const response = await fetch(`/api/schools${path}`, {
+    credentials: 'include',
+    ...options,
+    headers: {
+      ...(options.body ? { 'content-type': 'application/json' } : {}),
+      ...options.headers,
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok)
+    throw new Error(payload.error?.message || payload.message || 'Unable to manage schools');
+  return payload.data;
+}
 
 export default function SchoolAdmin() {
-  const [active, setActive] = useState('Overview');
-  const [schools, setSchools] = useState(seed);
-  const [name, setName] = useState('Main Campus');
-  const [slug, setSlug] = useState('main-campus');
-  const [email, setEmail] = useState('admin@school.edu');
+  const [schools, setSchools] = useState([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
-  const [items, setItems] = useState({
-    Branches: [],
-    Departments: [],
-    'Grade levels': [],
-    Administrators: [],
-  });
-  const [newItem, setNewItem] = useState('');
-  const stats = useMemo(
-    () => [
-      { label: 'Branches', value: items.Branches.length || '1' },
-      { label: 'Departments', value: items.Departments.length || '8' },
-      { label: 'Grade levels', value: items['Grade levels'].length || '12' },
-      { label: 'Administrators', value: items.Administrators.length || '3' },
-    ],
-    [items]
-  );
+  const [error, setError] = useState('');
 
-  function saveChanges(event) {
-    event.preventDefault();
-    if (!name.trim() || !slug.trim() || !email.trim())
-      return setNotice('School name, slug, and contact email are required.');
-    setSchools((current) =>
-      current.map((school, index) =>
-        index === 0
-          ? {
-              ...school,
-              name: name.trim(),
-              code: slug
-                .trim()
-                .toUpperCase()
-                .replace(/[^A-Z0-9-]/g, '-'),
-            }
-          : school
-      )
-    );
-    setNotice('School profile saved successfully.');
+  async function loadSchools() {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await schoolRequest();
+      setSchools(result.items ?? []);
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function addSchool(event) {
-    event.preventDefault();
-    if (!name.trim()) return setNotice('Enter a school name first.');
-    const code = `SCH-${schools.length + 1}`;
-    setSchools((current) => [...current, { name: name.trim(), code, status: 'Draft' }]);
-    setNotice(`${name.trim()} was added as a draft school.`);
-    setName('');
+  useEffect(() => {
+    loadSchools();
+  }, []);
+
+  function updateField(event) {
+    const { name, value } = event.target;
+    setForm((current) => {
+      if (name !== 'name') return { ...current, [name]: value };
+      const slug = slugFromName(value);
+      return { ...current, name: value, slug, email: slug ? `${slug}@gmail.com` : '' };
+    });
   }
 
-  function addItem(event) {
+  function selectSchool(school) {
+    setSelectedId(school.id);
+    setForm({ name: school.name ?? '', slug: school.slug ?? '', email: school.email ?? '' });
+    setNotice('');
+    setError('');
+  }
+
+  function startNewSchool() {
+    setSelectedId('');
+    setForm(emptyForm);
+    setNotice('');
+    setError('');
+  }
+
+  async function saveSchool(event) {
     event.preventDefault();
-    if (!newItem.trim())
-      return setNotice(`Enter a ${active.toLowerCase().replace(/s$/, '')} name first.`);
-    setItems((current) => ({ ...current, [active]: [...current[active], newItem.trim()] }));
-    setNotice(`${newItem.trim()} was added to ${active}.`);
-    setNewItem('');
+    if (!form.name.trim() || !form.slug.trim())
+      return setError('School name and slug are required.');
+    setSaving(true);
+    setError('');
+    setNotice('');
+    const body = {
+      name: form.name.trim(),
+      slug: form.slug.trim().toLowerCase(),
+      ...(form.email.trim() ? { email: form.email.trim() } : {}),
+    };
+    try {
+      const editing = Boolean(selectedId);
+      const school = await schoolRequest(editing ? `/${selectedId}` : '', {
+        method: editing ? 'PUT' : 'POST',
+        body: JSON.stringify(body),
+      });
+      setSelectedId(school.id);
+      setForm({ name: school.name ?? '', slug: school.slug ?? '', email: school.email ?? '' });
+      setNotice(editing ? 'School updated successfully.' : 'School created successfully.');
+      await loadSchools();
+    } catch (reason) {
+      setError(reason.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -72,165 +112,139 @@ export default function SchoolAdmin() {
         <header className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
-              SAIS / School setup
+              SAIS / School management
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">Your school workspace</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">Manage schools</h1>
             <p className="mt-2 text-sm text-slate-400">
-              Configure the structure your staff and students will use.
+              Create a school or update an existing school profile.
             </p>
           </div>
-          <button
-            onClick={saveChanges}
-            className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-400"
-          >
-            Save changes
+          <button type="button" onClick={startNewSchool} className="primary-button">
+            <Plus size={17} /> Create school
           </button>
         </header>
+
         {notice && (
-          <div
+          <p
             role="status"
-            className="mt-5 rounded-xl border border-indigo-400/30 bg-indigo-400/10 px-4 py-3 text-sm text-indigo-100"
+            className="mt-5 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100"
           >
             {notice}
-          </div>
+          </p>
         )}
-        <div className="mt-8 flex gap-2 overflow-x-auto border-b border-slate-800">
-          {sections.map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                setActive(item);
-                setNotice('');
-              }}
-              className={`whitespace-nowrap border-b-2 px-3 py-3 text-sm ${active === item ? 'border-indigo-400 text-white' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
-        {active === 'Overview' ? (
-          <>
-            <section className="grid gap-4 py-8 sm:grid-cols-2 lg:grid-cols-4">
-              {stats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-slate-800 bg-slate-900 p-5"
-                >
-                  <p className="text-sm text-slate-500">{stat.label}</p>
-                  <p className="mt-3 text-3xl font-semibold">{stat.value}</p>
-                </div>
-              ))}
-            </section>
-            <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-              <form
-                onSubmit={saveChanges}
-                className="rounded-2xl border border-slate-800 bg-slate-900 p-6"
-              >
-                <h2 className="text-lg font-semibold">School profile</h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="text-sm text-slate-400">
-                    School name
-                    <input
-                      value={name}
-                      onChange={(event) => setName(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                    />
-                  </label>
-                  <label className="text-sm text-slate-400">
-                    Slug
-                    <input
-                      value={slug}
-                      onChange={(event) => setSlug(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                    />
-                  </label>
-                  <label className="text-sm text-slate-400 sm:col-span-2">
-                    Contact email
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
-                    />
-                  </label>
-                </div>
-                <button
-                  type="submit"
-                  className="mt-5 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-950"
-                >
-                  Save profile
-                </button>
-              </form>
-              <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                <h2 className="text-lg font-semibold">Add school</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-400">
-                  Create a school workspace for this tenant.
-                </p>
-                <form onSubmit={addSchool} className="mt-5 flex gap-2">
-                  <input
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    placeholder="School name"
-                    className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-950"
-                  >
-                    Add
-                  </button>
-                </form>
-                <ul className="mt-5 flex flex-col gap-2">
-                  {schools.map((school) => (
-                    <li
-                      key={school.code}
-                      className="flex items-center justify-between rounded-xl bg-slate-950 px-3 py-3 text-sm"
-                    >
-                      <span>
-                        {school.name}
-                        <span className="ml-2 text-xs text-slate-500">{school.code}</span>
-                      </span>
-                      <span className="text-xs text-emerald-300">{school.status}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
-          </>
-        ) : (
-          <section className="py-8">
-            <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
-              <h2 className="text-xl font-semibold">{active}</h2>
-              <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">
-                Manage {active.toLowerCase()} for your school. Changes are permission-aware and
-                protected by the school-management API.
+        {error && (
+          <p
+            role="alert"
+            className="mt-5 rounded-xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100"
+          >
+            {error}
+          </p>
+        )}
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+            <h2 className="text-lg font-semibold">Schools</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              {schools.length} school{schools.length === 1 ? '' : 's'} configured
+            </p>
+            {loading ? (
+              <p className="mt-6 flex items-center gap-2 text-sm text-slate-400">
+                <LoaderCircle className="animate-spin" size={16} /> Loading schools...
               </p>
-              <form onSubmit={addItem} className="mt-6 flex max-w-xl gap-2">
+            ) : schools.length === 0 ? (
+              <div className="mt-6 rounded-xl border border-dashed border-slate-700 p-6 text-center">
+                <Building2 className="mx-auto text-slate-500" size={28} />
+                <p className="mt-3 font-medium">No schools yet</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Use the form to create your first school.
+                </p>
+              </div>
+            ) : (
+              <ul className="mt-5 space-y-2">
+                {schools.map((school) => (
+                  <li key={school.id}>
+                    <button
+                      type="button"
+                      onClick={() => selectSchool(school)}
+                      className={`w-full rounded-xl border px-4 py-3 text-left transition ${selectedId === school.id ? 'border-indigo-400 bg-indigo-400/10' : 'border-slate-800 bg-slate-950 hover:border-slate-600'}`}
+                    >
+                      <span className="block font-medium">{school.name}</span>
+                      <span className="mt-1 block text-xs text-slate-500">{school.slug}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <form
+            onSubmit={saveSchool}
+            className="rounded-2xl border border-slate-800 bg-slate-900 p-6"
+          >
+            <h2 className="text-lg font-semibold">
+              {selectedId ? 'Edit school' : 'Create school'}
+            </h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="text-sm text-slate-400">
+                School name
                 <input
-                  value={newItem}
-                  onChange={(event) => setNewItem(event.target.value)}
-                  placeholder={`Add ${active.toLowerCase().replace(/s$/, '')}`}
-                  className="min-w-0 flex-1 rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-sm"
+                  required
+                  name="name"
+                  value={form.name}
+                  onChange={updateField}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                  placeholder="Example Academy"
                 />
-                <button
-                  type="submit"
-                  className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold"
-                >
-                  Add {active.slice(0, -1)}
-                </button>
-              </form>
-              {items[active].length > 0 && (
-                <ul className="mt-6 flex flex-col gap-2">
-                  {items[active].map((item) => (
-                    <li key={item} className="rounded-xl bg-slate-950 px-4 py-3 text-sm">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              </label>
+              <label className="text-sm text-slate-400">
+                Slug
+                <input
+                  required
+                  name="slug"
+                  pattern="[a-z0-9-]+"
+                  value={form.slug}
+                  onChange={updateField}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                  placeholder="example-academy"
+                />
+              </label>
+              <div className="sm:col-span-2">
+                <label htmlFor="school-contact-email" className="text-sm text-slate-400">
+                  Contact email
+                </label>
+                <input
+                  id="school-contact-email"
+                  name="email"
+                  type="email"
+                  value={form.email}
+                  onChange={updateField}
+                  className="mt-2 w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-3 text-white"
+                  placeholder="admin@school.edu"
+                />
+                <span className="mt-2 block text-xs leading-5 text-slate-500">
+                  The suggested Gmail address is not guaranteed to be available. Confirm or create
+                  the address with Google before saving.
+                </span>
+              </div>
             </div>
-          </section>
-        )}
+            <a
+              href="https://accounts.google.com/signup"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex text-sm font-semibold text-indigo-300 underline decoration-indigo-400/50 underline-offset-4 hover:text-indigo-200"
+            >
+              Open Google account creation
+            </a>
+            <button
+              type="submit"
+              disabled={saving}
+              className="primary-button mt-6 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? <LoaderCircle className="animate-spin" size={17} /> : <Save size={17} />}
+              {saving ? 'Saving...' : selectedId ? 'Save changes' : 'Create school'}
+            </button>
+          </form>
+        </section>
       </div>
     </main>
   );

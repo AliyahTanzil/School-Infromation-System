@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { URL } from 'node:url';
 import {
   canTransitionTimetable,
   detectTimetableConflicts,
@@ -18,18 +19,22 @@ test('timetable routes require authenticated school context on both active mount
     ['patch', '/:id', 'teacherAvailabilityUpdateSchema', 'updateTeacherAvailability'],
     ['delete', '/:id', 'teacherAvailabilityIdSchema', 'removeTeacherAvailability'],
   ]) {
-    assert.ok(
-      routes.includes(
-        `router.${method}('/teachers/:teacherId/availability${suffix}', validate(${schema}), controller.${handler});`
-      )
+    const routePattern = new RegExp(
+      `router\\.${method}\\(\\s*'/teachers/:teacherId/availability${suffix.replace('/', '\\/')}',\\s*validate\\(${schema}\\),\\s*controller\\.${handler}\\s*\\);`
     );
+    assert.match(routes, routePattern);
   }
-  assert.match(app, /app\.use\('\/api\/timetables', timetableRouter\)/);
   assert.match(app, /app\.use\('\/api\/v1\/timetables', timetableRouter\)/);
   assert.match(routes, /router\.post\('\/:id\/generate-slots', controller\.generateSlots\)/);
+  assert.match(routes, /router\.post\('\/:id\/generate-schedule', controller\.generateSchedule\)/);
+  const service = await read('../../src/application/services/timetableService.js');
+  assert.match(service, /export async function generateCompleteSchedule/);
+  assert.match(service, /Automatic generation requires an empty timetable draft/);
+  assert.match(service, /Timetable is not feasible/);
+  assert.match(app, /app\.use\('\/api\/timetables', timetableRouter\)/);
   assert.match(
     routes,
-    /router\.post\('\/teaching-assignments',[\s\S]*?controller\.createTeachingAssignment\)/
+    /router\.post\(\s*'\/teaching-assignments',[\s\S]*?controller\.createTeachingAssignment\s*\)/
   );
   assert.match(
     routes,

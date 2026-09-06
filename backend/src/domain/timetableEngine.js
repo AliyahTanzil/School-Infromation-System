@@ -325,6 +325,39 @@ export function evaluateTeacherAvailability(slot, rules = []) {
   return { available: true, preference };
 }
 
+export function scoreTimetableCandidate({
+  slots,
+  requirement,
+  assignment,
+  availability = [],
+  dailyCounts = {},
+}) {
+  const day = slots[0].weekday;
+  const duration = slots.length;
+  const preference = Math.min(
+    ...slots.map(
+      (slot) =>
+        evaluateTeacherAvailability(
+          slot,
+          availability.filter((rule) => rule.teacherId === assignment.teacherId)
+        ).preference
+    )
+  );
+  const subjectKey = `${requirement.classId}:${requirement.subjectId}:${day}`;
+  const classKey = `${requirement.classId}:${day}`;
+  const teacherKey = `${assignment.teacherId}:${day}`;
+  const subjectToday = dailyCounts.subject?.[subjectKey] ?? 0;
+  const preferredDaily = requirement.preferredPeriodsDay ?? 1;
+  const abovePreferred = Math.max(0, subjectToday + duration - preferredDaily);
+  return (
+    abovePreferred * 10000 +
+    subjectToday * 1000 +
+    (dailyCounts.class?.[classKey] ?? 0) * 100 +
+    (dailyCounts.teacher?.[teacherKey] ?? 0) * 50 -
+    preference * 5
+  );
+}
+
 export function getEntryTeachingSlots(entry, slots) {
   const first = slots.find((slot) => slot.id === entry.timeSlotId);
   const duration = entry.duration ?? 1;

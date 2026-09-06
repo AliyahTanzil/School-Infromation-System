@@ -50,7 +50,6 @@ const ResultsDashboard = lazy(() => import('./ResultsDashboard.jsx'));
 const AcademicPolicyDashboard = lazy(() => import('./AcademicPolicyDashboard.jsx'));
 const UserManagement = lazy(() => import('./UserManagement.jsx'));
 const TimetableDashboard = lazy(() => import('./TimetableDashboard.jsx'));
-const AdminDemoEntry = lazy(() => import('./AdminDemoEntry.jsx'));
 const RoadmapInspectionHub = lazy(() => import('./RoadmapInspectionHub.jsx'));
 const AdminWorkspace = lazy(() => import('./AdminWorkspace.jsx'));
 const ClassroomDashboard = lazy(() => import('./ClassroomDashboard.jsx'));
@@ -899,7 +898,7 @@ function Dashboard() {
           style={{ marginBottom: '1.5rem' }}
         >
           {[
-            ['/admin', 'Administration', 'Manage school operations', LayoutDashboard],
+            ['/school-setup', 'School management', 'Create and manage schools', LayoutDashboard],
             ['/students', 'Students', 'Admissions and records', GraduationCap],
             ['/teachers', 'Teachers', 'Staff and teaching profiles', Users],
             ['/academic-calendar', 'Calendar', 'Terms and school events', CalendarDays],
@@ -1087,8 +1086,6 @@ export default function App() {
             =============================== */}
 
             <Route path="/" element={<LandingPage />} />
-
-            <Route path="/admin-demo" element={<AdminDemoEntry />} />
 
             {/* ===============================
                 AUTHENTICATION

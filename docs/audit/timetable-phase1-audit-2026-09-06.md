@@ -186,3 +186,45 @@ Remaining work: real-data draft persistence once school records are available, r
 ## School draft persistence checkpoint
 
 User confirmed Aunty Isha Internation School, First Term, and authorized the remaining setup. Migration 20260906100000_timetable_domain_reconciliation applied successfully. Saved the 2026/27 First Term SSS Science 3A draft with nine subjects, nine requirements, 40 lessons and 50 total slots. Database read-back verified all subject totals and school configuration. No teacher/room identities were fabricated; assignments remain pending. Dates and capacity are marked as planning assumptions in School.settings and the version snapshot. The local timetable document now reflects the saved draft.
+
+## Phase 9 room-management UI checkpoint
+
+- Added school-scoped room/resource listing and creation to the timetable dashboard.
+- Administrators can configure classrooms, laboratories, shared resources, capacity and resource labels, then activate or deactivate unused rooms.
+- The UI uses the existing validated room endpoints and surfaces backend errors instead of simulating persistence.
+- Empty-school requests are guarded until a school context exists. The previously saved timetable data was removed when all tenants were explicitly deleted; no replacement school, teacher or room data was fabricated.
+- Verification: 10 focused timetable contracts passed, 13 frontend tests passed, and backend/frontend production builds passed.
+
+Next implementation boundary: teaching-assignment and recurring availability management UI, followed by deterministic global timetable generation.
+
+## Phase 10 staffing UI checkpoint
+
+- Added real teaching-assignment management to the timetable page for teacher, subject, class, academic term, and weekly-period allocation.
+- Added recurring weekly teacher availability management for available, unavailable, and preferred windows.
+- Extended timetable options with school-scoped teacher identities and profiles; no placeholder staff are created.
+- Assignment and availability removal use the existing protected APIs and all errors are surfaced in the timetable status area.
+- Verification: 15 focused timetable/availability/room tests, 13 frontend tests, frontend build, and targeted lint pass.
+
+Next implementation boundary: deterministic global generation with feasibility reporting across requirements, assignments, availability, classes, and rooms.
+
+## Phase 11 deterministic generation checkpoint
+
+- Added `POST /api/timetables/:id/generate-schedule` and the versioned equivalent through the existing timetable mount.
+- Generation is deterministic and uses saved subject requirements, active teaching assignments, recurring teacher availability, class capacities, active rooms/laboratories, and persisted timetable slots.
+- Class, teacher, and room occupancy are enforced across every consumed slot. Double periods require adjacent slots; laboratory requirements select laboratory rooms.
+- Generation is atomic and restricted to empty draft timetables. Any missing assignment, room, availability, or placement capacity returns a detailed feasibility error and persists nothing.
+- Successful generation writes normalized schedule entries and a `SCHEDULE_GENERATED` audit record. The timetable UI exposes the action only for empty drafts.
+- Verification: backend/frontend builds, targeted lint, frontend suite, and focused timetable contracts pass.
+
+Next implementation boundary: generator quality improvements (preference scoring and balanced distribution), direct manual entry editing, and end-to-end live-data generation after a new tenant is configured.
+
+## Phase 12 generation-quality checkpoint
+
+- Replaced first-free-slot selection with deterministic candidate scoring.
+- Subject lessons are spread across weekdays before repeating beyond each requirement's preferred daily count.
+- Class and teacher daily loads are balanced when choosing among otherwise feasible slots.
+- Recurring `PREFERRED` teacher windows lower a candidate's score and are selected when hard constraints and load are equal.
+- Double periods remain intact and deterministic weekday/time ordering resolves equal scores.
+- Verification: 17 focused timetable tests passed, including new distribution and preference tests; targeted lint and backend build verification passed.
+
+Next implementation boundary: controlled manual entry creation/editing and stronger hard workload constraints in generation.

@@ -2,6 +2,8 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
 import {
   canTransitionTimetable,
   detectTimetableConflicts,
+  evaluateTeacherAvailability,
+  scoreTimetableCandidate,
   generateTimetableSlots,
   validateTimeRange,
   validateTimetableSettings,
@@ -15,7 +17,7 @@ import { validateEntryRoom } from './timetableRoomService.js';
 const scopeWhere = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
 
 export async function getTimetableOptions(scope) {
-  const [school, academicYears, classes, subjects] = await Promise.all([
+  const [school, academicYears, classes, subjects, teachers] = await Promise.all([
     prisma.school.findFirst({
       where: { id: scope.schoolId, tenantId: scope.tenantId },
       select: { id: true, name: true },
@@ -33,8 +35,13 @@ export async function getTimetableOptions(scope) {
       where: { ...scopeWhere(scope), deletedAt: null },
       select: { id: true, name: true, code: true },
     }),
+    prisma.teacher.findMany({
+      where: { ...scopeWhere(scope), deletedAt: null },
+      select: { id: true, employeeNumber: true, profile: true },
+      orderBy: { employeeNumber: 'asc' },
+    }),
   ]);
-  return { school, academicYears, classes, subjects };
+  return { school, academicYears, classes, subjects, teachers };
 }
 
 const defaultSettings = {
@@ -465,6 +472,169 @@ export async function addEntry({ tenantId, schoolId, timetableId, actorId, data 
         },
       });
       return created;
+    },
+    { isolationLevel: 'Serializable' }
+  );
+}
+
+export async function generateCompleteSchedule({ tenantId, schoolId, timetableId, actorId }) {
+  return prisma.$transaction(
+    async (tx) => {
+      const scope = { tenantId, schoolId };
+      const timetable = await tx.timetable.findFirst({ where: { id: timetableId, ...scope } });
+      if (!timetable) throw new NotFoundError('Timetable not found');
+      if (timetable.status !== 'DRAFT')
+        throw new ValidationError('Only draft timetables can be generated');
+      if (await tx.scheduleEntry.count({ where: { timetableId } })) {
+        throw new ValidationError('Automatic generation requires an empty timetable draft');
+      }
+      const [slots, requirements, assignments, rooms, availability] = await Promise.all([
+        tx.timetableSlot.findMany({
+          where: { timetableId, ...scope },
+          orderBy: [{ weekday: 'asc' }, { startTime: 'asc' }],
+        }),
+        tx.subjectPeriodRequirement.findMany({
+          where: { ...scope, termId: timetable.academicPeriodId },
+          include: { subject: true, class: true },
+          orderBy: [{ classId: 'asc' }, { subjectId: 'asc' }],
+        }),
+        tx.teacherTeachingAssignment.findMany({
+          where: { ...scope, termId: timetable.academicPeriodId, status: 'ACTIVE' },
+          orderBy: { id: 'asc' },
+        }),
+        tx.timetableRoom.findMany({
+          where: { ...scope, isActive: true },
+          orderBy: [{ capacity: 'asc' }, { code: 'asc' }],
+        }),
+        tx.teacherAvailability.findMany({ where: { teacher: { ...scope, deletedAt: null } } }),
+      ]);
+      if (!requirements.length)
+        throw new ValidationError('No subject period requirements exist for this timetable term');
+      const teachingSlots = slots.filter((slot) => !slot.isBreak);
+      const occupied = { class: new Set(), teacher: new Set(), room: new Set() };
+      const dailyCounts = { subject: {}, class: {}, teacher: {} };
+      const entries = [];
+      const issues = [];
+      const slotKeys = (slotList, id) => slotList.map((slot) => `${id}:${slot.id}`);
+      const free = (slotList, assignment, room) =>
+        slotKeys(slotList, assignment.classId).every((key) => !occupied.class.has(key)) &&
+        slotKeys(slotList, assignment.teacherId).every((key) => !occupied.teacher.has(key)) &&
+        slotKeys(slotList, room.id).every((key) => !occupied.room.has(key)) &&
+        slotList.every(
+          (slot) =>
+            evaluateTeacherAvailability(
+              slot,
+              availability.filter((rule) => rule.teacherId === assignment.teacherId)
+            ).available
+        );
+
+      for (const requirement of requirements) {
+        const assignment = assignments.find(
+          (item) => item.classId === requirement.classId && item.subjectId === requirement.subjectId
+        );
+        if (!assignment) {
+          issues.push(
+            `${requirement.class.name}: ${requirement.subject.name} has no active teacher assignment`
+          );
+          continue;
+        }
+        const room = rooms.find(
+          (item) =>
+            item.capacity >= requirement.class.capacity &&
+            (!requirement.requiresLaboratory || item.kind === 'LABORATORY')
+        );
+        if (!room) {
+          issues.push(
+            `${requirement.class.name}: ${requirement.subject.name} has no suitable active room`
+          );
+          continue;
+        }
+        let remaining = requirement.periodsPerWeek;
+        while (remaining > 0) {
+          const duration = requirement.requiresDoublePeriod && remaining >= 2 ? 2 : 1;
+          const candidates = [];
+          for (let index = 0; index < teachingSlots.length; index += 1) {
+            const span = teachingSlots.slice(index, index + duration);
+            if (
+              span.length !== duration ||
+              span.some((slot) => slot.weekday !== span[0].weekday) ||
+              span.some((slot, offset) => offset > 0 && slot.startTime !== span[offset - 1].endTime)
+            )
+              continue;
+            if (free(span, assignment, room)) candidates.push(span);
+          }
+          candidates.sort(
+            (left, right) =>
+              scoreTimetableCandidate({
+                slots: left,
+                requirement,
+                assignment,
+                availability,
+                dailyCounts,
+              }) -
+                scoreTimetableCandidate({
+                  slots: right,
+                  requirement,
+                  assignment,
+                  availability,
+                  dailyCounts,
+                }) ||
+              left[0].weekday - right[0].weekday ||
+              left[0].startTime.localeCompare(right[0].startTime)
+          );
+          const choice = candidates[0];
+          if (!choice) {
+            issues.push(
+              `${requirement.class.name}: ${requirement.subject.name} cannot place ${remaining} remaining period(s)`
+            );
+            break;
+          }
+          for (const key of slotKeys(choice, assignment.classId)) occupied.class.add(key);
+          for (const key of slotKeys(choice, assignment.teacherId)) occupied.teacher.add(key);
+          for (const key of slotKeys(choice, room.id)) occupied.room.add(key);
+          const day = choice[0].weekday;
+          const countKeys = {
+            subject: `${requirement.classId}:${requirement.subjectId}:${day}`,
+            class: `${assignment.classId}:${day}`,
+            teacher: `${assignment.teacherId}:${day}`,
+          };
+          for (const [group, key] of Object.entries(countKeys))
+            dailyCounts[group][key] = (dailyCounts[group][key] ?? 0) + duration;
+          entries.push({
+            tenantId,
+            schoolId,
+            timetableId,
+            timeSlotId: choice[0].id,
+            classId: assignment.classId,
+            teacherId: assignment.teacherId,
+            subjectId: assignment.subjectId,
+            roomId: room.id,
+            teachingAssignmentId: assignment.id,
+            subjectCode: requirement.subject.code,
+            kind:
+              duration === 2 ? 'DOUBLE' : requirement.requiresLaboratory ? 'LABORATORY' : 'LESSON',
+            duration,
+          });
+          remaining -= duration;
+        }
+      }
+      if (issues.length)
+        throw new ValidationError(`Timetable is not feasible: ${issues.join('; ')}`);
+      await tx.scheduleEntry.createMany({ data: entries });
+      await tx.timetableAudit.create({
+        data: {
+          tenantId,
+          schoolId,
+          timetableId,
+          actorId,
+          action: 'SCHEDULE_GENERATED',
+          metadata: {
+            entries: entries.length,
+            periods: entries.reduce((sum, item) => sum + item.duration, 0),
+          },
+        },
+      });
+      return hydrate(timetable, tx);
     },
     { isolationLevel: 'Serializable' }
   );

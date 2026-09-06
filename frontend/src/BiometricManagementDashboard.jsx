@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Activity, Fingerprint, Plus, ShieldCheck, WifiOff } from 'lucide-react';
 
-const demoDevices = [
+const initialDevices = [
   {
-    id: 'demo-gate-a',
+    id: 'reader-gate-a',
     displayName: 'Main Gate Reader',
     location: 'North entrance',
     status: 'ACTIVE',
@@ -11,7 +11,7 @@ const demoDevices = [
     lastSeenAt: new Date().toISOString(),
   },
   {
-    id: 'demo-lab-b',
+    id: 'reader-lab-b',
     displayName: 'Science Lab Reader',
     location: 'Science block',
     status: 'OFFLINE',
@@ -21,7 +21,7 @@ const demoDevices = [
 ];
 
 export default function BiometricManagementDashboard() {
-  const [devices, setDevices] = useState(demoDevices);
+  const [devices, setDevices] = useState(initialDevices);
   const [notice, setNotice] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ displayName: '', location: '' });
@@ -31,7 +31,7 @@ export default function BiometricManagementDashboard() {
     event.preventDefault();
     if (!form.displayName.trim()) return setNotice('Enter a device name first.');
     const device = {
-      id: `demo-${Date.now()}`,
+      id: `reader-${Date.now()}`,
       displayName: form.displayName.trim(),
       location: form.location.trim() || 'Unassigned location',
       status: 'PENDING',

@@ -230,7 +230,7 @@ const moduleGroups = [
 export default function AdminWorkspace() {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const leaveDemo = async () => {
+  const signOut = async () => {
     await logout();
     navigate('/', { replace: true });
   };
@@ -240,31 +240,29 @@ export default function AdminWorkspace() {
       <div className="admin-shell__container">
         <header className="admin-shell__header">
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="eyebrow" style={{ margin: 0 }}>
-                SAIS Demo workspace
-              </p>
-              <span className="pill">Test environment</span>
-            </div>
-            <h1 className="admin-shell__title">
-              Explore the complete school administration platform.
-            </h1>
+            <p className="eyebrow" style={{ margin: 0 }}>
+              SAIS administration
+            </p>
+            <h1 className="admin-shell__title">Manage your school administration platform.</h1>
             <p className="admin-shell__subtitle">
-              Browse every module with a seeded demo administrator account. You can explore
-              workflows freely; this environment is isolated from production school data.
+              Open a module to manage your school operations, academics, staff, and services.
             </p>
           </div>
-          <button type="button" onClick={leaveDemo} className="secondary-button">
-            <LogOut size={16} />
-            Exit Demo
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <Link to="/school-setup" className="primary-button">
+              <Building2 size={16} /> Create school
+            </Link>
+            <button type="button" onClick={signOut} className="secondary-button">
+              <LogOut size={16} /> Sign out
+            </button>
+          </div>
         </header>
 
-        <section className="admin-shell__metric-grid" aria-label="Demo environment details">
+        <section className="admin-shell__metric-grid" aria-label="Administration workspace details">
           {[
             ['35', 'Modules available'],
-            ['Demo Admin', 'Active role'],
-            ['Safe to explore', 'Data boundary'],
+            ['Administrator', 'Active role'],
+            ['Tenant scoped', 'Data boundary'],
           ].map(([value, label]) => (
             <div key={label} className="admin-shell__metric">
               <p className="admin-shell__metric-value">{value}</p>

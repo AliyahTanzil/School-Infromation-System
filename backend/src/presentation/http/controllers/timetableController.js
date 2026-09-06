@@ -128,6 +128,14 @@ export const generateSlots = async (req, res) =>
       actorId: req.user.id,
     }),
   });
+export const generateSchedule = async (req, res) =>
+  res.json({
+    data: await service.generateCompleteSchedule({
+      ...req.schoolContext,
+      timetableId: req.params.id,
+      actorId: req.user.id,
+    }),
+  });
 export const listTeachingAssignments = async (req, res) =>
   res.json({
     data: await service.listTeachingAssignments(req.schoolContext, req.validatedQuery ?? req.query),

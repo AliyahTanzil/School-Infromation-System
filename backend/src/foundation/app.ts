@@ -10,6 +10,8 @@ import authRouter from '../presentation/http/routes/authRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import userRouter from '../presentation/http/routes/userRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import schoolRouter from '../presentation/http/routes/schoolRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import studentRouter from '../presentation/http/routes/studentDomainRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import parentRouter from '../presentation/http/routes/parentRoutes.js';
@@ -144,6 +146,8 @@ export const createApp = () => {
   app.use('/api/v1/school', singleSchoolRouter);
   app.use('/api/users', userRouter);
   app.use('/api/v1/users', userRouter);
+  app.use('/api/schools', schoolRouter);
+  app.use('/api/v1/schools', schoolRouter);
   app.use('/api/students', studentRouter);
   app.use('/api/v1/students', studentRouter);
   app.use('/api/parents', parentRouter);

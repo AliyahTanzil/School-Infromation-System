@@ -36,7 +36,7 @@ function DashboardPreview() {
             School overview
           </div>
           <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-2 py-1 text-[10px] font-semibold text-emerald-300">
-            DEMO DATA
+            PLATFORM PREVIEW
           </span>
         </div>
         <div className="grid grid-cols-2 gap-3 py-4 sm:grid-cols-4">
@@ -119,22 +119,12 @@ export default function LandingPage() {
             >
               Sign in
             </Link>
-            <div className="flex flex-col items-stretch gap-2">
-              <Link
-                to="/admin-demo"
-                className="rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-indigo-400"
-              >
-                Get started
-              </Link>
-              {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true') && (
-                <Link
-                  to="/admin-demo"
-                  className="rounded-xl border border-amber-400/40 px-4 py-2.5 text-center text-sm font-semibold text-amber-200"
-                >
-                  Demo
-                </Link>
-              )}
-            </div>
+            <Link
+              to="/register"
+              className="rounded-xl bg-indigo-500 px-4 py-2.5 text-center text-sm font-semibold transition hover:bg-indigo-400"
+            >
+              Create a school
+            </Link>
           </div>
           <button
             type="button"
@@ -163,19 +153,11 @@ export default function LandingPage() {
                 Sign in
               </Link>
               <Link
-                to="/admin-demo"
+                to="/register"
                 className="rounded-lg bg-indigo-500 px-3 py-2 text-center text-sm font-semibold"
               >
-                Get started
+                Create a school
               </Link>
-              {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_ADMIN_DEMO === 'true') && (
-                <Link
-                  to="/admin-demo"
-                  className="rounded-lg px-3 py-2 text-center text-sm font-semibold text-amber-200"
-                >
-                  Demo
-                </Link>
-              )}
             </div>
           </div>
         )}
@@ -197,10 +179,10 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                to="/admin-demo"
+                to="/register"
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-5 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
               >
-                Get started <ArrowRight size={17} />
+                Create a school <ArrowRight size={17} />
               </Link>
               <a
                 href="#platform"
@@ -307,10 +289,10 @@ export default function LandingPage() {
             Start with a secure foundation and grow into the connected platform your school needs.
           </p>
           <Link
-            to="/admin-demo"
+            to="/register"
             className="mt-8 inline-flex items-center gap-2 rounded-xl bg-indigo-500 px-6 py-3.5 text-sm font-semibold transition hover:bg-indigo-400"
           >
-            Get started with SAIS <ArrowRight size={17} />
+            Create your school <ArrowRight size={17} />
           </Link>
         </section>
       </main>
