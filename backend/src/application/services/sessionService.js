@@ -1,4 +1,5 @@
 import config from '../../config/index.js';
+import prisma from '../../infrastructure/orm/prismaClient.js';
 import * as tokenService from '../../infrastructure/auth/tokenService.js';
 import auditLoginRepository from '../../infrastructure/repositories/auditLoginRepository.js';
 import refreshTokenRepository from '../../infrastructure/repositories/refreshTokenRepository.js';
@@ -161,18 +162,23 @@ export async function rotate({ refreshToken, context }) {
  * Revoke a single session (logout current device).
  */
 export async function revoke({ sessionId, userId, reason, context }) {
-  const session = await sessionRepository.findActiveById(sessionId);
-  if (!session || session.userId !== userId) {
-    throw new NotFoundError('Session not found');
-  }
-  await refreshTokenRepository.revokeAllForSession(sessionId, reason ?? 'user_logout');
-  await sessionRepository.revoke(sessionId, reason ?? 'user_logout');
-  await auditLoginRepository.record({
-    userId,
-    sessionId,
-    event: 'LOGGED_OUT',
-    ipAddress: context?.ipAddress,
-    userAgent: context?.userAgent,
+  return prisma.$transaction(async (tx) => {
+    const session = await sessionRepository.findActiveById(sessionId, tx);
+    if (!session || session.userId !== userId) {
+      throw new NotFoundError('Session not found');
+    }
+    await refreshTokenRepository.revokeAllForSession(sessionId, reason ?? 'user_logout', tx);
+    await sessionRepository.revoke(sessionId, reason ?? 'user_logout', tx);
+    await auditLoginRepository.record(
+      {
+        userId,
+        sessionId,
+        event: 'LOGGED_OUT',
+        ipAddress: context?.ipAddress,
+        userAgent: context?.userAgent,
+      },
+      tx
+    );
   });
 }
 
@@ -180,13 +186,18 @@ export async function revoke({ sessionId, userId, reason, context }) {
  * Revoke every session for a user (logout everywhere).
  */
 export async function revokeAll({ userId, reason, context }) {
-  await refreshTokenRepository.revokeAllForUser(userId, reason ?? 'logout_all');
-  await sessionRepository.revokeAllForUser(userId, reason ?? 'logout_all');
-  await auditLoginRepository.record({
-    userId,
-    event: 'LOGGED_OUT_ALL',
-    ipAddress: context?.ipAddress,
-    userAgent: context?.userAgent,
+  return prisma.$transaction(async (tx) => {
+    await refreshTokenRepository.revokeAllForUser(userId, reason ?? 'logout_all', tx);
+    await sessionRepository.revokeAllForUser(userId, reason ?? 'logout_all', tx);
+    await auditLoginRepository.record(
+      {
+        userId,
+        event: 'LOGGED_OUT_ALL',
+        ipAddress: context?.ipAddress,
+        userAgent: context?.userAgent,
+      },
+      tx
+    );
   });
 }
 

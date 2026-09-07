@@ -11,7 +11,8 @@ export async function resolveAccessContext(userId, requestedTenantId = null) {
   if (
     !user ||
     user.deletedAt ||
-    !['ACTIVE', 'INVITED', 'PENDING_VERIFICATION'].includes(user.status)
+    user.status !== 'ACTIVE' ||
+    (user.lockedUntil && user.lockedUntil.getTime() > Date.now())
   ) {
     throw new AuthorizationError('Account is not available', 'ACCOUNT_UNAVAILABLE');
   }

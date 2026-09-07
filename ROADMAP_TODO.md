@@ -47,56 +47,56 @@ A feature task is complete only when all applicable layers exist:
 
 ## Ordered task queue
 
-| Order | ID          | Status  | Task                                                              | Depends on                    | Primary roadmap                   |
-| ----: | ----------- | ------- | ----------------------------------------------------------------- | ----------------------------- | --------------------------------- |
-|     1 | DB-001      | DONE    | Reconcile active Prisma schema with services and routes           | None                          | Backend 4, 10, 25                 |
-|     2 | QA-001      | DONE    | Stabilize complete backend test runner                            | DB-001                        | Backend 15, 21, 25                |
-|   2.1 | PARENT-001  | DONE    | Complete parent persistence and portal contract                   | DB-001, QA-001                | Core 8                            |
-|   2.2 | TEACHER-001 | DONE    | Complete teacher persistence and lifecycle contract               | DB-001, QA-001                | Core 9                            |
-|     3 | SUB-001     | DONE    | Implement Subject domain vertical slice                           | DB-001, QA-001                | Core 10                           |
-|     4 | CLS-001     | DONE    | Complete Class, Section and Enrollment persistence                | SUB-001                       | Core 9, Backend 10                |
-|     5 | ATT-001     | DONE    | Complete attendance vertical slice                                | CLS-001                       | Core 12, Mobile 5                 |
-|     6 | POL-001     | DONE    | Implement academic policy and grading configuration               | SUB-001, QA-001               | Core 15                           |
-|     7 | EXM-001     | DONE    | Complete examination persistence and workflow                     | CLS-001, POL-001              | Core 13, Mobile 6                 |
-|     8 | RES-001     | DONE    | Complete result processing and publication workflow               | EXM-001                       | Core 14, Mobile 6                 |
-|     9 | TTB-001     | DONE    | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
-|    10 | FIN-001     | DONE    | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
-|    11 | PAY-001     | DONE    | Complete Monime payment intent, webhook and reconciliation flow   | FIN-001                       | Core 18, Mobile 7                 |
-|    12 | COM-001     | DONE    | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
-|    13 | HR-001      | DONE    | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
-|    14 | LIB-001     | DONE    | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
-|    15 | AST-001     | DONE    | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
-|    16 | TRN-001     | DONE    | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
-|    17 | BRD-001     | DONE    | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
-|    18 | LMS-001     | DONE    | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
-|    19 | LMS-002     | DONE    | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
-|    20 | LMS-003     | DONE    | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
-|    21 | LMS-004     | DONE    | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
-|    22 | LMS-005     | DONE    | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
-|    23 | LMS-006     | DONE    | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
-|    24 | LMS-007     | DONE    | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
-|    25 | LMS-008     | DONE    | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
-|    26 | LMS-009     | DONE    | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
-|    27 | LMS-010     | DONE    | Implement classroom communication and live-learning orchestration | LMS-002, LMS-008              | Core 51.17-51.18                  |
-|    28 | ANA-001     | DONE    | Replace demo analytics with persisted, calculated metrics         | ATT-001, RES-001, FIN-001     | Core 26, 35, 51.19                |
-|    29 | SRCH-001    | DONE    | Implement permission-aware global classroom search                | LMS-001 through LMS-010       | Core 51.22                        |
-|    30 | AI-001      | BLOCKED | Build grounded AI provider and evidence pipeline                  | ANA-001, SEC-001              | Core 27, 36-38, 51.20             |
-|    31 | AI-002      | BLOCKED | Implement academic integrity evidence workflow                    | LMS-005, LMS-006, AI-001      | Core 51.21                        |
-|    32 | PRD-001     | BLOCKED | Implement predictive analytics lifecycle                          | ANA-001, AI-001               | Core 39                           |
-|    33 | INT-001     | BLOCKED | Complete external integration execution framework                 | PAY-001, COM-001              | Core 28, 40                       |
-|    34 | BIO-001     | BLOCKED | Complete biometric device and verification persistence            | ATT-001, INT-001              | Core 29, 41                       |
-|    35 | IOT-001     | BLOCKED | Complete IoT device, telemetry, alert and command persistence     | INT-001, SEC-001              | Core 30, 42                       |
-|    36 | SaaS-001    | BLOCKED | Complete subscription entitlements and enforcement                | FIN-001, SEC-001              | Core 32, 44                       |
-|    37 | SEC-001     | BLOCKED | Close security/compliance and authorization gaps                  | QA-001                        | Core 25, 34, Backend 18           |
-|    38 | MOB-001     | BLOCKED | Implement mobile bootstrap and module manifest contracts          | SEC-001                       | Mobile 2-4                        |
-|    39 | MOB-002     | BLOCKED | Implement mobile notification device lifecycle                    | COM-001, MOB-001              | Mobile 8                          |
-|    40 | MOB-003     | BLOCKED | Implement offline sync cursors, conflicts and idempotency         | MOB-001                       | Mobile 15                         |
-|    41 | MOB-004     | BLOCKED | Connect mobile classroom to LMS APIs                              | LMS-010, MOB-003              | Core 51.23, Mobile 9              |
-|    42 | ADM-001     | BLOCKED | Complete platform and classroom administration controls           | SaaS-001, LMS-010, SEC-001    | Core 33, 45, 51.24                |
-|    43 | AUD-001     | BLOCKED | Complete classroom security, audit and retention controls         | ADM-001, LMS-010              | Core 51.25                        |
-|    44 | PERF-001    | BLOCKED | Establish performance baselines and optimize measured bottlenecks | Core vertical slices complete | Backend 19                        |
-|    45 | OPS-001     | BLOCKED | Verify backup, restore, import/export and disaster recovery       | DB-001, QA-001                | Backend 11, 23                    |
-|    46 | REL-001     | BLOCKED | Complete Vercel/PostgreSQL production release gate                | All critical tasks            | Backend 16, 22, 24, 25; Mobile 15 |
+| Order | ID          | Status      | Task                                                              | Depends on                    | Primary roadmap                   |
+| ----: | ----------- | ----------- | ----------------------------------------------------------------- | ----------------------------- | --------------------------------- |
+|     1 | DB-001      | DONE        | Reconcile active Prisma schema with services and routes           | None                          | Backend 4, 10, 25                 |
+|     2 | QA-001      | DONE        | Stabilize complete backend test runner                            | DB-001                        | Backend 15, 21, 25                |
+|   2.1 | PARENT-001  | DONE        | Complete parent persistence and portal contract                   | DB-001, QA-001                | Core 8                            |
+|   2.2 | TEACHER-001 | DONE        | Complete teacher persistence and lifecycle contract               | DB-001, QA-001                | Core 9                            |
+|     3 | SUB-001     | DONE        | Implement Subject domain vertical slice                           | DB-001, QA-001                | Core 10                           |
+|     4 | CLS-001     | DONE        | Complete Class, Section and Enrollment persistence                | SUB-001                       | Core 9, Backend 10                |
+|     5 | ATT-001     | DONE        | Complete attendance vertical slice                                | CLS-001                       | Core 12, Mobile 5                 |
+|     6 | POL-001     | DONE        | Implement academic policy and grading configuration               | SUB-001, QA-001               | Core 15                           |
+|     7 | EXM-001     | DONE        | Complete examination persistence and workflow                     | CLS-001, POL-001              | Core 13, Mobile 6                 |
+|     8 | RES-001     | DONE        | Complete result processing and publication workflow               | EXM-001                       | Core 14, Mobile 6                 |
+|     9 | TTB-001     | DONE        | Complete timetable scheduling and conflict validation             | CLS-001, SUB-001              | Core 16, Mobile 5                 |
+|    10 | FIN-001     | DONE        | Complete finance schema and transactional core                    | DB-001, QA-001                | Core 17, Mobile 7                 |
+|    11 | PAY-001     | DONE        | Complete Monime payment intent, webhook and reconciliation flow   | FIN-001                       | Core 18, Mobile 7                 |
+|    12 | COM-001     | DONE        | Complete notification event and delivery architecture             | DB-001, QA-001                | Core 19, Mobile 8                 |
+|    13 | HR-001      | DONE        | Complete HR, leave and payroll vertical slice                     | FIN-001, QA-001               | Core 20, Mobile 11                |
+|    14 | LIB-001     | DONE        | Add library models and operational APIs                           | DB-001, QA-001                | Core 21, Mobile 10                |
+|    15 | AST-001     | DONE        | Add asset and inventory models and CRUD workflows                 | DB-001, QA-001                | Core 22, Mobile 10                |
+|    16 | TRN-001     | DONE        | Add transport models and operational workflows                    | DB-001, QA-001                | Core 23, Mobile 12                |
+|    17 | BRD-001     | DONE        | Add boarding models and lifecycle workflows                       | DB-001, QA-001                | Core 24                           |
+|    18 | LMS-001     | DONE        | Implement classroom and membership foundation                     | CLS-001, TTB-001              | Core 51.1                         |
+|    19 | LMS-002     | DONE        | Implement classroom stream and announcements                      | LMS-001, COM-001              | Core 51.2                         |
+|    20 | LMS-003     | DONE        | Implement classwork and assignment lifecycle                      | LMS-001, SUB-001              | Core 51.3-51.4                    |
+|    21 | LMS-004     | DONE        | Implement digital materials repository                            | LMS-001                       | Core 51.5                         |
+|    22 | LMS-005     | DONE        | Implement student submissions and version history                 | LMS-003, LMS-004              | Core 51.6                         |
+|    23 | LMS-006     | DONE        | Implement assessment and quiz engine                              | LMS-003, POL-001              | Core 51.7-51.8                    |
+|    24 | LMS-007     | DONE        | Implement gradebook, rubrics and feedback                         | LMS-005, LMS-006, RES-001     | Core 51.9-51.11                   |
+|    25 | LMS-008     | DONE        | Integrate calendar and classroom notifications                    | LMS-003, COM-001, TTB-001     | Core 51.12-51.13                  |
+|    26 | LMS-009     | DONE        | Connect teacher, student and parent dashboards to real LMS data   | LMS-007, LMS-008              | Core 51.14-51.16                  |
+|    27 | LMS-010     | DONE        | Implement classroom communication and live-learning orchestration | LMS-002, LMS-008              | Core 51.17-51.18                  |
+|    28 | ANA-001     | DONE        | Replace demo analytics with persisted, calculated metrics         | ATT-001, RES-001, FIN-001     | Core 26, 35, 51.19                |
+|    29 | SRCH-001    | DONE        | Implement permission-aware global classroom search                | LMS-001 through LMS-010       | Core 51.22                        |
+|    30 | AI-001      | BLOCKED     | Build grounded AI provider and evidence pipeline                  | ANA-001, SEC-001              | Core 27, 36-38, 51.20             |
+|    31 | AI-002      | BLOCKED     | Implement academic integrity evidence workflow                    | LMS-005, LMS-006, AI-001      | Core 51.21                        |
+|    32 | PRD-001     | BLOCKED     | Implement predictive analytics lifecycle                          | ANA-001, AI-001               | Core 39                           |
+|    33 | INT-001     | BLOCKED     | Complete external integration execution framework                 | PAY-001, COM-001              | Core 28, 40                       |
+|    34 | BIO-001     | BLOCKED     | Complete biometric device and verification persistence            | ATT-001, INT-001              | Core 29, 41                       |
+|    35 | IOT-001     | BLOCKED     | Complete IoT device, telemetry, alert and command persistence     | INT-001, SEC-001              | Core 30, 42                       |
+|    36 | SaaS-001    | BLOCKED     | Complete subscription entitlements and enforcement                | FIN-001, SEC-001              | Core 32, 44                       |
+|    37 | SEC-001     | IN_PROGRESS | Close security/compliance and authorization gaps                  | QA-001                        | Core 25, 34, Backend 18           |
+|    38 | MOB-001     | BLOCKED     | Implement mobile bootstrap and module manifest contracts          | SEC-001                       | Mobile 2-4                        |
+|    39 | MOB-002     | BLOCKED     | Implement mobile notification device lifecycle                    | COM-001, MOB-001              | Mobile 8                          |
+|    40 | MOB-003     | BLOCKED     | Implement offline sync cursors, conflicts and idempotency         | MOB-001                       | Mobile 15                         |
+|    41 | MOB-004     | BLOCKED     | Connect mobile classroom to LMS APIs                              | LMS-010, MOB-003              | Core 51.23, Mobile 9              |
+|    42 | ADM-001     | BLOCKED     | Complete platform and classroom administration controls           | SaaS-001, LMS-010, SEC-001    | Core 33, 45, 51.24                |
+|    43 | AUD-001     | BLOCKED     | Complete classroom security, audit and retention controls         | ADM-001, LMS-010              | Core 51.25                        |
+|    44 | PERF-001    | BLOCKED     | Establish performance baselines and optimize measured bottlenecks | Core vertical slices complete | Backend 19                        |
+|    45 | OPS-001     | BLOCKED     | Verify backup, restore, import/export and disaster recovery       | DB-001, QA-001                | Backend 11, 23                    |
+|    46 | REL-001     | BLOCKED     | Complete Vercel/PostgreSQL production release gate                | All critical tasks            | Backend 16, 22, 24, 25; Mobile 15 |
 
 ## Current task specification
 
@@ -184,14 +184,14 @@ Agents add one row when claiming, blocking, submitting for review, or completing
 
 ## Progress summary
 
-| Measure                 | Count | Percentage |
-| ----------------------- | ----: | ---------: |
-| Total atomic tasks      |    48 |       100% |
-| Done                    |    25 |        52% |
-| In review               |     0 |         0% |
-| In progress             |     1 |         2% |
-| Ready                   |     1 |         2% |
-| Blocked by dependencies |    21 |        44% |
+| Measure            | Count | Percentage |
+| ------------------ | ----: | ---------: |
+| Total atomic tasks |    48 |       100% |
+| Done               |    31 |      64.6% |
+| In review          |     0 |         0% |
+| In progress        |     1 |       2.1% |
+| Ready              |     0 |         0% |
+| Blocked            |    16 |      33.3% |
 
 Update this summary whenever a task status changes.
 
@@ -254,3 +254,15 @@ Update this summary whenever a task status changes.
 | 2026-09-07 | TTB-001 | Codex | DONE | Phase 15: recheck current daily, weekly and consecutive teacher workload limits atomically before publishing or locking. |
 
 | 2026-09-07 | TTB-001 | Codex | BLOCKED | Live verification readiness audit completed: all 40 saved lesson spans and nine subject totals pass. End-to-end verification awaits the main-school choice, real teachers/assignments/availability and rooms; all 40 draft lessons are unassigned. Evidence: docs/audit/timetable-live-readiness-2026-09-07.md. No database changes made. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | QA-001 prerequisite is DONE. Beginning security completion with removal of fabricated dashboard metrics and evidence actions, replacing them with authenticated account-session listing and revocation. Remaining school-wide controls require further implementation and verification. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 1: replaced security-admin fabricated scores, alerts, compliance claims and fake evidence export with authenticated own-account session listing and real revocation through existing auth endpoints. Loading, retry, failure, current-device guidance and back navigation included. Three frontend behavior tests, focused lint and frontend production build pass. SEC-001 remains IN_PROGRESS; school-wide security controls and acceptance audit remain outstanding. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 2: align authenticated request eligibility with login/refresh by rejecting inactive, deleted and temporarily locked accounts even when a signed access token and unexpired session exist. Add middleware regression coverage with isolated persistence fixtures. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 2 completed: protected requests now reject non-ACTIVE, deleted and temporarily locked accounts despite existing tokens/sessions. Nine middleware regressions pass; full backend suite 285 passed/1 intentional live-database skip, backend build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS for remaining security controls and acceptance audit. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 3: make single-device and all-device sign-out transactional across refresh tokens, sessions and audit records; verify ownership checks and rollback behavior with isolated persistence tests. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 3 completed: single/all-device sign-out atomically revokes refresh tokens and sessions with audit recording through one transaction client. Nine service regressions cover ownership and injected write failures. Full backend suite 294 passed/1 intentional live-database skip; build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS. |
