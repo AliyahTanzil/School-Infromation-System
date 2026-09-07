@@ -7,6 +7,7 @@ import * as controller from '../controllers/timetableController.js';
 import {
   createTimetableSchema,
   entrySchema,
+  entryUpdateSchema,
   statusSchema,
   substitutionSchema,
   timetableSettingsSchema,
@@ -102,9 +103,11 @@ router.get(
 );
 router.get('/', controller.list);
 router.post('/', validate(createTimetableSchema), controller.create);
+router.get('/:id/readiness', validate(teachingAssignmentIdSchema), controller.readiness);
 router.post('/:id/generate-slots', controller.generateSlots);
 router.post('/:id/generate-schedule', controller.generateSchedule);
 router.post('/:id/entries', validate(entrySchema), controller.addEntry);
+router.patch('/:id/entries/:entryId', validate(entryUpdateSchema), controller.updateEntry);
 router.patch('/:id/status', validate(statusSchema), controller.changeStatus);
 router.post('/:id/substitutions', validate(substitutionSchema), controller.createSubstitution);
 export default router;

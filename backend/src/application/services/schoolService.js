@@ -20,6 +20,8 @@ const schoolData = ({ name, slug, email, phone, website }) => ({
   ...(website !== undefined ? { website } : {}),
 });
 const ensure = async (id, tenantId, tx) => {
+  const mainSchoolId = process.env.SINGLE_SCHOOL_ID?.trim();
+  if (mainSchoolId && id !== mainSchoolId) throw new NotFoundError('Main school not found');
   const school = await repo.find(id, tenantId, tx);
   if (!school) throw new NotFoundError('School not found');
   return school;
@@ -49,29 +51,41 @@ const resolveTenantId = async (requestedTenantId, tx = prisma) => {
   return created.id;
 };
 export async function list(input) {
-  const result = await repo.list(input);
+  const result = await repo.list({
+    ...input,
+    id: process.env.SINGLE_SCHOOL_ID?.trim() || undefined,
+  });
+  if (!process.env.SINGLE_SCHOOL_ID?.trim() && result.total > 1)
+    throw new ConflictError(
+      'Existing school records need a main school designated before setup can continue.'
+    );
   return { ...result, items: result.items.map(dto) };
 }
 export async function get(id, tenantId) {
   return dto(await ensure(id, tenantId));
 }
 export async function create(input) {
-  return prisma.$transaction(async (tx) => {
-    const tenantId = await resolveTenantId(input.tenantId, tx);
-    const data = {
-      ...schoolData(input),
-      tenantId,
-      code: input.slug || generateRecordCode('SCH', tenantId, [input.name]).toLowerCase(),
-    };
-    const existing = await tx.school.findFirst({
-      where: {
+  return prisma.$transaction(
+    async (tx) => {
+      if (await tx.school.count())
+        throw new ConflictError('The main school already exists. Add a branch instead.');
+      const tenantId = await resolveTenantId(input.tenantId, tx);
+      const data = {
+        ...schoolData(input),
         tenantId,
-        OR: [{ code: data.code }, { name: { equals: input.name, mode: 'insensitive' } }],
-      },
-    });
-    if (existing) throw new ConflictError('School name or slug already exists');
-    return dto(await repo.create(data, tx));
-  });
+        code: input.slug || generateRecordCode('SCH', tenantId, [input.name]).toLowerCase(),
+      };
+      const existing = await tx.school.findFirst({
+        where: {
+          tenantId,
+          OR: [{ code: data.code }, { name: { equals: input.name, mode: 'insensitive' } }],
+        },
+      });
+      if (existing) throw new ConflictError('School name or slug already exists');
+      return dto(await repo.create(data, tx));
+    },
+    { isolationLevel: 'Serializable' }
+  );
 }
 export async function update(id, tenantId, input) {
   await ensure(id, tenantId);
@@ -137,3 +151,27 @@ export default {
   assignAdmin,
   revokeAdmin,
 };
+
+export async function listBranches(schoolId, tenantId) {
+  await ensure(schoolId, tenantId);
+  return prisma.campus.findMany({ where: { schoolId }, orderBy: { name: 'asc' } });
+}
+export async function createBranch(schoolId, tenantId, input) {
+  await ensure(schoolId, tenantId);
+  return prisma.campus.create({
+    data: {
+      schoolId,
+      name: input.name,
+      code: input.code || generateRecordCode('BRN', schoolId, [input.name]),
+    },
+  });
+}
+export async function updateBranch(schoolId, tenantId, id, input) {
+  await ensure(schoolId, tenantId);
+  const result = await prisma.campus.updateMany({
+    where: { id, schoolId },
+    data: { name: input.name },
+  });
+  if (!result.count) throw new NotFoundError('Branch not found');
+  return prisma.campus.findFirst({ where: { id, schoolId } });
+}

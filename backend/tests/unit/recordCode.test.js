@@ -42,7 +42,11 @@ test('student creation generates admission numbers and updates preserve identity
 });
 test('school, subject and digital classroom create scoped codes when omitted', async () => {
   db.$transaction = async (fn) => fn(db);
-  db.school = { findFirst: async () => null, create: async ({ data }) => data };
+  db.school = {
+    count: async () => 0,
+    findFirst: async () => null,
+    create: async ({ data }) => data,
+  };
   const school = await schools.create({ tenantId: 'tenant', name: 'Oak Academy' });
   assert.match(school.code, /^sch-oakaca-/);
   assert.equal(school.slug, school.code);
@@ -59,27 +63,10 @@ test('school, subject and digital classroom create scoped codes when omitted', a
   assert.match(classroom.code, /^DCL-BIOLOG-/);
 });
 const { default: schoolContext } = await import('../../src/middleware/auth/singleSchoolContext.js');
-test('school selection validates identity and never allows a tenant user to cross schools', async () => {
-  const id = '12345678-1234-1234-1234-123456789012';
-  db.school = {
-    findFirst: async ({ where }) => {
-      assert.equal(where.tenantId, 'tenant');
-      return null;
-    },
-  };
-  await assert.rejects(
-    schoolContext({ user: { tenantId: 'tenant' }, get: () => id }, {}, () => assert.fail()),
-    /not available/
-  );
-  db.school.findFirst = async ({ where }) => {
-    assert.deepEqual(where, { id });
-    return { id, tenantId: 'other' };
-  };
-  const req = { user: { id: 'owner', platformRole: 'OWNER' }, get: () => id };
-  let continued = false;
-  await schoolContext(req, {}, () => {
-    continued = true;
-  });
-  assert.equal(continued, true);
-  assert.equal(req.schoolContext.tenantId, 'other');
+test('request headers cannot switch the main school', async () => {
+  const main = { id: 'main', tenantId: 'tenant' };
+  db.school = { findMany: async () => [main] };
+  const req = { user: { id: 'owner', platformRole: 'OWNER' }, get: () => 'another-school' };
+  await schoolContext(req, {}, () => {});
+  assert.equal(req.schoolContext.schoolId, 'main');
 });

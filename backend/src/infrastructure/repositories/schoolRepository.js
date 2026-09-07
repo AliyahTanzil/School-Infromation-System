@@ -1,11 +1,12 @@
 import prisma from '../orm/prismaClient.js';
 
 const db = (tx) => tx ?? prisma;
-export const list = ({ tenantId, search, page = 1, pageSize = 25 } = {}, tx) => {
+export const list = ({ tenantId, id, search, page = 1, pageSize = 25 } = {}, tx) => {
   const take = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
   const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
   const where = {
     tenantId,
+    ...(id ? { id } : {}),
     ...(search
       ? {
           OR: [

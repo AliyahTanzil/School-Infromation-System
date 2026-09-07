@@ -1,4 +1,8 @@
-import service from '../../../application/services/schoolService.js';
+import service, {
+  listBranches,
+  createBranch,
+  updateBranch,
+} from '../../../application/services/schoolService.js';
 import AuthorizationError from '../../../shared/errors/AuthorizationError.js';
 const tenant = (req) => {
   if (req.user?.tenantId) return req.user.tenantId;
@@ -7,6 +11,11 @@ const tenant = (req) => {
 };
 const send = (res, data, status = 200) => res.status(status).json({ success: true, data });
 export default {
+  listBranches: async (req, res) => send(res, await listBranches(req.params.id, tenant(req))),
+  createBranch: async (req, res) =>
+    send(res, await createBranch(req.params.id, tenant(req), req.body), 201),
+  updateBranch: async (req, res) =>
+    send(res, await updateBranch(req.params.id, tenant(req), req.params.branchId, req.body)),
   list: async (req, res) =>
     send(
       res,

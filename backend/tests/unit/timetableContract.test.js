@@ -27,7 +27,12 @@ test('timetable routes require authenticated school context on both active mount
   assert.match(app, /app\.use\('\/api\/v1\/timetables', timetableRouter\)/);
   assert.match(routes, /router\.post\('\/:id\/generate-slots', controller\.generateSlots\)/);
   assert.match(routes, /router\.post\('\/:id\/generate-schedule', controller\.generateSchedule\)/);
+  assert.match(
+    routes,
+    /router\.get\('\/:id\/readiness', validate\(teachingAssignmentIdSchema\), controller\.readiness\)/
+  );
   const service = await read('../../src/application/services/timetableService.js');
+  assert.match(service, /export async function getTimetableReadiness/);
   assert.match(service, /export async function generateCompleteSchedule/);
   assert.match(service, /Automatic generation requires an empty timetable draft/);
   assert.match(service, /Timetable is not feasible/);

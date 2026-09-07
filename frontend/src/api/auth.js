@@ -18,9 +18,6 @@ export const setAccessToken = (token) => {
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-  const selectedSchool = sessionStorage.getItem('sais.selectedSchoolId');
-  if (selectedSchool && !config.url?.includes('/auth/'))
-    config.headers['x-school-id'] = selectedSchool;
   return config;
 });
 

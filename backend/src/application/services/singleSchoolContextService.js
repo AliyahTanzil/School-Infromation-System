@@ -16,7 +16,7 @@ export async function resolveSingleSchool({ refresh = false, tenantId } = {}) {
   }
 
   const configuredId = process.env.SINGLE_SCHOOL_ID?.trim();
-  const where = tenantId ? { tenantId } : configuredId ? { id: configuredId } : {};
+  const where = configuredId ? { id: configuredId } : {};
   const schools = await prisma.school.findMany({
     where,
     select: {
@@ -36,7 +36,7 @@ export async function resolveSingleSchool({ refresh = false, tenantId } = {}) {
       settings: true,
       isConfigured: true,
     },
-    take: tenantId || configuredId ? 1 : 2,
+    take: configuredId ? 1 : 2,
     orderBy: { createdAt: 'asc' },
   });
 
@@ -48,8 +48,8 @@ export async function resolveSingleSchool({ refresh = false, tenantId } = {}) {
       configuredId ? { configuredSchoolId: configuredId } : undefined
     );
   }
-  if (!tenantId && !configuredId && schools.length !== 1) {
-    throw configurationError('Select a school from the school selector to continue', {
+  if (!configuredId && schools.length !== 1) {
+    throw configurationError('The main school needs to be configured by the application owner', {
       discoveredSchools: schools.length,
     });
   }

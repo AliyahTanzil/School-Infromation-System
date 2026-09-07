@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 const entry = z.object({
-  roomId: z.string().uuid().optional(),
+  subjectId: z.string().uuid().optional(),
+  roomId: z.string().uuid().nullable().optional(),
   timeSlotId: z.string().uuid(),
   classId: z.string().uuid().optional(),
-  teacherId: z.string().uuid().optional(),
+  teacherId: z.string().uuid().nullable().optional(),
   classroomId: z.string().uuid().optional(),
   subjectCode: z.string().min(1).max(60),
   kind: z.enum(['LESSON', 'BREAK', 'FREE', 'DOUBLE', 'PRACTICAL', 'LABORATORY']).default('LESSON'),
@@ -48,6 +49,13 @@ export const createTimetableSchema = z.object({
 });
 
 const idParams = z.object({ id: z.string().uuid() });
+export const entryUpdateSchema = z.object({
+  params: z.object({ id: z.string().uuid(), entryId: z.string().uuid() }),
+  body: entry
+    .partial()
+    .strict()
+    .refine((body) => Object.keys(body).length > 0, 'Provide at least one field'),
+});
 export const entrySchema = z.object({ params: idParams, body: entry });
 export const statusSchema = z.object({
   params: idParams,

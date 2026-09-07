@@ -238,3 +238,22 @@ Next implementation boundary: controlled manual entry creation/editing and stron
 - Verification: 25 focused tests pass, covering each limit across classes, double-period accounting, exact-limit acceptance, interruption boundaries, default settings and no partial writes. Backend build and targeted ESLint pass. Tests use database doubles; no live database changes were made.
 
 Next implementation boundary: controlled manual entry creation/editing.
+
+## Phase 14 manual lesson editing
+
+- POST /api/timetables/:id/entries and PATCH /api/timetables/:id/entries/:entryId share a serializable save workflow, also available under /api/v1. Existing administrator authorization and trusted school context apply.
+- PATCH accepts partial editable fields, rejects empty/unknown fields, and scopes entry ownership to the selected timetable and school. Omitted fields stay unchanged; nullable teacherId and roomId allow clearing assignments. subjectId resolves the authoritative subjectCode. Identity edits detach a stale teachingAssignmentId.
+- Draft/review lessons validate school-owned classes, subjects, teachers and rooms, teacher availability, room capacity/type, valid adjacent teaching slots, full-span class/teacher/room overlap, and daily/weekly/consecutive teacher limits. Double lessons require two periods. Published/locked records remain read-only. Failed validation writes no lesson/audit; serialization and uniqueness races return a refresh/retry message.
+- Successful writes rebuild conflict records and audit ENTRY_ADDED or ENTRY_UPDATED. The UI refreshes the saved timetable, uses named selections, and supports unassigned teachers/rooms while staffing is incomplete. Timetable and staffing requests now use shared authentication and token refresh.
+- Verification: 27 focused backend tests, 24 frontend tests, both production builds and targeted lint passed. Backend tests use database doubles; no live entries were written. Main-school configuration still needs resolution before live verification.
+
+Next: recheck workload limits during publication/locking, then verify generation and manual editing against the configured school's real data.
+
+## Phase 15 publication workload gate
+
+- The existing POST /api/timetables/:id/status endpoint (and /api/v1 equivalent) reloads school workload settings in its serializable transaction before transitions to PUBLISHED or LOCKED.
+- Teacher daily, weekly and consecutive-period totals aggregate across classes, count every period of multi-period lessons, and use the same defaults and validation helper as automatic generation/manual editing. Non-teaching BREAK/FREE entries and lessons without a teacher are excluded.
+- Over-limit schedules return a validation error identifying the affected subject, weekday and limit. Status, version snapshot and audit remain unchanged. Exact limits are permitted, and archived transitions are not blocked by workload checks.
+- Verification: 32 focused backend tests, backend build and targeted lint pass. Tests use database doubles; no timetable was published or locked in the live database.
+
+Next: live generation/editing/publication verification once the main school is designated. Existing-school reconciliation remains a prerequisite; no school was selected implicitly.

@@ -6,6 +6,7 @@ import validate from '../../../middleware/validation/validate.js';
 import controller from '../controllers/schoolController.js';
 import {
   schoolSchema,
+  branchSchema,
   updateSchoolSchema,
   childSchema,
   adminSchema,
@@ -13,6 +14,19 @@ import {
 const router = Router();
 router.use(authenticate);
 router.get('/', requirePermission('schools.read'), controller.list);
+router.get('/:id/branches', requirePermission('schools.read'), controller.listBranches);
+router.post(
+  '/:id/branches',
+  requirePermission('schools.manage_branches'),
+  validate(branchSchema),
+  controller.createBranch
+);
+router.patch(
+  '/:id/branches/:branchId',
+  requirePermission('schools.manage_branches'),
+  validate(branchSchema),
+  controller.updateBranch
+);
 router.post('/', requirePermission('schools.create'), validate(schoolSchema), controller.create);
 router.get('/:id', requireSchoolContext, requirePermission('schools.read'), controller.get);
 router.put(

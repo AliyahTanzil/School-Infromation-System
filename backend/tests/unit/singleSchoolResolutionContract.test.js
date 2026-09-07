@@ -12,8 +12,8 @@ test('single-school middleware resolves tenant-bound users before global configu
     'utf8'
   );
 
-  assert.match(service, /tenantId \? \{ tenantId \}/);
-  assert.match(service, /!tenantId && !configuredId/);
+  assert.match(service, /configuredId \? \{ id: configuredId \}/);
+  assert.match(service, /!configuredId && schools.length/);
   assert.match(middleware, /tenantId: req\.user\.tenantId \|\| undefined/);
 });
 

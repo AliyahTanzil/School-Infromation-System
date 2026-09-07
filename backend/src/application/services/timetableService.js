@@ -5,6 +5,7 @@ import {
   evaluateTeacherAvailability,
   scoreTimetableCandidate,
   teacherWorkloadIssue,
+  getEntryTeachingSlots,
   generateTimetableSlots,
   validateTimeRange,
   validateTimetableSettings,
@@ -67,6 +68,117 @@ export async function getTimetableSettings(scope) {
     where: { tenantId_schoolId: scopeWhere(scope) },
   });
   return row || { ...defaultSettings, ...scope };
+}
+
+export async function getTimetableReadiness({ tenantId, schoolId, timetableId }) {
+  const scope = scopeWhere({ tenantId, schoolId });
+  const timetable = await prisma.timetable.findFirst({ where: { id: timetableId, ...scope } });
+  if (!timetable) throw new NotFoundError('Timetable not found');
+
+  const [slots, entries, requirements, assignments, rooms, availability, savedConflicts, settings] =
+    await Promise.all([
+      prisma.timetableSlot.findMany({ where: { timetableId, ...scope } }),
+      prisma.scheduleEntry.findMany({ where: { timetableId, ...scope } }),
+      prisma.subjectPeriodRequirement.findMany({
+        where: { ...scope, termId: timetable.academicPeriodId },
+        include: { subject: true, class: true },
+      }),
+      prisma.teacherTeachingAssignment.findMany({
+        where: { ...scope, termId: timetable.academicPeriodId, status: 'ACTIVE' },
+      }),
+      prisma.timetableRoom.findMany({ where: { ...scope, isActive: true } }),
+      prisma.teacherAvailability.findMany({ where: { teacher: { ...scope, deletedAt: null } } }),
+      prisma.schedulingConflict.findMany({ where: { timetableId, ...scope, resolvedAt: null } }),
+      prisma.timetableSettings.findUnique({ where: { tenantId_schoolId: scope } }),
+    ]);
+  const issues = [];
+  const teachingSlots = slots.filter((slot) => !slot.isBreak);
+  const addIssue = (code, message) => issues.push({ code, message });
+
+  if (!teachingSlots.length) addIssue('NO_TEACHING_SLOTS', 'No teaching slots are configured');
+  if (!requirements.length)
+    addIssue(
+      'NO_SUBJECT_REQUIREMENTS',
+      'No subject period requirements exist for this timetable term'
+    );
+  if (!rooms.length) addIssue('NO_ACTIVE_ROOMS', 'No active timetable rooms are configured');
+
+  for (const requirement of requirements) {
+    if (
+      !assignments.some(
+        (assignment) =>
+          assignment.classId === requirement.classId &&
+          assignment.subjectId === requirement.subjectId
+      )
+    ) {
+      addIssue(
+        'MISSING_TEACHING_ASSIGNMENT',
+        `${requirement.class?.name ?? requirement.classId}: ${requirement.subject?.name ?? requirement.subjectId} has no active teacher assignment`
+      );
+    }
+    const scheduledPeriods = entries
+      .filter(
+        (entry) =>
+          entry.classId === requirement.classId && entry.subjectId === requirement.subjectId
+      )
+      .reduce((total, entry) => total + entry.duration, 0);
+    if (entries.length && scheduledPeriods !== requirement.periodsPerWeek) {
+      addIssue(
+        'PERIOD_REQUIREMENT_MISMATCH',
+        `${requirement.class?.name ?? requirement.classId}: ${requirement.subject?.name ?? requirement.subjectId} requires ${requirement.periodsPerWeek} periods but has ${scheduledPeriods}`
+      );
+    }
+  }
+
+  for (const entry of entries) {
+    if (['BREAK', 'FREE'].includes(entry.kind)) continue;
+    if (!entry.teacherId) addIssue('ENTRY_WITHOUT_TEACHER', `${entry.subjectCode} has no teacher`);
+    if (!(entry.roomId ?? entry.classroomId))
+      addIssue('ENTRY_WITHOUT_ROOM', `${entry.subjectCode} has no room`);
+  }
+
+  const calculatedConflicts = detectTimetableConflicts(entries, slots, {
+    teacherAvailability: availability,
+  });
+  for (const conflict of [...savedConflicts, ...calculatedConflicts]) {
+    if (conflict.severity === 'HARD')
+      addIssue('HARD_CONFLICT', conflict.message ?? 'An unresolved hard conflict exists');
+  }
+
+  const workloadSettings = { ...defaultSettings, ...settings };
+  const teacherSlots = new Map();
+  for (const entry of entries) {
+    if (!entry.teacherId || ['BREAK', 'FREE'].includes(entry.kind)) continue;
+    try {
+      const entrySlots = getEntryTeachingSlots(entry, slots);
+      const issue = teacherWorkloadIssue({
+        scheduledSlots: teacherSlots.get(entry.teacherId) ?? [],
+        candidateSlots: entrySlots,
+        settings: workloadSettings,
+      });
+      if (issue) addIssue('TEACHER_WORKLOAD_LIMIT', `${entry.subjectCode} exceeds the ${issue}`);
+      teacherSlots.set(entry.teacherId, [
+        ...(teacherSlots.get(entry.teacherId) ?? []),
+        ...entrySlots,
+      ]);
+    } catch (error) {
+      addIssue('INVALID_LESSON_SPAN', error.message);
+    }
+  }
+
+  return {
+    ready: issues.length === 0,
+    timetableId,
+    status: timetable.status,
+    counts: {
+      teachingSlots: teachingSlots.length,
+      entries: entries.length,
+      requirements: requirements.length,
+      activeAssignments: assignments.length,
+      activeRooms: rooms.length,
+    },
+    issues,
+  };
 }
 
 export async function upsertTimetableSettings({ tenantId, schoolId, ...input }) {
@@ -431,7 +543,16 @@ export async function createTimetable({
     return hydrate(row, tx);
   });
 }
-export async function addEntry({ tenantId, schoolId, timetableId, actorId, data }) {
+const manualEntryError = (error) => {
+  if (error.code === 'P2034' || error.code === 'P2002')
+    throw new ValidationError(
+      'Timetable changed concurrently; refresh and retry the lesson change'
+    );
+  throw error;
+};
+export const addEntry = (input) => saveManualEntry(input).catch(manualEntryError);
+export const updateEntry = (input) => saveManualEntry(input).catch(manualEntryError);
+async function saveManualEntry({ tenantId, schoolId, timetableId, actorId, data, entryId }) {
   return prisma.$transaction(
     async (tx) => {
       const row = await tx.timetable.findFirst({
@@ -441,13 +562,104 @@ export async function addEntry({ tenantId, schoolId, timetableId, actorId, data 
       if (!['DRAFT', 'REVIEW'].includes(row.status))
         throw new ValidationError('Timetable is not editable');
       const slots = await tx.timetableSlot.findMany({ where: { timetableId, tenantId, schoolId } });
+      const existing = entryId
+        ? await tx.scheduleEntry.findFirst({
+            where: { id: entryId, timetableId, tenantId, schoolId },
+          })
+        : null;
+      if (entryId && !existing)
+        throw new NotFoundError('Schedule entry not found in this timetable');
+      data = { ...existing, ...data };
       const slot = slots.find((item) => item.id === data.timeSlotId);
       if (!slot) throw new ValidationError('Time slot does not belong to this timetable');
       await validateEntryTeacherAvailability(tx, { tenantId, schoolId }, data, slots);
       await validateEntryRoom(tx, { tenantId, schoolId }, data, slots, timetableId);
-      const created = await tx.scheduleEntry.create({
-        data: { ...data, tenantId, schoolId, timetableId },
-      });
+      if (
+        data.classId &&
+        !(await tx.class.findFirst({
+          where: { id: data.classId, tenantId, schoolId, deletedAt: null },
+        }))
+      )
+        throw new ValidationError('Class does not belong to this school');
+      if (data.subjectId) {
+        const subject = await tx.subject.findFirst({
+          where: { id: data.subjectId, tenantId, schoolId, deletedAt: null },
+        });
+        if (!subject) throw new ValidationError('Subject does not belong to this school');
+        data.subjectCode = subject.code;
+      }
+      if (
+        data.classroomId &&
+        !(await tx.classroom.findFirst({ where: { id: data.classroomId, tenantId, schoolId } }))
+      )
+        throw new ValidationError('Classroom does not belong to this school');
+      if (data.kind === 'DOUBLE' && data.duration !== 2)
+        throw new ValidationError('Double lessons must occupy two periods');
+      let span;
+      try {
+        span = getEntryTeachingSlots(data, slots);
+      } catch (error) {
+        throw new ValidationError(error.message);
+      }
+      const others = (
+        await tx.scheduleEntry.findMany({ where: { timetableId, tenantId, schoolId } })
+      ).filter((item) => item.id !== entryId);
+      const teacherSlots = [];
+      for (const other of others) {
+        if (['BREAK', 'FREE'].includes(other.kind)) continue;
+        const otherSpan = getEntryTeachingSlots(other, slots);
+        const overlap = span.some((a) =>
+          otherSpan.some(
+            (b) => a.weekday === b.weekday && a.startTime < b.endTime && b.startTime < a.endTime
+          )
+        );
+        if (
+          overlap &&
+          ((data.classId && data.classId === other.classId) ||
+            (data.teacherId && data.teacherId === other.teacherId) ||
+            ((data.roomId || data.classroomId) &&
+              (data.roomId || data.classroomId) === (other.roomId || other.classroomId)))
+        )
+          throw new ValidationError('Lesson overlaps an existing class, teacher or room booking');
+        if (data.teacherId && data.teacherId === other.teacherId) teacherSlots.push(...otherSpan);
+      }
+      if (data.teacherId) {
+        const settings = await tx.timetableSettings.findUnique({
+          where: { tenantId_schoolId: { tenantId, schoolId } },
+        });
+        const issue = teacherWorkloadIssue({
+          scheduledSlots: teacherSlots,
+          candidateSlots: span,
+          settings: { ...defaultSettings, ...settings },
+        });
+        if (issue) throw new ValidationError('Lesson exceeds the ' + issue);
+      }
+      const fields = [
+        'timeSlotId',
+        'classId',
+        'subjectId',
+        'subjectCode',
+        'teacherId',
+        'roomId',
+        'classroomId',
+        'kind',
+        'duration',
+        'notes',
+      ];
+      const values = Object.fromEntries(
+        fields.filter((key) => data[key] !== undefined).map((key) => [key, data[key]])
+      );
+      if (
+        existing &&
+        ['classId', 'subjectId', 'teacherId'].some((key) => data[key] !== existing[key])
+      )
+        values.teachingAssignmentId = null;
+      const created = entryId
+        ? await tx.scheduleEntry.update({
+            where: { id: entryId, timetableId, tenantId, schoolId },
+            data: values,
+          })
+        : await tx.scheduleEntry.create({ data: { ...values, tenantId, schoolId, timetableId } });
       const entries = await tx.scheduleEntry.findMany({ where: { timetableId } });
       const teacherAvailability = await tx.teacherAvailability.findMany({
         where: {
@@ -468,7 +680,7 @@ export async function addEntry({ tenantId, schoolId, timetableId, actorId, data 
           schoolId,
           timetableId,
           actorId,
-          action: 'ENTRY_ADDED',
+          action: entryId ? 'ENTRY_UPDATED' : 'ENTRY_ADDED',
           metadata: { entryId: created.id, conflicts: conflicts.length },
         },
       });
@@ -669,9 +881,28 @@ export async function changeStatus({ tenantId, schoolId, timetableId, actorId, s
         tx.timetableSlot.findMany({ where: { timetableId } }),
       ]);
       if (status === 'PUBLISHED' || status === 'LOCKED') {
+        const savedSettings = await tx.timetableSettings.findUnique({
+          where: { tenantId_schoolId: { tenantId, schoolId } },
+        });
+        const settings = { ...defaultSettings, ...savedSettings };
+        const teacherSlots = new Map();
         for (const entry of entries) {
           await validateEntryTeacherAvailability(tx, { tenantId, schoolId }, entry, slots);
           await validateEntryRoom(tx, { tenantId, schoolId }, entry, slots, timetableId);
+          if (!entry.teacherId || ['BREAK', 'FREE'].includes(entry.kind)) continue;
+          let span;
+          try {
+            span = getEntryTeachingSlots(entry, slots);
+          } catch (error) {
+            throw new ValidationError(error.message);
+          }
+          const scheduledSlots = teacherSlots.get(entry.teacherId) ?? [];
+          const issue = teacherWorkloadIssue({ scheduledSlots, candidateSlots: span, settings });
+          if (issue)
+            throw new ValidationError(
+              `Cannot ${status === 'PUBLISHED' ? 'publish' : 'lock'} timetable: ${entry.subjectCode} on weekday ${span[0].weekday} exceeds the ${issue}`
+            );
+          teacherSlots.set(entry.teacherId, [...scheduledSlots, ...span]);
         }
       }
       let next;

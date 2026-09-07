@@ -33,6 +33,7 @@ function prepare() {
       return [school];
     },
     count: async (args) => {
+      if (!args) return 0;
       check(args);
       return 1;
     },
@@ -91,4 +92,31 @@ test('school list ignores client tenant overrides and rejects unscoped non-owner
   );
   assert.equal(calls[0].where.tenantId, 'tenant');
   await assert.rejects(controller.list({ user: {}, query: {} }, res), /context is required/);
+});
+
+// Branches share the main school's identity boundary without creating another School.
+test('second school creation is blocked before any records are written', async () => {
+  prepare();
+  db.school.count = async () => 1;
+  db.school.create = async () => assert.fail('Must not create another school');
+  await assert.rejects(service.create({ name: 'Second', slug: 'second' }), /Add a branch instead/);
+});
+test('branch creation generates a code and branch edits remain school scoped', async () => {
+  prepare();
+  let created;
+  db.campus = {
+    create: async ({ data }) => (created = { id: 'branch', ...data }),
+    updateMany: async ({ where, data }) => {
+      assert.deepEqual(where, { id: 'branch', schoolId: 'school' });
+      assert.deepEqual(data, { name: 'West campus' });
+      return { count: 1 };
+    },
+    findFirst: async () => created,
+  };
+  const branch = await service.createBranch('school', 'tenant', { name: 'East campus' });
+  assert.equal(branch.schoolId, 'school');
+  assert.match(branch.code, /^BRN-/);
+  await service.updateBranch('school', 'tenant', 'branch', { name: 'West campus' });
+  db.school.findFirst = async () => null;
+  await assert.rejects(service.createBranch('other', 'tenant', { name: 'Forbidden' }), /not found/);
 });

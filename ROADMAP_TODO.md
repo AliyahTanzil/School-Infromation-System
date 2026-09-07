@@ -17,7 +17,7 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
-Latest continuation: TTB-001 Phase 13 — DONE, Codex, 2026-09-06. Automatic generation enforces saved teacher daily, weekly and consecutive workload limits across classes in the draft. Verification: 25 focused tests, backend build and targeted lint passed. Next: controlled manual entry editing.
+Latest continuation: TTB-001 Phase 16 DONE, GitHub Copilot, 2026-09-07. Added authenticated, tenant/school-scoped read-only readiness verification at `GET /api/timetables/:id/readiness` and `/api/v1/timetables/:id/readiness`, dashboard reporting, tests and API documentation. Verification: 25 focused backend timetable tests, backend build and frontend build pass. Next: configure real teachers, teaching assignments, availability and rooms for the selected school, then run the report before live generation/editing/publication.
 
 - `BLOCKED`: cannot safely continue because a dependency or required decision is missing.
 - `READY`: dependencies are complete and the task can be claimed.
@@ -242,3 +242,9 @@ Update this summary whenever a task status changes.
 | 2026-08-29 | LMS-003 | Codex | CLAIMED | Reconciling assignment/classwork persistence, classroom membership authorization, lifecycle transitions, validation, active mounts, frontend workflows, documentation, and tests. |
 
 | 2026-09-06 | TTB-001 | Codex | CHECKPOINT | Phase 8 room/resource CRUD and assignment validation implemented. Timetable screen now uses readable school/term records and full generated slots. SSS Science 3A nine-subject preview prepared; configured database is empty, so actual draft persistence awaits school/term and subject details. Backend 241 passed/1 skipped, frontend 12 passed, builds and targeted lint pass. |
+
+| 2026-09-07 | TTB-001 | Codex | DONE | Phase 14: controlled manual lesson creation/editing, school-scoped entity validation, full-span collision and teacher workload checks, protected lifecycle and audited changes; named frontend selections with shared authentication. |
+
+| 2026-09-07 | TTB-001 | Codex | DONE | Phase 15: recheck current daily, weekly and consecutive teacher workload limits atomically before publishing or locking. |
+
+| 2026-09-07 | TTB-001 | Codex | BLOCKED | Live verification readiness audit completed: all 40 saved lesson spans and nine subject totals pass. End-to-end verification awaits the main-school choice, real teachers/assignments/availability and rooms; all 40 draft lessons are unassigned. Evidence: docs/audit/timetable-live-readiness-2026-09-07.md. No database changes made. |

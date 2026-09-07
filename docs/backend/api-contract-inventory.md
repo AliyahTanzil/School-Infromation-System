@@ -288,6 +288,7 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - All operations require authentication, `PLATFORM_ADMIN` or `SCHOOL_ADMIN`, and a validated `x-school-id` context.
 - `GET /` lists hydrated timetables, slots, entries, conflicts, and substitutions.
 - `POST /` creates a draft with validated time slots and an initial immutable version.
+- `GET /:id/readiness` performs no writes and returns a release-readiness report for the scoped timetable, including missing requirements, assignments, rooms, entry ownership, hard conflicts, and teacher-workload blockers.
 - `POST /:id/entries` adds an entry and recalculates scheduling conflicts.
 - `PATCH /:id/status` advances the lifecycle; unresolved hard conflicts block publication.
 - `POST /:id/substitutions` records a bounded teacher substitution for a timetable entry.

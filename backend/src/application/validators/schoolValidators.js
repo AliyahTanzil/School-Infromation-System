@@ -38,3 +38,8 @@ export const adminSchema = z.object({
   params: z.object({ id: z.string().uuid() }),
 });
 export default { schoolSchema, updateSchoolSchema, childSchema, childUpdateSchema, adminSchema };
+
+export const branchSchema = z.object({
+  body: z.object({ name: text(160), code: text(40).optional() }).strict(),
+  params: z.object({ id: z.string().uuid(), branchId: z.string().uuid().optional() }),
+});

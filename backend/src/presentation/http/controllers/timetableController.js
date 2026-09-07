@@ -120,6 +120,13 @@ export const updateSettings = async (req, res) =>
   });
 export const generatedSlots = async (req, res) =>
   res.json({ data: await service.generateSlotsFromSettings(req.schoolContext) });
+export const readiness = async (req, res) =>
+  res.json({
+    data: await service.getTimetableReadiness({
+      ...req.schoolContext,
+      timetableId: req.params.id,
+    }),
+  });
 export const generateSlots = async (req, res) =>
   res.json({
     data: await service.generateSlotsForTimetable({
@@ -166,4 +173,15 @@ export const teacherWorkload = async (req, res) =>
       req.params.teacherId,
       req.validatedQuery ?? req.query
     ),
+  });
+
+export const updateEntry = async (req, res) =>
+  res.json({
+    data: await service.updateEntry({
+      ...req.schoolContext,
+      timetableId: req.params.id,
+      entryId: req.params.entryId,
+      actorId: req.user.id,
+      data: req.body,
+    }),
   });

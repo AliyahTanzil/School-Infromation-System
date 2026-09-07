@@ -251,7 +251,7 @@ export default function AdminWorkspace() {
           </div>
           <div className="flex flex-wrap gap-3">
             <Link to="/school-setup" className="primary-button">
-              <Building2 size={16} /> Create school
+              <Building2 size={16} /> School and branches
             </Link>
             <button type="button" onClick={signOut} className="secondary-button">
               <LogOut size={16} /> Sign out

@@ -1,3 +1,4 @@
+import SchoolBranches from './SchoolBranches.jsx';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
@@ -48,6 +49,11 @@ export default function SchoolAdmin() {
     try {
       const result = await schoolRequest();
       setSchools(result.items ?? []);
+      if (result.items?.length === 1) {
+        const school = result.items[0];
+        setSelectedId(school.id);
+        setForm({ name: school.name ?? '', slug: school.slug ?? '', email: school.email ?? '' });
+      }
     } catch (reason) {
       setLoadFailed(true);
       setError(reason.message);
@@ -63,7 +69,7 @@ export default function SchoolAdmin() {
   function updateField(event) {
     const { name, value } = event.target;
     setForm((current) => {
-      if (name !== 'name') return { ...current, [name]: value };
+      if (name !== 'name' || selectedId) return { ...current, [name]: value };
       const slug = slugFromName(value);
       return { ...current, name: value, slug, email: slug ? `${slug}@gmail.com` : '' };
     });
@@ -128,14 +134,16 @@ export default function SchoolAdmin() {
             <p className="text-xs font-semibold uppercase tracking-[0.25em] text-indigo-300">
               SAIS / School management
             </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight">Manage schools</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-tight">School and branches</h1>
             <p className="mt-2 text-sm text-slate-400">
-              Create a school or update an existing school profile.
+              Manage your main school profile and its branches.
             </p>
           </div>
-          <button type="button" onClick={startNewSchool} className="primary-button">
-            <Plus size={17} /> Create school
-          </button>
+          {schools.length === 0 && !loading && !loadFailed && (
+            <button type="button" onClick={startNewSchool} className="primary-button">
+              <Plus size={17} /> Create school
+            </button>
+          )}
         </header>
 
         {notice && (
@@ -257,7 +265,7 @@ export default function SchoolAdmin() {
             </a>
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || loading || loadFailed || (schools.length > 0 && !selectedId)}
               className="primary-button mt-6 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? <LoaderCircle className="animate-spin" size={17} /> : <Save size={17} />}
@@ -265,6 +273,7 @@ export default function SchoolAdmin() {
             </button>
           </form>
         </section>
+        {schools.length === 1 && <SchoolBranches schoolId={schools[0].id} />}
       </div>
     </main>
   );

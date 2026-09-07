@@ -21,7 +21,7 @@ describe('School management', () => {
     };
     const responses = [{ items: [], total: 0 }, school, { items: [school], total: 1 }];
     const adapter = vi.fn(async (config) => ({
-      data: { data: responses.shift() },
+      data: { data: config.url.endsWith('/branches') ? [] : responses.shift() },
       status: 200,
       statusText: 'OK',
       headers: {},
@@ -47,12 +47,14 @@ describe('School management', () => {
     });
     fireEvent.click(screen.getAllByRole('button', { name: 'Create school' }).at(-1));
     await screen.findByText('School created successfully.');
-    await waitFor(() => expect(adapter).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(adapter).toHaveBeenCalledTimes(4));
     for (const [config] of adapter.mock.calls) {
-      expect(config.url).toBe('/schools');
+      expect(config.url).toMatch(/^\/schools/);
       expect(config.headers.get('Authorization')).toBe('Bearer test-access-token');
       expect(config.withCredentials).toBe(true);
     }
+    expect(screen.queryByRole('button', { name: 'Create school' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Add branch' })).toBeInTheDocument();
     expect(adapter.mock.calls[1][0].method).toBe('post');
     expect(JSON.parse(adapter.mock.calls[1][0].data)).toEqual({
       name: school.name,

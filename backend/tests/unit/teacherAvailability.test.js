@@ -176,6 +176,7 @@ function prepare({ rules = [], entries = [] } = {}) {
     update: async () => writes.push('status'),
   };
   db.timetableSlot = { findMany: async () => [slot, second] };
+  db.timetableSettings = { findUnique: async () => null };
   db.schedulingConflict = {
     findMany: async () => [],
     deleteMany: async () => {},

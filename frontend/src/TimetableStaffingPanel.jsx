@@ -1,13 +1,8 @@
 /* eslint-disable react/prop-types */
-import axios from 'axios';
+import api from './api/auth.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
-});
 const headers = (schoolId) => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
   'x-school-id': schoolId,
 });
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

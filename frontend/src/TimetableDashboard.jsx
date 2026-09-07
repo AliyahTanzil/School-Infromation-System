@@ -1,14 +1,12 @@
-import axios from 'axios';
+import api from './api/auth.js';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ScienceTimetableDraft from './ScienceTimetableDraft.jsx';
 import WeeklyTimetableGrid from './WeeklyTimetableGrid.jsx';
+import TimetableReadinessPanel from './TimetableReadinessPanel.jsx';
+import TimetableEntryEditor from './TimetableEntryEditor.jsx';
 import TimetableStaffingPanel from './TimetableStaffingPanel.jsx';
 
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  withCredentials: true,
-});
 const statusTone = {
   DRAFT: 'bg-slate-100 text-slate-700',
   REVIEW: 'bg-amber-100 text-amber-700',
@@ -16,7 +14,6 @@ const statusTone = {
   LOCKED: 'bg-indigo-100 text-indigo-700',
 };
 const requestHeaders = (schoolId) => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
   'x-school-id': schoolId,
 });
 
@@ -25,6 +22,7 @@ export default function TimetableDashboard() {
   const [timetables, setTimetables] = useState([]);
   const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState(null);
+  const [readiness, setReadiness] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [roomForm, setRoomForm] = useState({
     name: '',
@@ -59,6 +57,13 @@ export default function TimetableDashboard() {
   useEffect(() => {
     loadRooms().catch(() => setMessage('Unable to load timetable rooms.'));
   }, [loadRooms]);
+  useEffect(() => {
+    if (!schoolId || !selected?.id) return setReadiness(null);
+    api
+      .get(`/timetables/${selected.id}/readiness`, { headers: requestHeaders(schoolId) })
+      .then(({ data }) => setReadiness(data.data))
+      .catch(() => setReadiness(null));
+  }, [schoolId, selected?.id, selected?.version]);
   useEffect(() => {
     api
       .get('/timetables/options', { headers: requestHeaders(schoolId) })
@@ -275,7 +280,10 @@ export default function TimetableDashboard() {
             </button>
           </form>
         </section>
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-5">
+        <section
+          id="timetable-rooms"
+          className="mt-8 rounded-2xl border border-slate-200 bg-white p-5"
+        >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 className="font-semibold">Rooms and resources</h2>
@@ -369,7 +377,9 @@ export default function TimetableDashboard() {
             )}
           </div>
         </section>
-        <TimetableStaffingPanel schoolId={schoolId} options={options} onMessage={setMessage} />
+        <div id="timetable-staffing">
+          <TimetableStaffingPanel schoolId={schoolId} options={options} onMessage={setMessage} />
+        </div>
         {!timetables.some((item) => item.name.startsWith('SSS Science 3A - First Term')) && (
           <ScienceTimetableDraft />
         )}
@@ -469,11 +479,23 @@ export default function TimetableDashboard() {
                 )}
               </div>
             </div>
+            {selected && <TimetableReadinessPanel timetable={selected} report={readiness} />}
             <div className="mt-5 overflow-x-auto">
               <WeeklyTimetableGrid
                 slots={selected?.slots || []}
                 entries={selected?.entries || []}
               />
+              {selected && (
+                <div id="timetable-lessons">
+                  <TimetableEntryEditor
+                    key={selected.id}
+                    timetable={selected}
+                    options={options}
+                    rooms={rooms}
+                    onSaved={load}
+                  />
+                </div>
+              )}
               {selected?.conflicts?.length > 0 && (
                 <div className="mt-4 rounded-xl bg-rose-50 p-4 text-sm text-rose-700">
                   <strong>{selected.conflicts.length} conflict(s) detected.</strong> Resolve hard
