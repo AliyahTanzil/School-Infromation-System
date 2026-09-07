@@ -334,24 +334,28 @@ export async function forgotPassword({ email, context }) {
 export async function resetPassword({ token, password, context }) {
   const tokenHash = hashToken(token);
   const record = await passwordResetTokenRepository.findByHash(tokenHash);
+  const invalid = () =>
+    new AuthenticationError('This password reset link is invalid or has expired');
+  if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) throw invalid();
 
-  if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) {
-    throw new AuthenticationError('This password reset link is invalid or has expired');
-  }
-
+  // Hash before opening the transaction; the conditional write rechecks expiry and use.
   const passwordHash = await passwordService.hashPassword(password);
-  await userRepository.setPasswordHash(record.userId, passwordHash);
-  await passwordResetTokenRepository.markUsed(record.id);
-
-  // Force re-authentication everywhere after a reset.
-  await refreshTokenRepository.revokeAllForUser(record.userId, 'password_reset');
-  await sessionRepository.revokeAllForUser(record.userId, 'password_reset');
-
-  await auditLoginRepository.record({
-    userId: record.userId,
-    event: 'PASSWORD_RESET_COMPLETED',
-    ipAddress: context?.ipAddress,
-    userAgent: context?.userAgent,
+  await prisma.$transaction(async (tx) => {
+    const consumed = await passwordResetTokenRepository.consume(record.id, tx);
+    if (consumed.count !== 1) throw invalid();
+    await userRepository.setPasswordHash(record.userId, passwordHash, tx);
+    await passwordResetTokenRepository.invalidateAllForUser(record.userId, tx);
+    await refreshTokenRepository.revokeAllForUser(record.userId, 'password_reset', tx);
+    await sessionRepository.revokeAllForUser(record.userId, 'password_reset', tx);
+    await auditLoginRepository.record(
+      {
+        userId: record.userId,
+        event: 'PASSWORD_RESET_COMPLETED',
+        ipAddress: context?.ipAddress,
+        userAgent: context?.userAgent,
+      },
+      tx
+    );
   });
 }
 
@@ -367,19 +371,37 @@ export async function changePassword({ userId, sessionId, currentPassword, newPa
   }
 
   const passwordHash = await passwordService.hashPassword(newPassword);
-  await userRepository.setPasswordHash(userId, passwordHash);
-
-  // Keep the current device signed in; revoke every other session.
-  await refreshTokenRepository.revokeAllForUserExcept(userId, sessionId, 'password_changed');
-  await sessionRepository.revokeAllForUserExcept(userId, sessionId, 'password_changed');
-
-  await auditLoginRepository.record({
-    userId,
-    sessionId,
-    event: 'PASSWORD_RESET_COMPLETED',
-    ipAddress: context?.ipAddress,
-    userAgent: context?.userAgent,
-    metadata: { via: 'change_password' },
+  await prisma.$transaction(async (tx) => {
+    const session = await sessionRepository.findActiveById(sessionId, tx);
+    if (!session || session.userId !== userId) {
+      throw new AuthenticationError('Session is no longer valid');
+    }
+    const changed = await userRepository.replacePasswordHash(
+      userId,
+      user.passwordHash,
+      passwordHash,
+      tx
+    );
+    if (changed.count !== 1) {
+      throw new AuthenticationError(
+        'Account credentials changed or the account is unavailable. Please sign in again.'
+      );
+    }
+    await passwordResetTokenRepository.invalidateAllForUser(userId, tx);
+    // Keep the current device signed in; revoke every other session.
+    await refreshTokenRepository.revokeAllForUserExcept(userId, sessionId, 'password_changed', tx);
+    await sessionRepository.revokeAllForUserExcept(userId, sessionId, 'password_changed', tx);
+    await auditLoginRepository.record(
+      {
+        userId,
+        sessionId,
+        event: 'PASSWORD_RESET_COMPLETED',
+        ipAddress: context?.ipAddress,
+        userAgent: context?.userAgent,
+        metadata: { via: 'change_password' },
+      },
+      tx
+    );
   });
 }
 
@@ -387,24 +409,31 @@ export async function changePassword({ userId, sessionId, currentPassword, newPa
 
 export async function verifyEmail({ token, context }) {
   const tokenHash = hashToken(token);
-  const record = await emailVerificationTokenRepository.findByHash(tokenHash);
-
-  if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) {
-    throw new AuthenticationError('This verification link is invalid or has expired');
-  }
-
-  const user = await userRepository.markEmailVerified(record.userId);
-  await emailVerificationTokenRepository.markUsed(record.id);
-
-  await auditLoginRepository.record({
-    userId: record.userId,
-    event: 'EMAIL_VERIFIED',
-    ipAddress: context?.ipAddress,
-    userAgent: context?.userAgent,
+  return prisma.$transaction(async (tx) => {
+    const invalid = () =>
+      new AuthenticationError('This verification link is invalid or has expired');
+    const record = await emailVerificationTokenRepository.findByHash(tokenHash, tx);
+    if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) throw invalid();
+    const consumed = await emailVerificationTokenRepository.consume(record.id, tx);
+    if (consumed.count !== 1) throw invalid();
+    // Email ownership is separate from owner approval and account lifecycle.
+    const verified = await userRepository.markEmailVerified(record.userId, tx);
+    if (verified.count !== 1) throw invalid();
+    await emailVerificationTokenRepository.invalidateAllForUser(record.userId, tx);
+    await auditLoginRepository.record(
+      {
+        userId: record.userId,
+        event: 'EMAIL_VERIFIED',
+        ipAddress: context?.ipAddress,
+        userAgent: context?.userAgent,
+      },
+      tx
+    );
+    const user = await userRepository.findById(record.userId, tx);
+    if (!user) throw invalid();
+    const roles = await userRepository.findActiveRoleCodes(user.id, tx);
+    return { user: toPublicUser(user, { roles }) };
   });
-
-  const roles = await userRepository.findActiveRoleCodes(user.id);
-  return { user: toPublicUser(user, { roles }) };
 }
 
 /**

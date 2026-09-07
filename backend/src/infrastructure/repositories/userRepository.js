@@ -60,10 +60,23 @@ export function setPasswordHash(id, passwordHash, tx) {
   return db(tx).user.update({ where: { id }, data: { passwordHash } });
 }
 
+export function replacePasswordHash(id, expectedHash, passwordHash, tx) {
+  return db(tx).user.updateMany({
+    where: {
+      id,
+      passwordHash: expectedHash,
+      deletedAt: null,
+      status: 'ACTIVE',
+      OR: [{ lockedUntil: null }, { lockedUntil: { lte: new Date() } }],
+    },
+    data: { passwordHash },
+  });
+}
+
 export function markEmailVerified(id, tx) {
-  return db(tx).user.update({
-    where: { id },
-    data: { emailVerifiedAt: new Date(), status: 'ACTIVE' },
+  return db(tx).user.updateMany({
+    where: { id, deletedAt: null },
+    data: { emailVerifiedAt: new Date() },
   });
 }
 
@@ -120,6 +133,7 @@ export default {
   create,
   update,
   setPasswordHash,
+  replacePasswordHash,
   markEmailVerified,
   recordSuccessfulLogin,
   incrementFailedLogins,

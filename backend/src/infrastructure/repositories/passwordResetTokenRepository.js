@@ -17,6 +17,14 @@ export function findByHash(tokenHash, tx) {
   return db(tx).passwordResetToken.findUnique({ where: { tokenHash } });
 }
 
+export function consume(id, tx) {
+  const now = new Date();
+  return db(tx).passwordResetToken.updateMany({
+    where: { id, usedAt: null, expiresAt: { gt: now } },
+    data: { usedAt: now },
+  });
+}
+
 export function markUsed(id, tx) {
   return db(tx).passwordResetToken.update({
     where: { id },
@@ -31,4 +39,4 @@ export function invalidateAllForUser(userId, tx) {
   });
 }
 
-export default { create, findByHash, markUsed, invalidateAllForUser };
+export default { create, findByHash, consume, markUsed, invalidateAllForUser };

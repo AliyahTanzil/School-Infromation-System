@@ -266,3 +266,23 @@ Update this summary whenever a task status changes.
 | 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 3: make single-device and all-device sign-out transactional across refresh tokens, sessions and audit records; verify ownership checks and rollback behavior with isolated persistence tests. |
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 3 completed: single/all-device sign-out atomically revokes refresh tokens and sessions with audit recording through one transaction client. Nine service regressions cover ownership and injected write failures. Full backend suite 294 passed/1 intentional live-database skip; build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 4: transactional refresh rotation with checked token consumption and committed replay revocation; regression coverage for failed writes and competing consumption. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 4 completed: transactional refresh rotation checks conditional consumption count before successor creation; replay revocation commits before authentication rejection. Nine regressions cover successor linkage, simulated lost races, replay and rollback. Full backend suite 303 passed/1 intentional live-database skip; backend build, focused lint and diff check pass. Live concurrency verification remains outstanding; SEC-001 stays IN_PROGRESS. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 5: transactional session issuance across session, initial refresh token and remembered-device writes, with rollback regression tests. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 5 completed: session issuance commits session, initial hashed refresh token and remembered-device writes together before returning credentials. Six regressions cover linkage and failed creation/lookup/token/device/commit paths. Full backend suite 309 passed/1 intentional live-database skip; backend build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 6: transactional password reset and conditional single-use token consumption, with replay and rollback tests. Password-change hardening remains a separate follow-up. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 6 completed: password reset conditionally consumes an unused/unexpired link and atomically replaces credentials, invalidates remaining reset links, revokes sessions/tokens and records audit. Eight regressions cover replay, competing consumption and failed writes. Full backend suite 317 passed/1 intentional live-database skip; build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS; password-change hardening and live concurrency verification remain outstanding. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 7: transactional password change with expected-password conditional update, current-session ownership check, reset-link invalidation and revocation of other devices. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 7 completed: password changes use expected-hash conditional updates and atomically invalidate reset links, revoke other devices and record audit while preserving the current owned session. Nine regressions cover stale credentials, scope and failed writes. Full backend suite 326 passed/1 intentional live-database skip; build, focused lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 8: prevent email verification from activating accounts; transactional single-use link consumption and verification audit with lifecycle regression tests. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 8 completed: email verification preserves account lifecycle and atomically consumes verification links, updates email ownership and records audit. Ten regressions pass; full backend suite 336 passed/1 intentional skip, build, lint and diff check pass. SEC-001 remains IN_PROGRESS. |

@@ -28,43 +28,54 @@ function refreshExpiry() {
  * @param {{ user: any, context: { ipAddress: string, userAgent: string, deviceType: string, deviceFingerprint: string }, deviceName?: string }} params
  */
 export async function issueSession({ user, context, deviceName }) {
-  const session = await sessionRepository.create({
-    userId: user.id,
-    deviceName: deviceName ?? null,
-    deviceType: context.deviceType,
-    deviceHash: context.deviceFingerprint,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    expiresAt: refreshExpiry(),
+  return prisma.$transaction(async (tx) => {
+    const session = await sessionRepository.create(
+      {
+        userId: user.id,
+        deviceName: deviceName ?? null,
+        deviceType: context.deviceType,
+        deviceHash: context.deviceFingerprint,
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+        expiresAt: refreshExpiry(),
+      },
+      tx
+    );
+
+    const roles = await userRepository.findActiveRoleCodes(user.id, tx);
+    const { token: refreshToken, tokenHash, expiresAt } = tokenService.generateRefreshToken();
+
+    await refreshTokenRepository.create(
+      {
+        tokenHash,
+        userId: user.id,
+        sessionId: session.id,
+        parentTokenId: null,
+        expiresAt,
+      },
+      tx
+    );
+
+    await trustedDeviceRepository.upsert(
+      {
+        userId: user.id,
+        fingerprint: context.deviceFingerprint,
+        name: deviceName ?? context.deviceType,
+        userAgent: context.userAgent,
+        lastIp: context.ipAddress,
+      },
+      tx
+    );
+
+    const accessToken = tokenService.signAccessToken({
+      sub: user.id,
+      email: user.email,
+      sessionId: session.id,
+      roles,
+    });
+
+    return { accessToken, refreshToken, session, roles };
   });
-
-  const roles = await userRepository.findActiveRoleCodes(user.id);
-  const { token: refreshToken, tokenHash, expiresAt } = tokenService.generateRefreshToken();
-
-  await refreshTokenRepository.create({
-    tokenHash,
-    userId: user.id,
-    sessionId: session.id,
-    parentTokenId: null,
-    expiresAt,
-  });
-
-  await trustedDeviceRepository.upsert({
-    userId: user.id,
-    fingerprint: context.deviceFingerprint,
-    name: deviceName ?? context.deviceType,
-    userAgent: context.userAgent,
-    lastIp: context.ipAddress,
-  });
-
-  const accessToken = tokenService.signAccessToken({
-    sub: user.id,
-    email: user.email,
-    sessionId: session.id,
-    roles,
-  });
-
-  return { accessToken, refreshToken, session, roles };
 }
 
 /**
@@ -73,89 +84,96 @@ export async function issueSession({ user, context, deviceName }) {
  * treat it as a compromise and nuke the entire session.
  * @param {{ refreshToken: string, context: object }} params
  */
-export async function rotate({ refreshToken, context }) {
-  if (!refreshToken) {
-    throw new AuthenticationError('Refresh token is required');
-  }
-
+export async function rotate({ refreshToken, context = {} }) {
+  if (!refreshToken) throw new AuthenticationError('Refresh token is required');
   const tokenHash = tokenService.hashRefreshToken(refreshToken);
-  const stored = await refreshTokenRepository.findByHash(tokenHash);
+  const result = await prisma.$transaction(async (tx) => {
+    const stored = await refreshTokenRepository.findByHash(tokenHash, tx);
+    if (!stored) throw new AuthenticationError('Invalid refresh token');
 
-  if (!stored) {
-    throw new AuthenticationError('Invalid refresh token');
-  }
+    async function rejectReuse() {
+      await refreshTokenRepository.revokeAllForSession(stored.sessionId, 'reuse_detected', tx);
+      await sessionRepository.revoke(stored.sessionId, 'reuse_detected', tx);
+      await auditLoginRepository.record(
+        {
+          userId: stored.userId,
+          sessionId: stored.sessionId,
+          event: 'SESSION_REVOKED',
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          metadata: { reason: 'refresh_token_reuse_detected' },
+        },
+        tx
+      );
+      // Commit revocation before throwing the authentication error outside the transaction.
+      return { reused: true };
+    }
 
-  // Reuse detection: a revoked token presented again ⇒ possible theft.
-  if (stored.revokedAt) {
-    await refreshTokenRepository.revokeAllForSession(stored.sessionId, 'reuse_detected');
-    await sessionRepository.revoke(stored.sessionId, 'reuse_detected');
-    await auditLoginRepository.record({
-      userId: stored.userId,
-      sessionId: stored.sessionId,
-      event: 'SESSION_REVOKED',
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
-      metadata: { reason: 'refresh_token_reuse_detected' },
+    if (stored.revokedAt) return rejectReuse();
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      throw new AuthenticationError('Refresh token has expired');
+    }
+    const session = await sessionRepository.findActiveById(stored.sessionId, tx);
+    if (!session || session.userId !== stored.userId) {
+      throw new AuthenticationError('Session is no longer active');
+    }
+    const user = await userRepository.findById(stored.userId, tx);
+    if (
+      !user ||
+      user.status !== 'ACTIVE' ||
+      user.lockedUntil?.getTime() > Date.now() ||
+      user.deletedAt
+    ) {
+      throw new AuthenticationError('Account is not able to authenticate');
+    }
+
+    // Conditional update permits only one request to consume this token.
+    const consumed = await refreshTokenRepository.revokeById(stored.id, 'rotated', tx);
+    if (consumed.count !== 1) return rejectReuse();
+    const {
+      token: nextToken,
+      tokenHash: nextHash,
+      expiresAt,
+    } = tokenService.generateRefreshToken();
+    await refreshTokenRepository.create(
+      {
+        tokenHash: nextHash,
+        userId: user.id,
+        sessionId: session.id,
+        parentTokenId: stored.id,
+        expiresAt,
+      },
+      tx
+    );
+    await sessionRepository.touch(
+      session.id,
+      {
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      },
+      tx
+    );
+    const roles = await userRepository.findActiveRoleCodes(user.id, tx);
+    const accessToken = tokenService.signAccessToken({
+      sub: user.id,
+      email: user.email,
+      sessionId: session.id,
+      roles,
     });
-    throw new AuthenticationError('Refresh token has already been used');
-  }
-
-  if (stored.expiresAt.getTime() <= Date.now()) {
-    throw new AuthenticationError('Refresh token has expired');
-  }
-
-  const session = await sessionRepository.findActiveById(stored.sessionId);
-  if (!session) {
-    throw new AuthenticationError('Session is no longer active');
-  }
-
-  const user = await userRepository.findById(stored.userId);
-  if (
-    !user ||
-    user.status !== 'ACTIVE' ||
-    user.lockedUntil?.getTime() > Date.now() ||
-    user.deletedAt
-  ) {
-    throw new AuthenticationError('Account is not able to authenticate');
-  }
-
-  // Rotate: revoke the presented token and mint its successor.
-  await refreshTokenRepository.revokeById(stored.id, 'rotated');
-  const {
-    token: newRefreshToken,
-    tokenHash: newHash,
-    expiresAt,
-  } = tokenService.generateRefreshToken();
-  await refreshTokenRepository.create({
-    tokenHash: newHash,
-    userId: user.id,
-    sessionId: session.id,
-    parentTokenId: stored.id,
-    expiresAt,
+    await auditLoginRepository.record(
+      {
+        userId: user.id,
+        sessionId: session.id,
+        event: 'TOKEN_REFRESHED',
+        ipAddress: context.ipAddress,
+        userAgent: context.userAgent,
+      },
+      tx
+    );
+    return { accessToken, refreshToken: nextToken, user, session, roles };
   });
-
-  await sessionRepository.touch(session.id, {
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-  });
-
-  const roles = await userRepository.findActiveRoleCodes(user.id);
-  const accessToken = tokenService.signAccessToken({
-    sub: user.id,
-    email: user.email,
-    sessionId: session.id,
-    roles,
-  });
-
-  await auditLoginRepository.record({
-    userId: user.id,
-    sessionId: session.id,
-    event: 'TOKEN_REFRESHED',
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-  });
-
-  return { accessToken, refreshToken: newRefreshToken, user, session, roles };
+  if (result.reused) throw new AuthenticationError('Refresh token has already been used');
+  return result;
 }
 
 /**

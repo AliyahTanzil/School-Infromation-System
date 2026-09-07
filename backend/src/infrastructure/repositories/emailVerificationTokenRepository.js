@@ -18,6 +18,14 @@ export function findByHash(tokenHash, tx) {
   return db(tx).emailVerificationToken.findUnique({ where: { tokenHash } });
 }
 
+export function consume(id, tx) {
+  const now = new Date();
+  return db(tx).emailVerificationToken.updateMany({
+    where: { id, usedAt: null, expiresAt: { gt: now } },
+    data: { usedAt: now },
+  });
+}
+
 export function markUsed(id, tx) {
   return db(tx).emailVerificationToken.update({
     where: { id },
@@ -32,4 +40,4 @@ export function invalidateAllForUser(userId, tx) {
   });
 }
 
-export default { create, findByHash, markUsed, invalidateAllForUser };
+export default { create, findByHash, consume, markUsed, invalidateAllForUser };
