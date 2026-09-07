@@ -28,3 +28,19 @@ export const academicPeriodStatusSchema = z.object({
     reason: z.string().trim().max(500).optional(),
   }),
 });
+
+export const academicEventCreateSchema = z.object({
+  body: z
+    .object({
+      name: z.string().trim().min(1).max(160),
+      code: z.string().trim().min(1).max(60),
+      type: z.enum(['BREAK', 'EXAM', 'EVENT']),
+      description: z.string().trim().max(1000).optional(),
+      startsAt: z.coerce.date(),
+      endsAt: z.coerce.date(),
+    })
+    .refine((value) => value.endsAt >= value.startsAt, {
+      message: 'endsAt must be on or after startsAt',
+      path: ['endsAt'],
+    }),
+});

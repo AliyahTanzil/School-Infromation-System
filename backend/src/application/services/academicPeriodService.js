@@ -3,6 +3,8 @@ import {
   assertAcademicPeriodRange,
   assertAcademicTransition,
 } from '../../domain/academicPeriodLifecycle.js';
+import NotFoundError from '../../shared/errors/NotFoundError.js';
+import ValidationError from '../../shared/errors/ValidationError.js';
 
 const toDto = (period, type) => ({
   id: period.id,
@@ -10,32 +12,39 @@ const toDto = (period, type) => ({
   name: period.name,
   code: period.code ?? period.name,
   type,
-  status: type === 'YEAR' ? (period.isCurrent ? 'ACTIVE' : 'PLANNED') : 'PLANNED',
-  startsAt: period.startsOn,
-  endsAt: period.endsOn,
+  status:
+    type === 'YEAR' ? (period.isCurrent ? 'ACTIVE' : 'PLANNED') : (period.status ?? 'PLANNED'),
+  startsAt: period.startsOn ?? period.startsAt,
+  endsAt: period.endsOn ?? period.endsAt,
   parentId: type === 'TERM' ? period.academicYearId : null,
+  description: period.description ?? null,
 });
 
-export async function listAcademicPeriods({ tenantId, type, status }) {
-  const includeYears = !type || type === 'YEAR';
-  const includeTerms = !type || type === 'TERM';
-  const [years, terms] = await Promise.all([
-    includeYears
+export async function listAcademicPeriods({ tenantId, schoolId, type, status }) {
+  const [years, terms, events] = await Promise.all([
+    !type || type === 'YEAR'
       ? prisma.academicYear.findMany({ where: { tenantId }, orderBy: { startsOn: 'asc' } })
       : [],
-    includeTerms
+    !type || type === 'TERM'
       ? prisma.academicTerm.findMany({
           where: { academicYear: { tenantId } },
           orderBy: { startsOn: 'asc' },
         })
       : [],
+    !type || ['BREAK', 'EXAM', 'EVENT'].includes(type)
+      ? prisma.academicCalendarEvent.findMany({
+          where: { tenantId, schoolId, ...(type ? { type } : {}) },
+          orderBy: { startsAt: 'asc' },
+        })
+      : [],
   ]);
   return [
-    ...years.map((period) => toDto(period, 'YEAR')),
-    ...terms.map((period) => toDto(period, 'TERM')),
+    ...years.map((item) => toDto(item, 'YEAR')),
+    ...terms.map((item) => toDto(item, 'TERM')),
+    ...events.map((item) => toDto(item, item.type)),
   ]
-    .filter((period) => !status || period.status === status)
-    .sort((a, b) => a.startsAt - b.startsAt);
+    .filter((item) => !status || item.status === status)
+    .sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt));
 }
 
 export async function createAcademicPeriod({ tenantId, data }) {
@@ -52,36 +61,62 @@ export async function createAcademicPeriod({ tenantId, data }) {
     });
     return toDto({ ...year, code: data.code ?? data.name }, 'YEAR');
   }
-  if (!data.parentId) throw new Error('parentId is required for a term');
+  if (!data.parentId) throw new ValidationError('Academic year is required for a term');
   const year = await prisma.academicYear.findFirst({ where: { id: data.parentId, tenantId } });
-  if (!year) throw new Error('Academic year not found in tenant');
+  if (!year) throw new NotFoundError('Academic year not found');
+  if (data.startsAt < year.startsOn || data.endsAt > year.endsOn)
+    throw new ValidationError('Term dates must be inside the selected academic year');
   const term = await prisma.academicTerm.create({
     data: {
       academicYearId: year.id,
       name: data.name,
       startsOn: data.startsAt,
       endsOn: data.endsAt,
+      status: 'PLANNED',
     },
   });
   return toDto({ ...term, code: data.code ?? data.name }, 'TERM');
 }
 
-export async function changeAcademicPeriodStatus({ tenantId, id, status }) {
-  const year = await prisma.academicYear.findFirst({ where: { id, tenantId } });
-  if (year) {
-    const current = year.isCurrent ? 'ACTIVE' : 'PLANNED';
-    assertAcademicTransition(current, status);
-    const updated = await prisma.academicYear.update({
-      where: { id },
-      data: { isCurrent: status === 'ACTIVE' },
-    });
-    return toDto(updated, 'YEAR');
-  }
-  const term = await prisma.academicTerm.findFirst({ where: { id, academicYear: { tenantId } } });
-  if (!term) throw new Error('Academic period not found');
-  if (status === 'CLOSED')
-    throw new Error('Terms cannot be closed until result locking is implemented');
-  return toDto(term, 'TERM');
+export async function createAcademicEvent({ tenantId, schoolId, actorId, data }) {
+  const event = await prisma.academicCalendarEvent.create({
+    data: { ...data, tenantId, schoolId, createdById: actorId, status: 'PLANNED' },
+  });
+  return toDto(event, event.type);
 }
 
-export default { listAcademicPeriods, createAcademicPeriod, changeAcademicPeriodStatus };
+export async function changeAcademicPeriodStatus({ tenantId, schoolId, id, status }) {
+  const year = await prisma.academicYear.findFirst({ where: { id, tenantId } });
+  if (year) {
+    assertAcademicTransition(year.isCurrent ? 'ACTIVE' : 'PLANNED', status);
+    return prisma.$transaction(async (tx) => {
+      if (status === 'ACTIVE')
+        await tx.academicYear.updateMany({
+          where: { tenantId, isCurrent: true },
+          data: { isCurrent: false },
+        });
+      const updated = await tx.academicYear.update({
+        where: { id },
+        data: { isCurrent: status === 'ACTIVE' },
+      });
+      return toDto(updated, 'YEAR');
+    });
+  }
+  const term = await prisma.academicTerm.findFirst({ where: { id, academicYear: { tenantId } } });
+  if (term) {
+    assertAcademicTransition(term.status, status);
+    return toDto(await prisma.academicTerm.update({ where: { id }, data: { status } }), 'TERM');
+  }
+  const event = await prisma.academicCalendarEvent.findFirst({ where: { id, tenantId, schoolId } });
+  if (!event) throw new NotFoundError('Academic period not found');
+  assertAcademicTransition(event.status, status);
+  const updated = await prisma.academicCalendarEvent.update({ where: { id }, data: { status } });
+  return toDto(updated, updated.type);
+}
+
+export default {
+  listAcademicPeriods,
+  createAcademicPeriod,
+  createAcademicEvent,
+  changeAcademicPeriodStatus,
+};

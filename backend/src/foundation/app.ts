@@ -26,6 +26,8 @@ import attendanceRouter from '../presentation/http/routes/attendanceRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import academicPolicyRouter from '../presentation/http/routes/academicPolicyRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
+import academicPeriodRouter from '../presentation/http/routes/academicPeriodRoutes.js';
+// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import examinationRouter from '../presentation/http/routes/examinationRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import resultRouter from '../presentation/http/routes/resultRoutes.js';
@@ -162,6 +164,8 @@ export const createApp = () => {
   app.use('/api/v1/attendance', attendanceRouter);
   app.use('/api/academic-policies', academicPolicyRouter);
   app.use('/api/v1/academic-policies', academicPolicyRouter);
+  app.use('/api/academic-periods', academicPeriodRouter);
+  app.use('/api/v1/academic-periods', academicPeriodRouter);
   app.use('/api/examinations', examinationRouter);
   app.use('/api/v1/examinations', examinationRouter);
   app.use('/api/results', resultRouter);

@@ -4,16 +4,22 @@ export default {
   list: async (req, res) =>
     res.json({
       data: await academicPeriodService.listAcademicPeriods({
-        tenantId: req.context.tenantId,
-        schoolId: req.context.schoolId,
-        ...req.query,
+        ...req.schoolContext,
+        ...(req.validatedQuery ?? req.query),
       }),
     }),
   create: async (req, res) =>
     res.status(201).json({
       data: await academicPeriodService.createAcademicPeriod({
-        tenantId: req.context.tenantId,
-        schoolId: req.context.schoolId,
+        ...req.schoolContext,
+        actorId: req.user.id,
+        data: req.body,
+      }),
+    }),
+  createEvent: async (req, res) =>
+    res.status(201).json({
+      data: await academicPeriodService.createAcademicEvent({
+        ...req.schoolContext,
         actorId: req.user.id,
         data: req.body,
       }),
@@ -21,8 +27,7 @@ export default {
   changeStatus: async (req, res) =>
     res.json({
       data: await academicPeriodService.changeAcademicPeriodStatus({
-        tenantId: req.context.tenantId,
-        schoolId: req.context.schoolId,
+        ...req.schoolContext,
         actorId: req.user.id,
         id: req.params.id,
         ...req.body,
