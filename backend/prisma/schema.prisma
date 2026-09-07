@@ -874,6 +874,7 @@ model ClassTeacher {
 model ClassSubject {
   classId   String  @db.Uuid
   subjectId String  @db.Uuid
+  teachingFocus String?
   class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
   subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
 

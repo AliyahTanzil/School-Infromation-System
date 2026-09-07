@@ -7,7 +7,13 @@ import { getApiErrorMessage } from './api/errorMessage.js';
 export default function SubjectManagement() {
   const [saving, setSaving] = useState(false);
   const [subjects, setSubjects] = useState([]);
-  const [form, setForm] = useState({ code: '', name: '', description: '' });
+  const [classes, setClasses] = useState([]);
+  const [form, setForm] = useState({
+    code: '',
+    name: '',
+    description: '',
+    classAssignments: [],
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -15,8 +21,12 @@ export default function SubjectManagement() {
     setLoading(true);
     setError('');
     try {
-      const { data } = await api.get('/subjects');
-      setSubjects(data.data ?? []);
+      const [subjectResponse, classResponse] = await Promise.all([
+        api.get('/subjects'),
+        api.get('/classes', { params: { pageSize: 100 } }),
+      ]);
+      setSubjects(subjectResponse.data.data ?? []);
+      setClasses(classResponse.data.data?.items ?? []);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Unable to load subjects'));
     } finally {
@@ -34,7 +44,7 @@ export default function SubjectManagement() {
     setSaving(true);
     try {
       await api.post('/subjects', { ...form, code: form.code || undefined });
-      setForm({ code: '', name: '', description: '' });
+      setForm({ code: '', name: '', description: '', classAssignments: [] });
       await load();
     } catch (requestError) {
       setError(getApiErrorMessage(requestError, 'Unable to create subject'));
@@ -42,6 +52,24 @@ export default function SubjectManagement() {
       setSaving(false);
     }
   };
+
+  const toggleClass = (classId) => {
+    const selected = form.classAssignments.some((item) => item.classId === classId);
+    setForm({
+      ...form,
+      classAssignments: selected
+        ? form.classAssignments.filter((item) => item.classId !== classId)
+        : [...form.classAssignments, { classId, teachingFocus: '' }],
+    });
+  };
+
+  const setTeachingFocus = (classId, teachingFocus) =>
+    setForm({
+      ...form,
+      classAssignments: form.classAssignments.map((item) =>
+        item.classId === classId ? { ...item, teachingFocus } : item
+      ),
+    });
 
   const summary = [
     { label: 'Total subjects', value: subjects.length },
@@ -119,8 +147,52 @@ export default function SubjectManagement() {
             />
           </label>
 
+          <fieldset className="form-field" style={{ gridColumn: '1 / -1' }}>
+            <legend className="form-field__label">Classes (select at least one)</legend>
+            {classes.length === 0 && (
+              <p className="empty-state">Create a class before creating a subject.</p>
+            )}
+            <div className="result-list">
+              {classes.map((klass) => {
+                const assignment = form.classAssignments.find((item) => item.classId === klass.id);
+                return (
+                  <div className="result-row" key={klass.id}>
+                    <label className="result-row__meta">
+                      <span>
+                        <input
+                          type="checkbox"
+                          checked={Boolean(assignment)}
+                          onChange={() => toggleClass(klass.id)}
+                        />{' '}
+                        <strong>
+                          {klass.name}
+                          {klass.section ? ` · ${klass.section}` : ''}
+                        </strong>
+                      </span>
+                      <small>
+                        {klass.gradeLevel?.name} · {klass.academicYear?.name}
+                      </small>
+                    </label>
+                    {assignment && (
+                      <input
+                        aria-label={`Teaching focus for ${klass.name}`}
+                        value={assignment.teachingFocus}
+                        onChange={(event) => setTeachingFocus(klass.id, event.target.value)}
+                        placeholder="Class-specific level or teaching focus"
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </fieldset>
+
           <div style={{ gridColumn: '1 / -1' }}>
-            <button className="primary-button" disabled={saving || loading} type="submit">
+            <button
+              className="primary-button"
+              disabled={saving || loading || form.classAssignments.length === 0}
+              type="submit"
+            >
               Create subject
             </button>
           </div>
@@ -146,6 +218,14 @@ export default function SubjectManagement() {
                 <span className="result-row__meta">
                   <strong>{subject.name}</strong>
                   <small>{subject.code}</small>
+                  <small>
+                    {(subject.classes ?? [])
+                      .map(
+                        (assignment) =>
+                          `${assignment.class.name}${assignment.teachingFocus ? ` — ${assignment.teachingFocus}` : ''}`
+                      )
+                      .join(' · ')}
+                  </small>
                 </span>
                 <span className="status-pill">{subject.status}</span>
               </article>

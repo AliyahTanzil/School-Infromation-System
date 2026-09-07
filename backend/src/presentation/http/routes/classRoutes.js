@@ -12,7 +12,11 @@ import {
   classSubjectSchema,
 } from '../../../application/validators/classValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(
+  authenticate,
+  teacherContext,
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER')
+);
 router.get('/options', controller.options);
 router.get('/', validate(classQuerySchema), controller.list);
 router.post('/', validate(classCreateSchema), controller.create);

@@ -21,11 +21,19 @@ export function list(context, filters) {
           }
         : {}),
     },
+    include: {
+      classes: {
+        include: {
+          class: { include: { gradeLevel: true } },
+        },
+      },
+    },
     orderBy: [{ name: 'asc' }, { code: 'asc' }],
   });
 }
 export const find = (id, context) => prisma.subject.findFirst({ where: { id, ...scope(context) } });
-export const create = (data) => prisma.subject.create({ data });
+export const create = (data, tx = prisma) => tx.subject.create({ data });
+export const getClient = () => prisma;
 export const update = (id, context, data) =>
   prisma.subject.update({
     where: { id, tenantId: context.tenantId, schoolId: context.schoolId },

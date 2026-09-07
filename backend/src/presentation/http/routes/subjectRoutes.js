@@ -12,7 +12,11 @@ import {
 } from '../../../application/validators/subjectValidators.js';
 
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(
+  authenticate,
+  teacherContext,
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER')
+);
 router.get('/', validate(subjectQuerySchema), controller.list);
 router.post('/', validate(subjectCreateSchema), controller.create);
 router.get('/:id', controller.get);

@@ -18,7 +18,21 @@ export const subjectQuerySchema = z.object({
     status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
   }),
 });
-export const subjectCreateSchema = z.object({ body: z.object(fields).strict() });
+export const subjectCreateSchema = z.object({
+  body: z
+    .object({
+      ...fields,
+      classAssignments: z
+        .array(
+          z.object({
+            classId: z.string().uuid(),
+            teachingFocus: z.string().trim().max(500).optional(),
+          })
+        )
+        .min(1, 'Select at least one class'),
+    })
+    .strict(),
+});
 export const subjectUpdateSchema = z.object({ body: z.object(fields).partial().strict() });
 export const subjectStatusSchema = z.object({
   body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']) }).strict(),
