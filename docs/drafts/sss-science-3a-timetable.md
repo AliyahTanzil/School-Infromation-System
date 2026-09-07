@@ -5,11 +5,11 @@ tags: []
 
 # SSS Science 3A – First Term weekly timetable
 
-School: **Aunty Isha Internation School**. Term: **First Term, 2026/27**.
+School: **Aunty Isha International Academy**. Term: **First Term, 2026/27**.
 
-Status: **DRAFT — saved and verified in the school database**.
+Status: **ACADEMIC FOUNDATION SAVED — timetable draft not yet created**.
 
-School, SSS Science 3A, all nine subjects, subject requirements and 40 lessons have been saved. Teachers and rooms remain unassigned. Planning assumptions: academic year September 1, 2026-August 31, 2027; First Term September 1-December 31, 2026; planned class capacity 40. These dates and capacity should be confirmed by the school.
+The 2026/27 academic year, First Term, SSS Science 3A and all nine class subjects are saved in the current school database. Subject-period requirements, timetable settings, slots and lessons remain for the next phase; teachers and rooms remain unassigned. Planning assumptions: academic year September 1, 2026-August 31, 2027; First Term September 1-December 31, 2026; planned class capacity 40. These dates and capacity should be confirmed by the school.
 
 Monday–Friday, 08:00–14:00. Eight 40-minute lessons per day; 40 lessons per week.
 

@@ -19,6 +19,12 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 Latest continuation: TTB-001 Phase 16 DONE, GitHub Copilot, 2026-09-07. Added authenticated, tenant/school-scoped read-only readiness verification at `GET /api/timetables/:id/readiness` and `/api/v1/timetables/:id/readiness`, dashboard reporting, tests and API documentation. Verification: 25 focused backend timetable tests, backend build and frontend build pass. Next: configure real teachers, teaching assignments, availability and rooms for the selected school, then run the report before live generation/editing/publication.
 
+Phase 17 continuation: BLOCKED, Codex, 2026-09-07. Added read-only `npm run timetable:readiness`; the configured `SINGLE_SCHOOL_ID` is absent from the connected database and no school records currently exist. No database data was changed. Create or restore the intended real school before staffing, room configuration or live timetable verification.
+
+Phase 18 continuation: DONE, Codex, 2026-09-07. Backend startup now idempotently ensures the explicitly configured single school before listening and refuses ambiguous or mismatched live data. Added `npm run school:bootstrap`, environment documentation and focused tests. Reconciled the live configuration to Aunty Isha International Academy; bootstrap passes without duplicate writes. Readiness correctly reports that the school has no timetables yet.
+
+Phase 19 continuation: DONE, Codex, 2026-09-07. Added and ran idempotent `npm run timetable:bootstrap-academics`; live Aunty Isha now has 2026/27, First Term, SSS3, planned SSS Science 3A (capacity 40), nine active subjects and their class links. Six focused bootstrap tests, Prisma validation and backend build pass. No teachers, rooms, period requirements, slots or timetable were invented.
+
 - `BLOCKED`: cannot safely continue because a dependency or required decision is missing.
 - `READY`: dependencies are complete and the task can be claimed.
 - `IN_PROGRESS`: claimed by one agent; other agents must not modify its scope.

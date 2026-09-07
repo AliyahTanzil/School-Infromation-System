@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Prisma } from '@prisma/client';
 const db = { $on() {} };
 globalThis.__prisma = db;
+process.env.SINGLE_SCHOOL_ID = 'school';
 const service = await import('../../src/application/services/schoolService.js');
 const { default: controller } =
   await import('../../src/presentation/http/controllers/schoolController.js');

@@ -61,11 +61,11 @@ export default function TimetableReadinessPanel({ timetable, report }) {
           No teaching lessons have been scheduled. Generate a schedule or add lessons to begin.
         </p>
       ) : !missing.length && !hardConflicts.length ? (
-        <p role="status" className="mt-4">
+        <p role={report ? undefined : 'status'} className="mt-4">
           All lessons have class, teacher and room assignments. Publication checks still apply.
         </p>
       ) : (
-        <p role="status" className="mt-4">
+        <p role={report ? undefined : 'status'} className="mt-4">
           Complete the missing assignments and resolve hard conflicts before releasing this
           timetable.
         </p>

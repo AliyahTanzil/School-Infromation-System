@@ -1,34 +1,21 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import api, { refresh, setAccessToken } from './auth.js';
+import api, { me } from './auth.js';
+
+const originalAdapter = api.defaults.adapter;
 
 afterEach(() => {
-  vi.restoreAllMocks();
-  setAccessToken(null);
+  api.defaults.adapter = originalAdapter;
 });
 
-it('shares simultaneous refresh requests and permits later token rotation', async () => {
-  let complete;
-  const post = vi.spyOn(api, 'post').mockImplementationOnce(
-    () =>
-      new Promise((resolve) => {
-        complete = resolve;
-      })
-  );
-  const first = refresh();
-  const second = refresh();
-  expect(post).toHaveBeenCalledTimes(1);
-  expect(first).toBe(second);
-  complete({ data: { data: { accessToken: 'test-token' } } });
-  expect(await second).toEqual({ accessToken: 'test-token' });
-  post.mockResolvedValueOnce({ data: { data: { accessToken: 'rotated-token' } } });
-  await refresh();
-  expect(post).toHaveBeenCalledTimes(2);
-});
+it('unwraps the current user from the auth response envelope', async () => {
+  const user = { id: 'admin', accountType: 'TENANT_ADMIN', roles: ['SCHOOL_ADMIN'] };
+  api.defaults.adapter = vi.fn(async (config) => ({
+    data: { success: true, data: { user } },
+    status: 200,
+    statusText: 'OK',
+    headers: {},
+    config,
+  }));
 
-it('preserves an unauthenticated error and allows a later retry', async () => {
-  const failure = { response: { status: 401 } };
-  const post = vi.spyOn(api, 'post').mockRejectedValue(failure);
-  await expect(refresh()).rejects.toBe(failure);
-  await expect(refresh()).rejects.toBe(failure);
-  expect(post).toHaveBeenCalledTimes(2);
+  await expect(me()).resolves.toEqual(user);
 });

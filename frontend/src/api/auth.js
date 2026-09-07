@@ -74,7 +74,7 @@ export async function logout() {
 }
 export async function me() {
   const { data } = await api.get('/auth/me');
-  return data.data;
+  return data.data.user;
 }
 export async function forgotPassword(email) {
   return api.post('/auth/forgot-password', { email });

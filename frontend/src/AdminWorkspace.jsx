@@ -35,7 +35,7 @@ import {
 import { useAuth } from './context/AuthContext.jsx';
 import { ActivationNotice } from './ActivationWorkspace.jsx';
 
-const moduleGroups = [
+export const administrationModuleGroups = [
   {
     label: 'Core operations',
     description: 'Daily school administration and academic workflows.',
@@ -228,6 +228,11 @@ const moduleGroups = [
   },
 ];
 
+const administrationModuleCount = administrationModuleGroups.reduce(
+  (total, group) => total + group.modules.length,
+  0
+);
+
 export default function AdminWorkspace() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -262,7 +267,7 @@ export default function AdminWorkspace() {
         {user?.accountType === 'APPLICATION_MANAGER' && <ActivationNotice />}
         <section className="admin-shell__metric-grid" aria-label="Administration workspace details">
           {[
-            ['35', 'Modules available'],
+            [String(administrationModuleCount), 'Modules available'],
             ['Administrator', 'Active role'],
             ['Tenant scoped', 'Data boundary'],
           ].map(([value, label]) => (
@@ -274,7 +279,7 @@ export default function AdminWorkspace() {
         </section>
 
         <div style={{ marginTop: '2.5rem' }}>
-          {moduleGroups.map((group) => (
+          {administrationModuleGroups.map((group) => (
             <section
               key={group.label}
               className="admin-shell__section"

@@ -5,11 +5,20 @@ import { createApp } from './app.js';
 import { assertProductionConfig, config } from './foundation/config.js';
 import { disconnectPrisma } from './foundation/prisma.js';
 import { logger } from './foundation/logger.js';
+// @ts-expect-error Legacy JavaScript service is intentionally shared with the application layer.
+import { ensureConfiguredSingleSchool } from './application/services/singleSchoolBootstrapService.js';
 
 const portFile = resolve(process.cwd(), '.sais-port');
 
-export const startServer = (): Server => {
+export const startServer = async (): Promise<Server> => {
   assertProductionConfig();
+  const bootstrap = await ensureConfiguredSingleSchool();
+  if (bootstrap?.created) {
+    logger.info('configured single school created', {
+      schoolId: bootstrap.school.id,
+      schoolName: bootstrap.school.name,
+    });
+  }
   try {
     unlinkSync(portFile);
   } catch {
