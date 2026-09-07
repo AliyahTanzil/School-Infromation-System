@@ -43,6 +43,7 @@ const LandingPage = lazy(() => import('./LandingPage.jsx'));
 const TeacherDashboard = lazy(() => import('./TeacherDashboard.jsx'));
 const SubjectManagement = lazy(() => import('./SubjectManagement.jsx'));
 const ClassDashboard = lazy(() => import('./ClassDashboard.jsx'));
+const ClassDetailDashboard = lazy(() => import('./ClassDetailDashboard.jsx'));
 const FinanceDashboard = lazy(() => import('./FinanceDashboard.jsx'));
 const AcademicCalendarDashboard = lazy(() => import('./AcademicCalendarDashboard.jsx'));
 const AttendanceDashboard = lazy(() => import('./AttendanceDashboard.jsx'));
@@ -1301,6 +1302,14 @@ export default function App() {
               element={
                 <Protected>
                   <ClassDashboard />
+                </Protected>
+              }
+            />
+            <Route
+              path="/classes/:classId"
+              element={
+                <Protected>
+                  <ClassDetailDashboard />
                 </Protected>
               }
             />

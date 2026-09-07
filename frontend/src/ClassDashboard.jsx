@@ -199,7 +199,7 @@ export default function ClassDashboard() {
         {classes.length > 0 && (
           <div className="result-list">
             {classes.map((item) => (
-              <article className="result-row" key={item.id}>
+              <Link className="result-row" key={item.id} to={`/classes/${item.id}`}>
                 <span className="result-row__meta">
                   <strong>
                     {item.name}
@@ -212,7 +212,7 @@ export default function ClassDashboard() {
                 <span className="status-pill">
                   {item._count?.enrollments ?? 0} / {item.capacity} · {item.status}
                 </span>
-              </article>
+              </Link>
             ))}
           </div>
         )}

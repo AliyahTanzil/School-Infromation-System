@@ -27,3 +27,19 @@ export const classQuerySchema = z.object({
   }),
 });
 export const enrollmentSchema = z.object({ body: z.object({ studentId: z.string().uuid() }) });
+export const classSubjectSchema = z.object({
+  body: z
+    .object({
+      subjectId: z.string().uuid().optional(),
+      subject: z
+        .object({
+          name: z.string().trim().min(1).max(120),
+          code: z.string().trim().min(1).max(40).optional(),
+          description: z.string().trim().max(1000).optional(),
+        })
+        .optional(),
+    })
+    .refine((value) => Boolean(value.subjectId) !== Boolean(value.subject), {
+      message: 'Provide either subjectId or subject',
+    }),
+});

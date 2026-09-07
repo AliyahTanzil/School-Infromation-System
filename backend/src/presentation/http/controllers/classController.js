@@ -23,6 +23,27 @@ export async function create(req, res, next) {
     next(error);
   }
 }
+export async function get(req, res, next) {
+  try {
+    res.json({ success: true, data: await service.get({ ...context(req), id: req.params.id }) });
+  } catch (error) {
+    next(error);
+  }
+}
+export async function addSubject(req, res, next) {
+  try {
+    res.status(201).json({
+      success: true,
+      data: await service.addSubject({
+        ...context(req),
+        classId: req.params.id,
+        ...req.body,
+      }),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
 export async function changeStatus(req, res, next) {
   try {
     res.json({

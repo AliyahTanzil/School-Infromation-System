@@ -57,7 +57,9 @@ export async function create(input) {
   assertCapacity(data.capacity, 0);
   const prisma = repository.getClient();
   const [year, grade, room] = await Promise.all([
-    prisma.academicYear.findFirst({ where: { id: data.academicYearId, tenantId: data.tenantId } }),
+    prisma.academicYear.findFirst({
+      where: { id: data.academicYearId, tenantId: data.tenantId, schoolId: data.schoolId },
+    }),
     prisma.gradeLevel.findFirst({
       where: { id: data.gradeLevelId, tenantId: data.tenantId, schoolId: data.schoolId },
     }),
@@ -72,6 +74,47 @@ export async function create(input) {
       'Academic year, grade level, or classroom is outside the selected school'
     );
   return repository.createClass(data);
+}
+
+export async function get({ id, tenantId, schoolId }) {
+  const klass = await repository.getClassDashboard(id, { tenantId, schoolId });
+  if (!klass) throw new NotFoundError('Class not found');
+  return klass;
+}
+
+export async function addSubject({ classId, subjectId, subject, tenantId, schoolId }) {
+  const db = repository.getClient();
+  return db.$transaction(async (tx) => {
+    const klass = await tx.class.findFirst({
+      where: { id: classId, tenantId, schoolId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!klass) throw new NotFoundError('Class not found');
+
+    let selectedSubject;
+    if (subjectId) {
+      selectedSubject = await tx.subject.findFirst({
+        where: { id: subjectId, tenantId, schoolId, deletedAt: null },
+      });
+      if (!selectedSubject) throw new NotFoundError('Subject not found');
+    } else {
+      selectedSubject = await tx.subject.create({
+        data: {
+          ...subject,
+          code: subject.code || generateRecordCode('SUB', schoolId, [subject.name]),
+          tenantId,
+          schoolId,
+        },
+      });
+    }
+
+    await tx.classSubject.upsert({
+      where: { classId_subjectId: { classId, subjectId: selectedSubject.id } },
+      update: {},
+      create: { classId, subjectId: selectedSubject.id },
+    });
+    return selectedSubject;
+  });
 }
 
 export async function changeStatus({ id, tenantId, schoolId, actorId, status, reason }) {
@@ -104,7 +147,9 @@ export async function enroll({ classId, studentId, tenantId, schoolId }) {
     if (!klass) throw new NotFoundError('Class not found');
     if (klass.status !== ClassStatus.ACTIVE)
       throw new ValidationError('Only active classes accept enrollment');
-    const student = await tx.student.findFirst({ where: { id: studentId, tenantId } });
+    const student = await tx.student.findFirst({
+      where: { id: studentId, tenantId, schoolId, deletedAt: null },
+    });
     if (!student) throw new NotFoundError('Student not found');
     const existing = await tx.classEnrollment.findFirst({
       where: { classId, studentId, status: EnrollmentStatus.ACTIVE },

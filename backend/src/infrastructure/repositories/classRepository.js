@@ -27,6 +27,29 @@ export function getClass(id, context) {
     include,
   });
 }
+export function getClassDashboard(id, context) {
+  return prisma.class.findFirst({
+    where: { id, tenantId: context.tenantId, schoolId: context.schoolId, deletedAt: null },
+    include: {
+      ...include,
+      school: { select: { id: true, name: true, code: true } },
+      enrollments: {
+        where: { status: 'ACTIVE' },
+        orderBy: { enrolledAt: 'desc' },
+        include: {
+          student: {
+            select: {
+              id: true,
+              admissionNumber: true,
+              status: true,
+              profile: { select: { firstName: true, lastName: true } },
+            },
+          },
+        },
+      },
+    },
+  });
+}
 export function createClass(data) {
   return prisma.class.create({ data, include });
 }
