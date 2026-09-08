@@ -33,7 +33,7 @@ export const subjectCreateSchema = z.object({
     })
     .strict(),
 });
-export const subjectUpdateSchema = z.object({ body: z.object(fields).partial().strict() });
+export const subjectUpdateSchema = z.object({ body: subjectCreateSchema.shape.body.partial() });
 export const subjectStatusSchema = z.object({
   body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']) }).strict(),
 });

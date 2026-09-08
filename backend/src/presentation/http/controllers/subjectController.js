@@ -10,3 +10,7 @@ export const update = async (req, res) =>
   res.json({ data: await service.update(req.params.id, req.body, req.schoolContext) });
 export const changeStatus = async (req, res) =>
   res.json({ data: await service.changeStatus(req.params.id, req.body.status, req.schoolContext) });
+export const remove = async (req, res) => {
+  await service.remove(req.params.id, req.schoolContext);
+  res.status(204).end();
+};

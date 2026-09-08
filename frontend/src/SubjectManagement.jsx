@@ -6,6 +6,8 @@ import { getApiErrorMessage } from './api/errorMessage.js';
 
 export default function SubjectManagement() {
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [deleting, setDeleting] = useState(null);
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
   const [form, setForm] = useState({
@@ -43,11 +45,44 @@ export default function SubjectManagement() {
     setError('');
     setSaving(true);
     try {
-      await api.post('/subjects', { ...form, code: form.code || undefined });
+      const payload = { ...form, code: form.code || undefined };
+      if (editingId) await api.patch(`/subjects/${editingId}`, payload);
+      else await api.post('/subjects', payload);
+      setEditingId(null);
       setForm({ code: '', name: '', description: '', classAssignments: [] });
       await load();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to create subject'));
+      setError(getApiErrorMessage(requestError, 'Unable to save subject'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const edit = (subject) => {
+    setEditingId(subject.id);
+    setForm({
+      code: subject.code,
+      name: subject.name,
+      description: subject.description || '',
+      classAssignments: (subject.classes || []).map((item) => ({
+        classId: item.classId || item.class.id,
+        teachingFocus: item.teachingFocus || '',
+      })),
+    });
+  };
+  const remove = async () => {
+    setSaving(true);
+    setError('');
+    try {
+      await api.delete('/subjects/' + deleting.id);
+      if (editingId === deleting.id) {
+        setEditingId(null);
+        setForm({ code: '', name: '', description: '', classAssignments: [] });
+      }
+      setDeleting(null);
+      await load();
+    } catch (requestError) {
+      setError(getApiErrorMessage(requestError, 'Unable to delete subject'));
     } finally {
       setSaving(false);
     }
@@ -113,11 +148,23 @@ export default function SubjectManagement() {
       <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
         <div className="section-heading">
           <div>
-            <h2>Add subject</h2>
+            <h2>{editingId ? 'Edit subject' : 'Add subject'}</h2>
             <p>Capture the subject code, title, and teaching focus for the school catalog.</p>
           </div>
         </div>
 
+        {editingId && (
+          <button
+            type="button"
+            disabled={saving}
+            onClick={() => {
+              setEditingId(null);
+              setForm({ code: '', name: '', description: '', classAssignments: [] });
+            }}
+          >
+            Cancel editing
+          </button>
+        )}
         <form onSubmit={create} className="form-grid">
           <label className="form-field">
             <span className="form-field__label">Code</span>
@@ -193,12 +240,24 @@ export default function SubjectManagement() {
               disabled={saving || loading || form.classAssignments.length === 0}
               type="submit"
             >
-              Create subject
+              {editingId ? 'Save changes' : 'Create subject'}
             </button>
           </div>
         </form>
       </section>
 
+      {deleting && (
+        <section className="data-panel" role="dialog" aria-label="Delete subject">
+          <h2>Delete {deleting.name}?</h2>
+          <p>This removes the subject from the catalog. Existing linked records are preserved.</p>
+          <button disabled={saving} onClick={remove}>
+            Confirm delete
+          </button>
+          <button disabled={saving} onClick={() => setDeleting(null)}>
+            Cancel
+          </button>
+        </section>
+      )}
       <section className="data-panel">
         <div className="section-heading">
           <div>
@@ -228,6 +287,20 @@ export default function SubjectManagement() {
                   </small>
                 </span>
                 <span className="status-pill">{subject.status}</span>
+                <button
+                  disabled={saving}
+                  onClick={() => edit(subject)}
+                  aria-label={'Edit ' + subject.name}
+                >
+                  Edit
+                </button>
+                <button
+                  disabled={saving}
+                  onClick={() => setDeleting(subject)}
+                  aria-label={'Delete ' + subject.name}
+                >
+                  Delete
+                </button>
               </article>
             ))}
           </div>

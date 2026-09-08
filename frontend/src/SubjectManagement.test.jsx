@@ -65,3 +65,40 @@ describe('Subject management', () => {
     );
   });
 });
+
+it('edits a persisted subject and confirms deletion before sending it', async () => {
+  const user = userEvent.setup();
+  api.patch = vi.fn().mockResolvedValue({ data: { data: {} } });
+  api.delete = vi.fn().mockResolvedValue({});
+  const subject = {
+    id: 'subject-1',
+    name: 'Maths',
+    code: 'MATH',
+    status: 'ACTIVE',
+    classes: [{ classId: 'class-1', class: { id: 'class-1', name: 'Grade 7' } }],
+  };
+  api.get.mockImplementation(async (url) =>
+    url === '/subjects'
+      ? { data: { data: [subject] } }
+      : { data: { data: { items: [{ id: 'class-1', name: 'Grade 7' }] } } }
+  );
+  render(
+    <MemoryRouter>
+      <SubjectManagement />
+    </MemoryRouter>
+  );
+  await user.click(await screen.findByRole('button', { name: 'Edit Maths' }));
+  await user.clear(screen.getByRole('textbox', { name: 'Subject name' }));
+  await user.type(screen.getByRole('textbox', { name: 'Subject name' }), 'Mathematics');
+  await user.click(screen.getByRole('button', { name: 'Save changes' }));
+  await waitFor(() =>
+    expect(api.patch).toHaveBeenCalledWith(
+      '/subjects/subject-1',
+      expect.objectContaining({ name: 'Mathematics' })
+    )
+  );
+  await user.click(screen.getByRole('button', { name: 'Delete Maths' }));
+  expect(api.delete).not.toHaveBeenCalled();
+  await user.click(screen.getByRole('button', { name: 'Confirm delete' }));
+  await waitFor(() => expect(api.delete).toHaveBeenCalledWith('/subjects/subject-1'));
+});

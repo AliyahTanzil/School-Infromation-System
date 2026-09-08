@@ -7,7 +7,13 @@ import {
 } from '../../src/application/validators/subjectValidators.js';
 
 test('subject input normalizes codes and rejects unknown ownership fields', () => {
-  const parsed = subjectCreateSchema.parse({ body: { code: ' math ', name: 'Mathematics' } });
+  const parsed = subjectCreateSchema.parse({
+    body: {
+      code: ' math ',
+      name: 'Mathematics',
+      classAssignments: [{ classId: '00000000-0000-4000-8000-000000000001' }],
+    },
+  });
   assert.equal(parsed.body.code, 'MATH');
   assert.equal(
     subjectCreateSchema.safeParse({ body: { code: 'X', name: 'X', tenantId: 'forged' } }).success,

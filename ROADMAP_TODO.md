@@ -286,3 +286,9 @@ Update this summary whenever a task status changes.
 | 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 8: prevent email verification from activating accounts; transactional single-use link consumption and verification audit with lifecycle regression tests. |
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 8 completed: email verification preserves account lifecycle and atomically consumes verification links, updates email ownership and records audit. Ten regressions pass; full backend suite 336 passed/1 intentional skip, build, lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 9: reject access tokens without expiry, with empty identity claims or inconsistent session aliases; preserve valid legacy sid-only tokens. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 9 implemented: access tokens require HS256, finite expiry, nonblank identity and consistent session aliases while retaining valid sid-only compatibility. All 13 focused token tests, backend build, focused lint and diff check pass. Full backend suite fails in subject-creation coverage requiring classAssignments (including recordCode.test.js and subjectDomain.test.js); subject implementation was not modified by this checkpoint. SEC-001 remains IN_PROGRESS, full-suite acceptance not achieved. |
+
+User-directed scope change, 2026-09-07: prioritize application-wide CRUD completion. Begin with subject end-to-end editing and soft deletion; inventory in docs/audit/crud-coverage-2026-09-07.md. SEC-001 remains unfinished; no completion claim.

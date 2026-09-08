@@ -21,5 +21,6 @@ router.get('/', validate(subjectQuerySchema), controller.list);
 router.post('/', validate(subjectCreateSchema), controller.create);
 router.get('/:id', controller.get);
 router.patch('/:id', validate(subjectUpdateSchema), controller.update);
+router.delete('/:id', controller.remove);
 router.patch('/:id/status', validate(subjectStatusSchema), controller.changeStatus);
 export default router;
