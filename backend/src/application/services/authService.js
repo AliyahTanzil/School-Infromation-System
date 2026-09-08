@@ -189,12 +189,21 @@ export async function register({
 // ─── Login ─────────────────────────────────────────────────────────────────
 
 export async function login({ email, password, deviceName, context }) {
-  // Throttle by recent failures for this email within the lockout window.
-  const recentFailures = await loginAttemptRepository.countRecentFailuresByEmail(
-    email,
-    lockoutWindowStart()
-  );
-  if (recentFailures >= config.auth.maxFailedLogins) {
+  // Persisted limits work across restarts and horizontally scaled instances.
+  // The higher IP threshold avoids locking out a shared school network merely
+  // because several users mistyped their own passwords.
+  const windowStart = lockoutWindowStart();
+  const [recentEmailFailures, recentIpFailures] = await Promise.all([
+    loginAttemptRepository.countRecentFailuresByEmail(email, windowStart),
+    loginAttemptRepository.countRecentFailuresByIp(
+      context.throttleIpAddress ?? context.ipAddress,
+      windowStart
+    ),
+  ]);
+  if (
+    recentEmailFailures >= config.auth.maxFailedLogins ||
+    recentIpFailures >= config.auth.maxFailedLoginsPerIp
+  ) {
     throw new RateLimitError(
       `Too many failed attempts. Try again in ${config.auth.lockoutMinutes} minutes.`
     );
@@ -206,7 +215,7 @@ export async function login({ email, password, deviceName, context }) {
     await loginAttemptRepository.record({
       userId,
       email,
-      ipAddress: context.ipAddress,
+      ipAddress: context.throttleIpAddress ?? context.ipAddress,
       userAgent: context.userAgent,
       succeeded: false,
       failureReason: reason,
@@ -241,18 +250,45 @@ export async function login({ email, password, deviceName, context }) {
   }
 
   if (!passwordOk) {
-    const nextCount = user.failedLoginCount + 1;
-    const shouldLock = nextCount >= config.auth.maxFailedLogins;
-    await userRepository.incrementFailedLogins(user.id, {
-      lockUntil: shouldLock ? new Date(Date.now() + config.auth.lockoutMinutes * 60 * 1000) : null,
-    });
-    await recordFailure('invalid_password', user.id);
-    await auditLoginRepository.record({
-      userId: user.id,
-      event: shouldLock ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
-      ipAddress: context.ipAddress,
-      userAgent: context.userAgent,
-    });
+    await prisma.$transaction(
+      async (tx) => {
+        const current = await userRepository.findById(user.id, tx);
+        if (!current || current.status !== 'ACTIVE') {
+          throw new AuthenticationError(GENERIC_LOGIN_ERROR);
+        }
+        const shouldLock = current.failedLoginCount + 1 >= config.auth.maxFailedLogins;
+        await userRepository.incrementFailedLogins(
+          user.id,
+          {
+            lockUntil: shouldLock
+              ? new Date(Date.now() + config.auth.lockoutMinutes * 60 * 1000)
+              : null,
+          },
+          tx
+        );
+        await loginAttemptRepository.record(
+          {
+            userId: user.id,
+            email,
+            ipAddress: context.throttleIpAddress ?? context.ipAddress,
+            userAgent: context.userAgent,
+            succeeded: false,
+            failureReason: 'invalid_password',
+          },
+          tx
+        );
+        await auditLoginRepository.record(
+          {
+            userId: user.id,
+            event: shouldLock ? 'ACCOUNT_LOCKED' : 'LOGIN_FAILED',
+            ipAddress: context.ipAddress,
+            userAgent: context.userAgent,
+          },
+          tx
+        );
+      },
+      { isolationLevel: 'Serializable' }
+    );
     throw new AuthenticationError(GENERIC_LOGIN_ERROR);
   }
 

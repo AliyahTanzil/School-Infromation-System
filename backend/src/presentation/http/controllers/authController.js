@@ -28,7 +28,9 @@ function authPayload(result) {
 
 export async function register(req, res) {
   const context = getRequestContext(req);
-  const result = await authService.register({ ...req.body, context });
+  // Public registration is exclusively the approval-based administrator flow.
+  // Staff and learner identities must be provisioned by authenticated admins.
+  const result = await authService.register({ ...req.body, accountType: 'TENANT_ADMIN', context });
   if (result.activationPending) {
     res.status(202).json({
       success: true,

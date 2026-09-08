@@ -271,15 +271,6 @@ function Login({ defaultMode = 'login', defaultType = 'owner' }) {
     password: '',
   });
 
-  const [staffForm, setStaffForm] = useState({
-    firstName: '',
-    lastName: '',
-    designation: 'Teacher',
-    schoolName: '',
-    email: '',
-    password: '',
-  });
-
   const [busy, setBusy] = useState(false);
   const [pendingActivation, setPendingActivation] = useState(false);
 
@@ -296,10 +287,6 @@ function Login({ defaultMode = 'login', defaultType = 'owner' }) {
 
   const updateOwner = (key, value) => {
     setOwnerForm((current) => ({ ...current, [key]: value }));
-  };
-
-  const updateStaff = (key, value) => {
-    setStaffForm((current) => ({ ...current, [key]: value }));
   };
 
   const handleBadge = (event) => {
@@ -364,47 +351,19 @@ function Login({ defaultMode = 'login', defaultType = 'owner' }) {
     }
   };
 
-  const handleStaffSubmit = async (event) => {
-    event.preventDefault();
-    setBusy(true);
-
-    try {
-      const result = await register({
-        ...staffForm,
-        accountType: 'STAFF',
-      });
-
-      const user = result?.user;
-      const destination = getDestinationForUser(user);
-      toast.success('Staff account created successfully');
-      nav(destination, { replace: true });
-    } catch (error) {
-      const status = error.response?.status;
-      const serverMessage = error.response?.data?.error?.message;
-      const message = !error.response
-        ? 'The registration service is unavailable. Please try again.'
-        : status === 409
-          ? serverMessage || 'An account with this email already exists.'
-          : serverMessage || 'Unable to create staff account';
-      toast.error(message);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   const roleConfig = {
     title:
       mode === 'login'
         ? 'School Information System sign in'
         : accountType === 'owner'
           ? 'Create Owner Account'
-          : 'Create Staff Account',
+          : 'Staff Account Access',
     subtitle:
       mode === 'login'
         ? 'Sign in with the account issued by your school administrator or school owner.'
         : accountType === 'owner'
           ? 'Register a new school tenant & administrator account.'
-          : 'Register a teacher or staff account to access your school workspace.',
+          : 'Staff accounts are securely issued by your school administrator.',
   };
 
   return (
@@ -676,8 +635,8 @@ function Login({ defaultMode = 'login', defaultType = 'owner' }) {
               />
 
               <button
-                type="submit"
-                disabled={busy}
+                type="button"
+                onClick={() => handleModeSwitch('login')}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
               >
                 {busy ? 'Creating owner account…' : 'Create Owner Account'}
@@ -685,69 +644,25 @@ function Login({ defaultMode = 'login', defaultType = 'owner' }) {
               </button>
             </form>
           ) : (
-            /* ================= STAFF SIGNUP FORM ================= */
-            <form onSubmit={handleStaffSubmit} className="space-y-3.5">
+            <div className="space-y-3.5">
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900">
-                <p className="font-semibold">Register as a Staff Member</p>
+                <p className="font-semibold">Staff accounts require administrator approval</p>
                 <p className="mt-0.5 text-indigo-700 text-[11px]">
-                  Create your teacher, administrative, or departmental staff account.
+                  Ask your school administrator to create your account and assign the correct role.
+                  Public self-registration is unavailable for staff, teachers, parents, and
+                  students.
                 </p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Field
-                  label="First name"
-                  value={staffForm.firstName}
-                  onChange={(event) => updateStaff('firstName', event.target.value)}
-                  placeholder="Kofi"
-                />
-                <Field
-                  label="Last name"
-                  value={staffForm.lastName}
-                  onChange={(event) => updateStaff('lastName', event.target.value)}
-                  placeholder="Mensah"
-                />
-              </div>
-
-              <Field
-                label="Role / Designation"
-                value={staffForm.designation}
-                onChange={(event) => updateStaff('designation', event.target.value)}
-                placeholder="e.g. Teacher, HR Manager, Accountant, Librarian"
-              />
-
-              <Field
-                label="School Name"
-                value={staffForm.schoolName}
-                onChange={(event) => updateStaff('schoolName', event.target.value)}
-                placeholder="e.g. Horizon Academy"
-              />
-
-              <Field
-                label="Work email"
-                type="email"
-                value={staffForm.email}
-                onChange={(event) => updateStaff('email', event.target.value)}
-                placeholder="staff@school.edu"
-              />
-
-              <Field
-                label="Password"
-                type="password"
-                value={staffForm.password}
-                onChange={(event) => updateStaff('password', event.target.value)}
-                placeholder="8+ characters"
-              />
 
               <button
                 type="submit"
                 disabled={busy}
                 className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:opacity-60"
               >
-                {busy ? 'Creating staff account…' : 'Create Staff Account'}
-                {!busy && <ArrowRight size={17} />}
+                Return to Sign In
+                <ArrowRight size={17} />
               </button>
-            </form>
+            </div>
           )}
 
           <p className="mt-5 text-center text-xs text-slate-500">

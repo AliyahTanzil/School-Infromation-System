@@ -295,6 +295,30 @@ Update this summary whenever a task status changes.
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 10: make successful login state, session/token/device issuance and success auditing one atomic transaction with rollback coverage. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 10 completed: successful-login state, login-attempt telemetry, session, initial refresh token, remembered device and success audit now commit through the same transaction. Failures return no credentials and roll back the entire issuance. Nine focused auth/session tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 11: make failed-password counter/lockout changes, attempt telemetry and security auditing atomic under concurrent requests. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 11 completed: invalid-password counter/lockout updates, attempt telemetry and login auditing now commit in one serializable transaction. Current account state is re-read inside the transaction, and write failures roll back every related record. Thirteen focused auth/session tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 12: add configurable database-backed per-IP login throttling so brute-force limits survive restarts and multiple application instances. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 12 completed: login now checks persisted recent failure counts for both the submitted email and client IP before credential lookup. The configurable per-IP threshold defaults to 25 to accommodate shared school networks and complements the process-local HTTP limiter. Fourteen focused auth/session tests, backend build, targeted lint and diff check pass; environment and backend configuration docs are updated. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 13: fail startup for invalid brute-force thresholds or lockout durations instead of silently accepting unsafe zero, negative, fractional or malformed values. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 13 completed: explicit brute-force thresholds and lockout durations must be positive safe integers; invalid zero, negative, fractional, malformed or unsafe values fail startup while omitted values retain defaults. Fifteen focused tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 14: prevent forged `x-forwarded-for` headers from bypassing login throttling or corrupting audit IP attribution when proxy trust is disabled. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 14 completed: request context and rate-limit keys now use only Express-resolved `req.ip`, which applies the configured proxy-trust policy. Direct `x-forwarded-for` parsing was removed, spoofed headers are ignored without trusted proxy configuration, and trusted deployments retain resolved client IPs. Eighteen focused tests, backend build, targeted lint and diff check pass; environment and backend docs are updated. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 15: normalize IPv6 login-throttle identities to a /64 allocation so rotating interface addresses cannot reset HTTP or persisted brute-force counters. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 15 completed: process-local and persisted login throttles share a canonical IP identity; IPv6 addresses are grouped by /64, while IPv4 and IPv4-mapped addresses remain address-specific. Login-attempt throttle records use the normalized key, while sessions and security audits retain the full Express-resolved IP. Nineteen focused auth/context tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 16: prevent unauthenticated self-registration of immediately active staff, teacher, parent or student identities; retain only the approval-based administrator application flow. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 13 completed: `MAX_FAILED_LOGINS`, `MAX_FAILED_LOGINS_PER_IP` and `ACCOUNT_LOCKOUT_MINUTES` now accept only positive safe integers when explicitly configured; zero, negative, fractional, malformed and unsafe numeric values fail startup. Defaults remain unchanged when variables are omitted. Fifteen focused auth/config/session tests, backend build, targeted lint and diff check pass; configuration documentation is updated. SEC-001 remains IN_PROGRESS. |
 =======
 
 | 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 9: reject access tokens without expiry, with empty identity claims or inconsistent session aliases; preserve valid legacy sid-only tokens. |

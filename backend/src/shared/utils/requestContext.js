@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { isIP } from 'node:net';
 
 /**
  * Extracts a normalized client context (IP, user-agent, device fingerprint)
@@ -7,17 +8,40 @@ import crypto from 'node:crypto';
  */
 
 /**
- * Best-effort client IP resolution, honoring the first entry of
- * `x-forwarded-for` when running behind a proxy/load balancer.
+ * Best-effort client IP resolution. Express computes `req.ip` using the
+ * application's configured `trust proxy` policy, so this helper must not read
+ * `x-forwarded-for` directly or an untrusted client could spoof throttle and
+ * audit identities.
  * @param {import('express').Request} req
  * @returns {string}
  */
 export function getClientIp(req) {
-  const forwarded = req.headers['x-forwarded-for'];
-  if (typeof forwarded === 'string' && forwarded.length > 0) {
-    return forwarded.split(',')[0].trim();
-  }
   return req.ip ?? req.socket?.remoteAddress ?? 'unknown';
+}
+
+function expandIpv6(ip) {
+  let normalized = ip.toLowerCase().split('%')[0];
+  const ipv4Match = normalized.match(/(?:^|:)(\d+\.\d+\.\d+\.\d+)$/);
+  if (ipv4Match) {
+    const octets = ipv4Match[1].split('.').map(Number);
+    const tail = `${((octets[0] << 8) | octets[1]).toString(16)}:${((octets[2] << 8) | octets[3]).toString(16)}`;
+    normalized = normalized.slice(0, -ipv4Match[1].length) + tail;
+  }
+  const [left = '', right = ''] = normalized.split('::');
+  const leftParts = left ? left.split(':') : [];
+  const rightParts = right ? right.split(':') : [];
+  const missing = Math.max(0, 8 - leftParts.length - rightParts.length);
+  return [...leftParts, ...Array(missing).fill('0'), ...rightParts].map((part) =>
+    part.padStart(4, '0')
+  );
+}
+
+export function getThrottleIp(ip) {
+  const value = String(ip ?? '').trim();
+  const mappedIpv4 = value.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i);
+  if (mappedIpv4 && isIP(mappedIpv4[1]) === 4) return mappedIpv4[1];
+  if (isIP(value) !== 6) return value || 'unknown';
+  return `${expandIpv6(value).slice(0, 4).join(':')}::/64`;
 }
 
 /**
@@ -62,6 +86,7 @@ export function getRequestContext(req) {
   const userAgent = getUserAgent(req);
   return {
     ipAddress: getClientIp(req),
+    throttleIpAddress: getThrottleIp(getClientIp(req)),
     userAgent,
     deviceType: getDeviceType(userAgent),
     deviceFingerprint: getDeviceFingerprint(req),

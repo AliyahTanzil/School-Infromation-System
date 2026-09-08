@@ -5,6 +5,19 @@ const toInt = (value, fallback) => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
+export const toPositiveInt = (value, fallback, name) => {
+  if (value === undefined || String(value).trim() === '') return fallback;
+  const normalized = String(value).trim();
+  if (
+    !/^\d+$/.test(normalized) ||
+    Number(normalized) < 1 ||
+    !Number.isSafeInteger(Number(normalized))
+  ) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return Number(normalized);
+};
+
 const toBool = (value, fallback) =>
   value === undefined ? fallback : String(value).toLowerCase() === 'true';
 
@@ -86,8 +99,17 @@ const config = {
     bcryptRounds: toInt(process.env.BCRYPT_ROUNDS, 12),
 
     // Brute-force protection.
-    maxFailedLogins: toInt(process.env.MAX_FAILED_LOGINS, 5),
-    lockoutMinutes: toInt(process.env.ACCOUNT_LOCKOUT_MINUTES, 15),
+    maxFailedLogins: toPositiveInt(process.env.MAX_FAILED_LOGINS, 5, 'MAX_FAILED_LOGINS'),
+    maxFailedLoginsPerIp: toPositiveInt(
+      process.env.MAX_FAILED_LOGINS_PER_IP,
+      25,
+      'MAX_FAILED_LOGINS_PER_IP'
+    ),
+    lockoutMinutes: toPositiveInt(
+      process.env.ACCOUNT_LOCKOUT_MINUTES,
+      15,
+      'ACCOUNT_LOCKOUT_MINUTES'
+    ),
 
     // Single-use token lifetimes.
     emailVerificationTtlHours: toInt(process.env.EMAIL_VERIFICATION_TTL_HOURS, 24),

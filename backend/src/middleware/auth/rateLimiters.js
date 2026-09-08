@@ -1,6 +1,6 @@
 import rateLimit from 'express-rate-limit';
 import RateLimitError from '../../shared/errors/RateLimitError.js';
-import { getClientIp } from '../../shared/utils/requestContext.js';
+import { getClientIp, getThrottleIp } from '../../shared/utils/requestContext.js';
 
 /**
  * IP-based rate limiters for sensitive auth endpoints. These are a coarse first
@@ -14,7 +14,7 @@ function build({ windowMs, max, message }) {
     max,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => getClientIp(req),
+    keyGenerator: (req) => getThrottleIp(getClientIp(req)),
     handler: () => {
       throw new RateLimitError(message);
     },
