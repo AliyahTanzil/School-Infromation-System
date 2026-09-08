@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import WeeklyTimetableGrid from './WeeklyTimetableGrid.jsx';
 import { scienceSubjects, sciencePeriods, scienceWeek } from './scienceTimetableDraft.js';
+import { printElement } from './printElement.js';
 
 export default function ScienceTimetableDraft() {
   const [subjects, setSubjects] = useState(scienceSubjects);
@@ -29,6 +30,7 @@ export default function ScienceTimetableDraft() {
   );
   return (
     <section
+      id="science-timetable-print"
       className="mt-8 rounded-2xl border border-indigo-200 bg-white p-5"
       aria-labelledby="science-draft-title"
     >
@@ -46,7 +48,7 @@ export default function ScienceTimetableDraft() {
         </div>
         <button
           type="button"
-          onClick={() => window.print()}
+          onClick={() => printElement('science-timetable-print')}
           className="rounded-xl border px-4 py-2 text-sm font-semibold print:hidden"
         >
           Print draft

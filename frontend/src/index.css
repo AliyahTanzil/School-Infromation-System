@@ -32,3 +32,22 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .calendar-shell, .live-learning-shell, .assessment-shell, .quiz-shell, .gradebook-shell,
   .feedback-shell, .module-page { padding: 20px 16px; }
 }
+
+#timetable-print-root { display: none; }
+
+@media print {
+  body.printing-timetable > :not(#timetable-print-root) { display: none !important; }
+  body.printing-timetable #timetable-print-root {
+    display: block;
+    color: #0f172a;
+    background: #fff;
+  }
+  body.printing-timetable #timetable-print-root .print\:hidden { display: none !important; }
+  body.printing-timetable #timetable-print-root section {
+    margin: 0;
+    border: 0;
+    padding: 0;
+  }
+  body.printing-timetable #timetable-print-root .overflow-x-auto { overflow: visible; }
+  @page { size: landscape; margin: 12mm; }
+}

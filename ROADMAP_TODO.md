@@ -318,6 +318,8 @@ Update this summary whenever a task status changes.
 
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 16: prevent unauthenticated self-registration of immediately active staff, teacher, parent or student identities; retain only the approval-based administrator application flow. |
 
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 16 completed: the public registration validator accepts only `TENANT_ADMIN`, and the controller enforces that type independently. Staff, teacher, parent and student identities must use authenticated administrator provisioning. The frontend no longer submits staff self-registration and directs staff back to administrator-issued sign-in. Four focused backend tests, 37 frontend tests, both production builds, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 13 completed: `MAX_FAILED_LOGINS`, `MAX_FAILED_LOGINS_PER_IP` and `ACCOUNT_LOCKOUT_MINUTES` now accept only positive safe integers when explicitly configured; zero, negative, fractional, malformed and unsafe numeric values fail startup. Defaults remain unchanged when variables are omitted. Fifteen focused auth/config/session tests, backend build, targeted lint and diff check pass; configuration documentation is updated. SEC-001 remains IN_PROGRESS. |
 =======
 

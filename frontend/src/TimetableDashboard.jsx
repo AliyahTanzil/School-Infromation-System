@@ -2,6 +2,7 @@ import api from './api/auth.js';
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ScienceTimetableDraft from './ScienceTimetableDraft.jsx';
+import { printElement } from './printElement.js';
 import WeeklyTimetableGrid from './WeeklyTimetableGrid.jsx';
 import TimetableReadinessPanel from './TimetableReadinessPanel.jsx';
 import TimetableEntryEditor from './TimetableEntryEditor.jsx';
@@ -196,7 +197,9 @@ export default function TimetableDashboard() {
             </p>
           </div>
           <button
-            onClick={() => window.print()}
+            onClick={() =>
+              printElement(selected ? 'operational-timetable-print' : 'science-timetable-print')
+            }
             className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold hover:border-indigo-300"
           >
             Print timetable
@@ -481,10 +484,12 @@ export default function TimetableDashboard() {
             </div>
             {selected && <TimetableReadinessPanel timetable={selected} report={readiness} />}
             <div className="mt-5 overflow-x-auto">
-              <WeeklyTimetableGrid
-                slots={selected?.slots || []}
-                entries={selected?.entries || []}
-              />
+              <div id="operational-timetable-print">
+                <WeeklyTimetableGrid
+                  slots={selected?.slots || []}
+                  entries={selected?.entries || []}
+                />
+              </div>
               {selected && (
                 <div id="timetable-lessons">
                   <TimetableEntryEditor
