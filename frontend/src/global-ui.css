@@ -766,3 +766,88 @@ body {
   background: #0d1c30 !important;
   color: #e8eef7 !important;
 }
+
+/* Keep shared operational surfaces aligned with the dark page-shell override. */
+.page-shell {
+  --saas-card: #102036;
+  --saas-card-alt: #142a43;
+  --saas-border: #29445f;
+  --saas-surface-50: #142a43;
+  --saas-surface-100: #18314d;
+  --saas-text: #e8eef7;
+  --saas-text-soft: #aebed0;
+  --saas-text-muted: #91a4ba;
+  --saas-primary-600: #8aa2ff;
+  --saas-primary-700: #b5c3ff;
+}
+
+.page-shell :is(.data-panel, .data-table-wrap, .result-row, .stat-card, .registration-modal) {
+  border-color: var(--saas-border);
+  background: linear-gradient(145deg, #142a43, var(--saas-card));
+  color: var(--saas-text);
+}
+
+.page-shell .data-table tbody tr:hover {
+  background: rgba(72, 216, 201, 0.06);
+}
+
+.page-shell .registration-modal__close {
+  border-color: var(--saas-border);
+  background: #18314d;
+  color: var(--saas-text-soft);
+}
+
+/*
+ * Light-surface boundary
+ *
+ * global-ui.css intentionally applies the product's dark shell after the
+ * light design system. Authentication remains a light surface, so every
+ * inherited text and form color is restated here to prevent the global dark
+ * defaults from producing light-on-light headings or dark fields.
+ */
+.auth-shell {
+  color: var(--saas-text);
+  color-scheme: light;
+}
+
+.auth-shell__panel {
+  color: var(--saas-text);
+}
+
+.auth-shell__brand,
+.auth-shell__title,
+.auth-shell .form-field__label {
+  color: #142033;
+}
+
+.auth-shell__brand-context,
+.auth-shell__subtitle {
+  color: #536177;
+}
+
+.auth-shell :is(input, select, textarea) {
+  border-color: #cbd5e1 !important;
+  background: #f8fafc !important;
+  color: #142033 !important;
+}
+
+.auth-shell :is(input, select, textarea)::placeholder {
+  color: #64748b;
+  opacity: 1;
+}
+
+.auth-shell :is(input, select, textarea):focus {
+  border-color: var(--saas-primary-500) !important;
+  background: #fff !important;
+  box-shadow: 0 0 0 4px rgba(61, 125, 255, 0.16);
+}
+
+.auth-shell .action-link,
+.auth-shell .text-indigo-600 {
+  color: #2457d6 !important;
+}
+
+.auth-shell .text-slate-500,
+.auth-shell .text-slate-600 {
+  color: #526077 !important;
+}

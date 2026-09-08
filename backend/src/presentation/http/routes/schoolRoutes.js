@@ -61,16 +61,12 @@ for (const [model, permission] of [
     }
   );
 }
-router.get('/:id/admins', requirePermission('schools.assign_admins'), controller.admins);
+router.get('/:id/admins', requirePermission('schools.assign'), controller.admins);
 router.post(
   '/:id/admins',
-  requirePermission('schools.assign_admins'),
+  requirePermission('schools.assign'),
   validate(adminSchema),
   controller.assignAdmin
 );
-router.delete(
-  '/:id/admins/:userId',
-  requirePermission('schools.assign_admins'),
-  controller.revokeAdmin
-);
+router.delete('/:id/admins/:userId', requirePermission('schools.assign'), controller.revokeAdmin);
 export default router;

@@ -4,6 +4,8 @@ import {
   getOverview,
   listKpis,
   getLearningAnalytics,
+  evaluateKpi,
+  requestExport,
 } from '../../src/application/services/analyticsService.js';
 
 const scope = { tenantId: 'tenant-1', schoolId: 'school-1' };
@@ -77,17 +79,37 @@ test('database failures reject overview and KPIs instead of returning success da
 
 test('missing scope is rejected and computed KPIs match the overview', async (t) => {
   const { db } = database(t);
-  await assert.rejects(getOverview({}, db), /Tenant scope required/);
-  await assert.rejects(listKpis({}, db), /Tenant scope required/);
+  await assert.rejects(getOverview({}, db), /School scope required/);
+  await assert.rejects(getOverview({ tenantId: scope.tenantId }, db), /School scope required/);
+  await assert.rejects(listKpis({}, db), /School scope required/);
+  await assert.rejects(
+    getLearningAnalytics({ tenantId: scope.tenantId }, db),
+    /School scope required/
+  );
+  assert.throws(
+    () => evaluateKpi({ tenantId: scope.tenantId, metricKey: 'attendance' }),
+    /School scope required/
+  );
+  assert.throws(() => requestExport({ tenantId: scope.tenantId }), /School scope required/);
   assert.deepEqual(
     (await listKpis(scope, db)).map((kpi) => kpi.value),
     [80, 75]
   );
 });
 
-test('learning analytics contract uses isolated database fixtures', async () => {
-  const db = { subject: { findMany: async () => [] }, class: { findMany: async () => [] } };
+test('learning analytics contract uses isolated school-scoped database fixtures', async (t) => {
+  const subjects = t.mock.fn(async () => []);
+  const classes = t.mock.fn(async () => []);
+  const db = { subject: { findMany: subjects }, class: { findMany: classes } };
   const learning = await getLearningAnalytics(scope, db);
   assert.ok(Array.isArray(learning.subjects));
   assert.ok(Array.isArray(learning.learners));
+  assert.deepEqual(subjects.mock.calls[0].arguments[0].where, {
+    ...scope,
+    status: 'ACTIVE',
+  });
+  assert.deepEqual(classes.mock.calls[0].arguments[0].where, {
+    ...scope,
+    status: 'ACTIVE',
+  });
 });

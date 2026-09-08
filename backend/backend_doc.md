@@ -6,20 +6,21 @@
 - Workspace: `/vercel/share/v0-project/backend`
 - Runtime: Node.js ESM, Node >= 20
 - HTTP framework: Express 5
-- ORM/database: Prisma 5 with PostgreSQL
-- Current entrypoint: `src/main.js`
-- Application factory: `src/app.js`
-- API prefix: `/api`
-- Default backend port: `5000`
-- Frontend development origin: `http://localhost:4000`
+- ORM/database: Prisma 6 with PostgreSQL
+- Source entrypoint: `src/main.ts`
+- Compiled production entrypoint: `dist/main.js`
+- Application factory: `src/foundation/app.ts`, re-exported by `src/app.ts`
+- API prefixes: `/api` and `/api/v1`
+- Default backend port: `3000`
+- Frontend development origins: `http://localhost:3000`, `http://localhost:4000`, and `http://localhost:5173`
 
 ## Startup and middleware contract
 
-1. `src/main.js` imports the Express app, config, logger, and database disconnect helper.
-2. The server listens on `0.0.0.0`, uses `PORT` or configured port, writes `.sais-port`, retries on `EADDRINUSE`, and performs graceful shutdown on SIGTERM/SIGINT.
-3. `src/app.js` configures Helmet, CORS with credentials, JSON/urlencoded parsing, `cookie-parser`, request logging, `/api` routing, 404 handling, and centralized error handling.
-4. Readiness/health routes are mounted at the API root through `healthRoutes`.
-5. Error responses must continue to pass through `notFoundHandler` and `errorHandler`.
+1. `src/main.ts` calls the server bootstrap in `src/server.ts`; Docker, npm start, and serverless builds consume only the compiled `dist` output.
+2. The server validates production configuration, reconciles the configured single school, listens on `0.0.0.0`, writes `.sais-port`, and performs graceful shutdown on SIGTERM/SIGINT.
+3. `src/foundation/app.ts` is the only composition root. It configures trusted-proxy behavior, request IDs/logging, Helmet, explicit CORS checks, body parsing, cookies, routes, 404 handling, and centralized error handling.
+4. Liveness is available at `/api/v1/health/live`; readiness and database probes are under `/api/v1/health`.
+5. Error responses must continue to pass through the foundation `notFound` and `errorHandler` middleware.
 
 ## Environment/config contract
 

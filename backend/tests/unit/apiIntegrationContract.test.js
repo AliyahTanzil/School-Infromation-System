@@ -3,7 +3,9 @@ import test from 'node:test';
 import fs from 'node:fs';
 import path from 'node:path';
 import request from 'supertest';
-import app from '../../src/app.js';
+import { createApp } from '../../src/app.js';
+
+const app = createApp();
 
 const root = path.resolve(import.meta.dirname, '../../..');
 const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -80,11 +82,29 @@ test('platform actions use the active audit model', () => {
 });
 
 test('deferred domains return a controlled runtime response', async () => {
-  for (const path of ['/api/ai-intelligence']) {
+  for (const path of [
+    '/api/ai-intelligence',
+    '/api/billing/overview',
+    '/api/v1/billing/overview',
+  ]) {
     const response = await request(app).get(path).expect(501);
     assert.equal(response.body.error.code, 'FEATURE_NOT_IMPLEMENTED');
     assert.ok(response.body.error.details.requiredTask);
   }
+});
+
+test('incomplete billing and unsigned webhook handlers are not mounted', () => {
+  const appSource = read('backend/src/foundation/app.ts');
+  assert.doesNotMatch(appSource, /import billingRouter/);
+  assert.doesNotMatch(appSource, /app\.use\('\/api(?:\/v1)?\/billing', billingRouter\)/);
+  assert.match(
+    appSource,
+    /app\.use\('\/api\/billing', featureUnavailableRoutes\('Subscription billing', 'SaaS-001'\)\)/
+  );
+  assert.match(
+    appSource,
+    /app\.use\('\/api\/v1\/billing', featureUnavailableRoutes\('Subscription billing', 'SaaS-001'\)\)/
+  );
 });
 
 test('operational analytics routes require authentication', async () => {

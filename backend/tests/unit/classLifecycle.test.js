@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assertCapacity, assertClassTransition } from '../../src/domain/classLifecycle.js';
 import { readFile } from 'node:fs/promises';
+import { URL } from 'node:url';
 
 test('class lifecycle allows planned to active', () =>
   assert.doesNotThrow(() => assertClassTransition('PLANNED', 'ACTIVE')));
@@ -20,7 +21,7 @@ test('class, section, and enrollment persistence is tenant and school scoped', a
   assert.match(schema, /model Class \{/);
   assert.match(schema, /model ClassEnrollment \{/);
   assert.match(schema, /model ClassSubject \{/);
-  assert.match(service, /where: \{ id: studentId, tenantId \}/);
+  assert.match(service, /where: \{ id: studentId, tenantId, schoolId, deletedAt: null \}/);
   assert.match(routes, /router\.use\('\/classes', classRoutes\)/);
   assert.match(app, /app\.use\('\/api\/classes', classRouter\)/);
   assert.doesNotMatch(dashboard, /demoClasses/);

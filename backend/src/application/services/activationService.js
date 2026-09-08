@@ -6,7 +6,7 @@ const ACTIVATION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function requireOwner(ownerUserId) {
   const owner = await prisma.user.findUnique({ where: { id: ownerUserId } });
-  if (!owner || owner.accountType !== 'APPLICATION_MANAGER') {
+  if (!owner || owner.accountType !== 'APPLICATION_MANAGER' || owner.platformRole !== 'OWNER') {
     throw new AuthorizationError('Only an application owner can manage activation requests');
   }
   return owner;
@@ -57,10 +57,17 @@ export async function decide({ ownerUserId, requestId, decision }) {
       where: { id: requestId, ownerUserId },
     });
     if (status === 'APPROVED') {
-      await tx.user.update({
-        where: { id: request.userId },
+      const activated = await tx.user.updateMany({
+        where: {
+          id: request.userId,
+          status: 'PENDING_VERIFICATION',
+          deletedAt: null,
+        },
         data: { status: 'ACTIVE', emailVerifiedAt: new Date() },
       });
+      if (!activated.count) {
+        throw new NotFoundError('Applicant is no longer awaiting activation');
+      }
     }
     return { status, userId: request.userId };
   });

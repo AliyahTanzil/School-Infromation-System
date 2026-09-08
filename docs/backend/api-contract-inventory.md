@@ -27,9 +27,11 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## activationRoutes
 
+- Mounted at `/api/activation-requests` and `/api/v1/activation-requests`.
+- All operations require an authenticated `APPLICATION_MANAGER` with platform role `OWNER`.
 - `GET` '/', controller.listPending);
 - `GET` '/outbox', controller.outbox);
-- `POST` '/:id/decision', controller.decide);
+- `POST` '/:id/decision', UUID and `approve|reject` validation, controller.decide);
 
 ## aiAcademicRoutes
 
@@ -61,7 +63,10 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - `GET` '/overview', overview);
 - `GET` '/kpis', kpis);
 - `GET` '/kpis/:metricKey', kpi);
-- `POST` '/exports', exportReport);
+- `GET` '/learning', learningAnalytics);
+- `POST` '/exports', administrator role required, exportReport);
+
+All analytics operations use the authenticated, server-resolved single-school context. Analytics services reject missing tenant or school scope.
 
 ## assetInventoryRoutes
 
@@ -90,9 +95,9 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## billingRoutes
 
-- `GET` '/overview', getOverview);
-- `POST` '/lifecycle', lifecycle);
-- `POST` '/webhooks/:provider', webhook);
+- `/api/billing/*` and `/api/v1/billing/*` return HTTP `501 FEATURE_NOT_IMPLEMENTED`.
+- The response identifies `SaaS-001` as the required task.
+- Provisional overview, lifecycle and unsigned webhook handlers are not mounted.
 
 ## biometricRoutes
 
@@ -184,10 +189,11 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## parentRoutes
 
+- All routes require authenticated parent context resolved against the configured school.
 - `GET` '/me', controller.portal);
 - `PATCH` '/me/profile', validate(profileSchema), controller.updateProfile);
-- `POST` '/me/students', validate(linkSchema), controller.link);
-- `DELETE` '/me/students/:studentId', controller.unlink);
+- `POST` '/me/students', school-enrollment check, validate(linkSchema), controller.link);
+- `DELETE` '/me/students/:studentId', validate(unlinkSchema), controller.unlink);
 
 ## paymentGatewayRoutes
 
@@ -223,7 +229,7 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 - `POST` '/', requirePermission('schools.create'), validate(schoolSchema), controller.create);
 - `GET` '/:id', requireSchoolContext, requirePermission('schools.read'), controller.get);
 - `DELETE` '/:id', requirePermission('schools.delete'), controller.remove);
-- `GET` '/:id/admins', requirePermission('schools.assign_admins'), controller.admins);
+- `GET` '/:id/admins', requirePermission('schools.assign'), controller.admins);
 
 ## securityAdminRoutes
 
@@ -245,11 +251,11 @@ Generated from implemented Express route declarations. The mounted prefix is `/a
 
 ## studentDomainRoutes
 
-- `GET` '/', requirePermission('student.read'), controller.list);
-- `GET` '/:id', requirePermission('student.read'), controller.get);
-- `POST` '/', requirePermission('student.create'), controller.create);
-- `PATCH` '/:id', requirePermission('student.update'), controller.update);
-- `POST` '/:id/guardians', requirePermission('student.update'), controller.addGuardian);
+- `GET` '/', requirePermission('students.read'), controller.list);
+- `GET` '/:id', requirePermission('students.read'), controller.get);
+- `POST` '/', requirePermission('students.create'), controller.create);
+- `PATCH` '/:id', requirePermission('students.update'), controller.update);
+- `POST` '/:id/guardians', requirePermission('students.update'), controller.addGuardian);
 
 ## studentRoutes
 

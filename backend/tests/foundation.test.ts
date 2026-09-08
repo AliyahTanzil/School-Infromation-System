@@ -29,3 +29,13 @@ test('user-management routes are mounted on the active server', async () => {
   assert.equal(response.status, 401);
   assert.notEqual(response.body.error?.code, 'NOT_FOUND');
 });
+
+test('canonical app rejects unknown browser origins with a stable error', async () => {
+  const response = await request(createApp())
+    .get('/api/v1/health')
+    .set('origin', 'https://attacker.example');
+  assert.equal(response.status, 403);
+  assert.equal(response.body.error.code, 'CORS_ORIGIN_DENIED');
+  assert.ok(response.body.requestId);
+  assert.equal(response.headers['x-request-id'], response.body.requestId);
+});

@@ -17,20 +17,20 @@ function publicPortal(parent) {
       },
       student: {
         id: link.student.id,
-        status: link.student.enrollments[0]?.status ?? 'NOT_ENROLLED',
+        status: link.student.classEnrollments[0]?.status ?? 'NOT_ENROLLED',
         admissionNumber: link.student.admissionNumber,
         profile: {
           firstName: link.student.firstName,
           lastName: link.student.lastName,
         },
-        enrollment: link.student.enrollments[0] ?? null,
+        enrollment: link.student.classEnrollments[0] ?? null,
       },
     })),
   };
 }
 
-export async function getPortal(parentId, tenantId, req) {
-  const parent = await parentRepository.findPortal(parentId, tenantId);
+export async function getPortal(parentId, scope, req) {
+  const parent = await parentRepository.findPortal(parentId, scope);
   if (!parent) throw new NotFoundError('Parent portal not found');
   await prisma.parentAccessLog.create({
     data: { parentId, resource: 'parent-portal', action: 'VIEW', ipAddress: req.ip },
@@ -42,9 +42,13 @@ export async function updateProfile(parentId, data) {
   return prisma.parentProfile.update({ where: { parentId }, data });
 }
 
-export async function link(parentId, tenantId, studentId, relationship) {
+export async function link(parentId, { tenantId, schoolId }, studentId, relationship) {
   const student = await prisma.student.findFirst({
-    where: { id: studentId, tenantId },
+    where: {
+      id: studentId,
+      tenantId,
+      classEnrollments: { some: { tenantId, schoolId, status: 'ACTIVE' } },
+    },
     select: { id: true },
   });
   if (!student) throw new NotFoundError('Student not found');

@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import request from 'supertest';
-import app from '../../src/app.js';
+import { createApp } from '../../src/app.js';
+
+const app = createApp();
 
 test('rejects invalid login input before reaching the service', async () => {
   const response = await request(app)

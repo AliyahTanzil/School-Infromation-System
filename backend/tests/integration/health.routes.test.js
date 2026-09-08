@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import request from 'supertest';
-import app from '../../src/app.js';
+import { createApp } from '../../src/app.js';
+
+const app = createApp();
 
 describe('system routes', () => {
   it('reports that the process is alive without requiring a database', async () => {

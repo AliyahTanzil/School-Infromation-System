@@ -287,7 +287,6 @@ Update this summary whenever a task status changes.
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 8 completed: email verification preserves account lifecycle and atomically consumes verification links, updates email ownership and records audit. Ten regressions pass; full backend suite 336 passed/1 intentional skip, build, lint and diff check pass. SEC-001 remains IN_PROGRESS. |
 
-<<<<<<< HEAD
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 9: remove sign-in account enumeration across missing, suspended, pending and temporarily locked identities while retaining internal failure telemetry. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 9 completed: sign-in now returns one generic authentication failure for missing, suspended, pending and locked accounts, performs bcrypt work for unknown identities, and retains specific internal failure telemetry. The focused regression, backend build, targeted lint and diff check pass. Full backend suite reports 336 passed/1 intentional skip/3 pre-existing subject-class contract failures unrelated to SEC-001. SEC-001 remains IN_PROGRESS. |
@@ -321,12 +320,34 @@ Update this summary whenever a task status changes.
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 16 completed: the public registration validator accepts only `TENANT_ADMIN`, and the controller enforces that type independently. Staff, teacher, parent and student identities must use authenticated administrator provisioning. The frontend no longer submits staff self-registration and directs staff back to administrator-issued sign-in. Four focused backend tests, 37 frontend tests, both production builds, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 13 completed: `MAX_FAILED_LOGINS`, `MAX_FAILED_LOGINS_PER_IP` and `ACCOUNT_LOCKOUT_MINUTES` now accept only positive safe integers when explicitly configured; zero, negative, fractional, malformed and unsafe numeric values fail startup. Defaults remain unchanged when variables are omitted. Fifteen focused auth/config/session tests, backend build, targeted lint and diff check pass; configuration documentation is updated. SEC-001 remains IN_PROGRESS. |
-=======
-
 | 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 9: reject access tokens without expiry, with empty identity claims or inconsistent session aliases; preserve valid legacy sid-only tokens. |
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 9 implemented: access tokens require HS256, finite expiry, nonblank identity and consistent session aliases while retaining valid sid-only compatibility. All 13 focused token tests, backend build, focused lint and diff check pass. Full backend suite fails in subject-creation coverage requiring classAssignments (including recordCode.test.js and subjectDomain.test.js); subject implementation was not modified by this checkpoint. SEC-001 remains IN_PROGRESS, full-suite acceptance not achieved. |
 
 User-directed scope change, 2026-09-07: prioritize application-wide CRUD completion. Begin with subject end-to-end editing and soft deletion; inventory in docs/audit/crud-coverage-2026-09-07.md. SEC-001 remains unfinished; no completion claim.
 
-> > > > > > > dfc4a1a7f92aa2e0b7f89199edb91dc58ec5dfe9
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 17: eliminate deployment-dependent security drift by making the compiled TypeScript backend the only application composition root. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 17 completed: removed duplicate JavaScript bootstraps; development, npm production startup, Docker and serverless deployment now share the compiled TypeScript app. Docker builds and runs `dist/main.js`, its health check uses `/api/v1/health/live`, configured proxy/CORS and compatibility routes are preserved, and rejected origins receive request IDs. The 25-test route/composition suite, backend build, compiled-artifact verification, targeted lint and diff check pass. Full backend suite: 369 passed, one intentional skip and one pre-existing class contract failure. Docker unavailable locally; static definition coverage passes. SEC-001 remains IN_PROGRESS. |
+
+User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme boundaries so authentication and operational page text remains readable. WCAG contrast regressions, all 40 frontend tests, production build, targeted lint and diff check pass. Browser screenshot verification remains pending because no browser-control surface was available. SEC-001 status is unchanged.
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 18: begin the mounted-route authorization and single-school scope audit with canonical permission-code validation and digital-classroom mutation boundaries. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 18 authorization wave 1 completed: corrected active student `students.*` and school administrator `schools.assign` permission checks, added a repository-wide route-to-catalog drift regression, and role-gated digital-classroom create/member/archive mutations while retaining service owner and school-scope enforcement. Eight focused tests, backend build, targeted lint and diff check pass. Full backend suite: 372 passed, one intentional skip and the same pre-existing class source-contract failure. SEC-001 remains IN_PROGRESS for the remaining mounted routers and compliance controls. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 19: continue the mounted-route audit by preventing analytics controllers from discarding the resolved single-school context and by protecting analytics export mutations. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 19 authorization wave 2 completed: analytics overview, KPIs, learning data and exports now use server-resolved tenant/school context and fail closed when either value is absent; export requests require administrator roles. Corrected the stale class contract to require the implementation's stronger tenant, school and soft-delete lookup. Eighteen focused tests, backend build, targeted lint and diff check pass. Full backend suite passes: 374 tests, one intentional live-database skip. SEC-001 remains IN_PROGRESS for remaining mounted routers and compliance controls. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 20: audit the actively mounted billing surface and prevent incomplete lifecycle or unsigned webhook processing while SaaS-001 remains blocked. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 20 authorization wave 3 completed: `/api/billing` and `/api/v1/billing` now fail closed with `501 FEATURE_NOT_IMPLEMENTED` and `requiredTask: SaaS-001`; provisional lifecycle mutations and unsigned webhook handlers are no longer mounted. Seventeen focused runtime/composition/authorization tests, backend build, targeted lint and diff check pass. Full backend suite passes: 375 tests, one intentional live-database skip. SEC-001 remains IN_PROGRESS for remaining mounted routers and compliance controls. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 21: reconcile the owner activation workflow with the canonical server, strict input validation and defense-in-depth owner/lifecycle authorization. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 21 authorization wave 4 completed: mounted activation requests on both API prefixes; require authenticated `APPLICATION_MANAGER` plus `OWNER` at route and service layers; validate UUID and explicit approve/reject decisions; and conditionally activate only current, non-deleted pending applicants so lifecycle drift rolls back. Payment webhook verification was reviewed and retained. Five focused and nineteen combined tests, backend build, targeted lint and diff check pass. Full backend suite passes: 378 tests, one intentional live-database skip. SEC-001 remains IN_PROGRESS for remaining mounted routers and compliance controls. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 22: audit parent-to-student authorization, configured-school boundaries and mutation validation. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 22 authorization wave 5 completed: parent routes now resolve the configured school before parent context; portal relationships and link targets require active enrollment in that school; self-requested links remain pending; and profile/link/unlink schemas now match the shared validator with strict body and UUID validation. Eight focused tests, backend build, targeted lint and diff check pass. Full backend suite passes: 378 tests, one intentional live-database skip. SEC-001 remains IN_PROGRESS for remaining mounted routers and compliance controls. |

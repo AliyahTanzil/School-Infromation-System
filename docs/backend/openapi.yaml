@@ -148,7 +148,7 @@ paths:
         '404': { description: Parent profile not found }
   /parents/me/students:
     post:
-      summary: Link a tenant student to the authenticated parent
+      summary: Request a link to a student actively enrolled in the configured school
       security: [{ bearerAuth: [] }]
       requestBody:
         required: true
@@ -162,7 +162,7 @@ paths:
                 studentId: { type: string, format: uuid }
                 relationship: { type: string }
       responses:
-        '201': { description: Student linked }
+        '201': { description: Pending student relationship created }
         '400': { description: Validation error }
         '401': { description: Authentication required }
         '404': { description: Parent or student not found }
@@ -176,7 +176,7 @@ paths:
       summary: Revoke a student's link to the authenticated parent
       security: [{ bearerAuth: [] }]
       responses:
-        '204': { description: Student link revoked }
+        '200': { description: Student link revoked }
         '401': { description: Authentication required }
         '404': { description: Parent or student link not found }
   /teachers:

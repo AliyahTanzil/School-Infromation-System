@@ -3,7 +3,7 @@ import parentService from '../../../application/services/parentService.js';
 const send = (res, data, status = 200) => res.status(status).json({ data });
 export default {
   portal: async (req, res) =>
-    send(res, await parentService.getPortal(req.parent.id, req.parent.tenantId, req)),
+    send(res, await parentService.getPortal(req.parent.id, req.schoolContext, req)),
   updateProfile: async (req, res) =>
     send(res, await parentService.updateProfile(req.parent.id, req.body)),
   link: async (req, res) =>
@@ -11,7 +11,7 @@ export default {
       res,
       await parentService.link(
         req.parent.id,
-        req.parent.tenantId,
+        req.schoolContext,
         req.body.studentId,
         req.body.relationship
       ),

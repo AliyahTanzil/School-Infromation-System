@@ -105,15 +105,13 @@ export const analyticsDemo = {
  * Calculates operational & academic analytics for the active tenant.
  */
 export async function getOverview({ tenantId, schoolId }, db = prisma) {
-  if (!tenantId) throw new ValidationError('Tenant scope required');
-  const scopeWhere = { tenantId, ...(schoolId ? { schoolId } : {}) };
+  if (!tenantId || !schoolId) throw new ValidationError('School scope required');
+  const scopeWhere = { tenantId, schoolId };
   const [students, teachers, present, attendance, payments, invoices] = await Promise.all([
     db.student.count({
       where: {
         tenantId,
-        ...(schoolId
-          ? { classEnrollments: { some: { ...scopeWhere, status: 'ACTIVE' } } }
-          : { enrollments: { some: { tenantId, status: 'ACTIVE' } } }),
+        classEnrollments: { some: { ...scopeWhere, status: 'ACTIVE' } },
       },
     }),
     db.teacher.count({ where: { ...scopeWhere, status: 'ACTIVE', deletedAt: null } }),
@@ -169,13 +167,13 @@ export async function listKpis(scope, db = prisma) {
   }));
 }
 
-export async function getLearningAnalytics({ tenantId }, db = prisma) {
-  if (!tenantId) return analyticsDemo;
+export async function getLearningAnalytics({ tenantId, schoolId }, db = prisma) {
+  if (!tenantId || !schoolId) throw new ValidationError('School scope required');
 
   const [subjectsList, classesList] = await Promise.all([
     db.subject
       .findMany({
-        where: { tenantId, status: 'ACTIVE' },
+        where: { tenantId, schoolId, status: 'ACTIVE' },
         take: 6,
         select: { id: true, name: true, code: true },
       })
@@ -183,7 +181,7 @@ export async function getLearningAnalytics({ tenantId }, db = prisma) {
 
     db.class
       .findMany({
-        where: { tenantId, status: 'ACTIVE' },
+        where: { tenantId, schoolId, status: 'ACTIVE' },
         take: 5,
         select: { id: true, name: true, code: true, _count: { select: { enrollments: true } } },
       })
@@ -222,14 +220,20 @@ export async function getLearningAnalytics({ tenantId }, db = prisma) {
   };
 }
 
-export function evaluateKpi({ tenantId, metricKey }) {
-  if (!tenantId) throw new Error('Tenant scope required');
+export function evaluateKpi({ tenantId, schoolId, metricKey }) {
+  if (!tenantId || !schoolId) throw new ValidationError('School scope required');
   const kpi = analyticsDemo.kpis.find((item) => item.key === metricKey) || analyticsDemo.kpis[0];
   return { ...kpi, healthy: kpi.value >= kpi.target };
 }
 
-export function requestExport({ tenantId, format = 'csv' }) {
-  if (!tenantId) throw new Error('Tenant scope required');
+export function requestExport({ tenantId, schoolId, format = 'csv' }) {
+  if (!tenantId || !schoolId) throw new ValidationError('School scope required');
   if (!['csv', 'xlsx', 'pdf'].includes(format)) throw new Error('Unsupported export format');
-  return { id: `analytics-export-${Date.now()}`, status: 'queued', format, scope: 'tenant' };
+  return {
+    id: `analytics-export-${Date.now()}`,
+    status: 'queued',
+    format,
+    scope: 'school',
+    schoolId,
+  };
 }

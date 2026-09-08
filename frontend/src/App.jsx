@@ -136,7 +136,7 @@ function AuthShell({ children, title, subtitle, wide = false }) {
         <Link to="/" className="auth-shell__brand" aria-label="Return to home">
           <div className="auth-shell__mark">S</div>
           <span>
-            SAIS <span style={{ color: '#728196' }}> / identity</span>
+            SAIS <span className="auth-shell__brand-context"> / identity</span>
           </span>
         </Link>
 

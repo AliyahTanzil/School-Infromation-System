@@ -21,11 +21,22 @@ router.post(
   controller.create
 );
 router.get('/:classroomId', validate(classroomParamsSchema), controller.details);
-router.post('/:classroomId/members', validate(memberSchema), controller.addMember);
+router.post(
+  '/:classroomId/members',
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  validate(memberSchema),
+  controller.addMember
+);
 router.delete(
   '/:classroomId/members/:userId',
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
   validate(memberParamsSchema),
   controller.removeMember
 );
-router.patch('/:classroomId/archive', validate(classroomParamsSchema), controller.archive);
+router.patch(
+  '/:classroomId/archive',
+  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  validate(classroomParamsSchema),
+  controller.archive
+);
 export default router;

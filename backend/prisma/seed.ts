@@ -76,13 +76,18 @@ async function main(): Promise<void> {
 
     await tx.user.upsert({
       where: { id: ids.platformOwner },
-      update: { status: 'ACTIVE', platformRole: 'OWNER' },
+      update: {
+        status: 'ACTIVE',
+        accountType: 'APPLICATION_MANAGER',
+        platformRole: 'OWNER',
+      },
       create: {
         id: ids.platformOwner,
         email: 'owner@demo.sais.local',
         firstName: 'Platform',
         lastName: 'Owner',
         status: 'ACTIVE',
+        accountType: 'APPLICATION_MANAGER',
         platformRole: 'OWNER',
       },
     });

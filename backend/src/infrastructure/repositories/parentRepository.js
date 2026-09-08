@@ -1,28 +1,45 @@
 import prisma from '../orm/prismaClient.js';
 
-const includePortal = {
+const includePortal = ({ tenantId, schoolId }) => ({
   profile: true,
   relationships: {
-    where: { status: 'ACTIVE', revokedAt: null },
+    where: {
+      status: 'ACTIVE',
+      revokedAt: null,
+      student: {
+        classEnrollments: { some: { tenantId, schoolId, status: 'ACTIVE' } },
+      },
+    },
     include: {
       student: {
-        include: { enrollments: { orderBy: { enrolledAt: 'desc' }, take: 1 } },
+        include: {
+          classEnrollments: {
+            where: { tenantId, schoolId, status: 'ACTIVE' },
+            orderBy: { enrolledAt: 'desc' },
+            take: 1,
+          },
+        },
       },
     },
   },
-};
+});
 
-export async function findPortal(parentId, tenantId) {
+export async function findPortal(parentId, { tenantId, schoolId }) {
   return prisma.parent.findFirst({
-    where: { id: parentId, tenantId, deletedAt: null },
-    include: includePortal,
+    where: {
+      id: parentId,
+      tenantId,
+      deletedAt: null,
+      OR: [{ schoolId }, { schoolId: null }],
+    },
+    include: includePortal({ tenantId, schoolId }),
   });
 }
 
 export async function findByUser(userId, tenantId) {
   return prisma.parent.findFirst({
     where: { userId, tenantId, deletedAt: null },
-    include: includePortal,
+    include: includePortal({ tenantId, schoolId: undefined }),
   });
 }
 
@@ -32,7 +49,7 @@ export async function createWithProfile(data, profile) {
       ...data,
       profile: { create: profile },
     },
-    include: includePortal,
+    include: includePortal({ tenantId: data.tenantId, schoolId: data.schoolId }),
   });
 }
 

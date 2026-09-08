@@ -3,10 +3,19 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { config } from './config.js';
+import { AppError } from './errors.js';
 import { errorHandler, notFound, requestId, requestLogger } from './middleware.js';
 import { healthRouter } from './health.js';
+// @ts-expect-error Legacy system routes remain active during the TypeScript migration.
+import systemHealthRouter from '../presentation/http/routes/healthRoutes.js';
+// @ts-expect-error Legacy OpenAPI route remains active during the TypeScript migration.
+import documentationRouter from '../presentation/http/routes/documentationRoutes.js';
+// @ts-expect-error Deferred-domain responses remain active during the TypeScript migration.
+import { featureUnavailableRoutes } from '../presentation/http/routes/featureUnavailableRoutes.js';
 // @ts-expect-error Legacy JavaScript router is mounted during the TypeScript migration.
 import authRouter from '../presentation/http/routes/authRoutes.js';
+// @ts-expect-error Legacy JavaScript activation routes remain active during migration.
+import activationRouter from '../presentation/http/routes/activationRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import userRouter from '../presentation/http/routes/userRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
@@ -68,8 +77,6 @@ import quizRouter from '../presentation/http/routes/quizRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import gradebookRouter from '../presentation/http/routes/gradebookRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
-import billingRouter from '../presentation/http/routes/billingRoutes.js';
-// @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import analyticsRouter from '../presentation/http/routes/analyticsRoutes.js';
 // @ts-expect-error Legacy JavaScript router remains the source of truth during migration.
 import searchRouter from '../presentation/http/routes/searchRoutes.js';
@@ -86,7 +93,7 @@ export function isCorsOriginAllowed(origin?: string): boolean {
     const hostname = url.hostname.toLowerCase();
     const projects = new Set([
       'school-administration-information-system-frontend',
-      ...String(process.env.VERCEL_PREVIEW_PROJECT ?? '').split(','),
+      ...String(config.corsVercelPreviewProject ?? '').split(','),
     ]);
     const belongsToFrontendProject = [...projects]
       .map((project) => project.trim().toLowerCase())
@@ -107,6 +114,9 @@ export function isCorsOriginAllowed(origin?: string): boolean {
 export const createApp = () => {
   const app = express();
   app.disable('x-powered-by');
+  if (config.trustProxy) app.set('trust proxy', 1);
+  app.use(requestId);
+  app.use(requestLogger);
   app.use(
     helmet({
       contentSecurityPolicy: {
@@ -126,7 +136,18 @@ export const createApp = () => {
       crossOriginResourcePolicy: { policy: 'same-origin' },
     })
   );
-  app.use(cors({ origin: config.corsOrigins, credentials: true }));
+  app.use(
+    cors({
+      origin(origin, callback) {
+        if (!origin || isCorsOriginAllowed(origin)) {
+          callback(null, true);
+          return;
+        }
+        callback(new AppError('Origin not allowed', 403, 'CORS_ORIGIN_DENIED'));
+      },
+      credentials: true,
+    })
+  );
   app.use(
     express.json({
       limit: config.jsonBodyLimit,
@@ -137,13 +158,17 @@ export const createApp = () => {
   );
   app.use(express.urlencoded({ extended: false, limit: config.urlencodedBodyLimit }));
   app.use(cookieParser());
-  app.use(requestId);
-  app.use(requestLogger);
   app.use('/api/v1', healthRouter);
+  app.use('/api', systemHealthRouter);
+  app.use('/api/v1', systemHealthRouter);
+  app.use('/api', documentationRouter);
+  app.use('/api/v1', documentationRouter);
   // Keep the legacy auth implementation on the active TypeScript server until
   // the remaining domain routes are migrated to the foundation app.
   app.use('/api/auth', authRouter);
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/activation-requests', activationRouter);
+  app.use('/api/v1/activation-requests', activationRouter);
   app.use('/api/school', singleSchoolRouter);
   app.use('/api/v1/school', singleSchoolRouter);
   app.use('/api/users', userRouter);
@@ -176,8 +201,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/calendar', classroomCalendarRouter);
   app.use('/api/finance', financeRouter);
   app.use('/api/v1/finance', financeRouter);
-  app.use('/api/billing', billingRouter);
-  app.use('/api/v1/billing', billingRouter);
+  app.use('/api/billing', featureUnavailableRoutes('Subscription billing', 'SaaS-001'));
+  app.use('/api/v1/billing', featureUnavailableRoutes('Subscription billing', 'SaaS-001'));
   app.use('/api/payment/monime', paymentGatewayRouter);
   app.use('/api/v1/payment/monime', paymentGatewayRouter);
   app.use('/api/payment-gateway', paymentGatewayRouter);
@@ -216,6 +241,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/search', searchRouter);
   app.use('/api/search', searchRouter);
   app.use('/api/v1/search', searchRouter);
+  app.use('/api/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));
+  app.use('/api/v1/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));
   app.get('/', (_request, response) => {
     response.status(200).json({
       success: true,

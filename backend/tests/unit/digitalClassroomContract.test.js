@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
+import { URL } from 'node:url';
 
 const read = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 
@@ -28,11 +29,26 @@ test('classroom APIs derive tenant and school ownership from authenticated conte
 test('classroom membership and archival operations are exposed on both active mounts', async () => {
   const routes = await read('src/presentation/http/routes/digitalClassroomRoutes.js');
   const app = await read('src/foundation/app.ts');
-  assert.match(routes, /post\('\/:classroomId\/members'/);
+  assert.match(routes, /post\(\s*'\/:classroomId\/members'/);
   assert.match(routes, /'\/:classroomId\/members\/:userId'/);
-  assert.match(routes, /patch\('\/:classroomId\/archive'/);
+  assert.match(routes, /patch\(\s*'\/:classroomId\/archive'/);
   assert.match(app, /app\.use\('\/api\/lms\/classrooms', digitalClassroomRouter\)/);
   assert.match(app, /app\.use\('\/api\/v1\/lms\/classrooms', digitalClassroomRouter\)/);
+});
+
+test('classroom mutations require an administrator or teacher before ownership checks', async () => {
+  const routes = await read('src/presentation/http/routes/digitalClassroomRoutes.js');
+  const service = await read('src/application/services/digitalClassroomService.js');
+  const mutationRoleBoundary = /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/g;
+
+  assert.equal(
+    [...routes.matchAll(mutationRoleBoundary)].length,
+    4,
+    'create, add-member, remove-member and archive must each have a route-level role boundary'
+  );
+  assert.match(service, /Only the classroom owner can manage members/);
+  assert.match(service, /Only the classroom owner can archive this classroom/);
+  assert.match(service, /where: \{ id: classroomId, \.\.\.owned\(scope\)/);
 });
 
 test('digital classroom migration is checked in and non-destructive', async () => {
