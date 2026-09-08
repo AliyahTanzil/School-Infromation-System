@@ -287,6 +287,7 @@ Update this summary whenever a task status changes.
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 8 completed: email verification preserves account lifecycle and atomically consumes verification links, updates email ownership and records audit. Ten regressions pass; full backend suite 336 passed/1 intentional skip, build, lint and diff check pass. SEC-001 remains IN_PROGRESS. |
 
+<<<<<<< HEAD
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 9: remove sign-in account enumeration across missing, suspended, pending and temporarily locked identities while retaining internal failure telemetry. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 9 completed: sign-in now returns one generic authentication failure for missing, suspended, pending and locked accounts, performs bcrypt work for unknown identities, and retains specific internal failure telemetry. The focused regression, backend build, targeted lint and diff check pass. Full backend suite reports 336 passed/1 intentional skip/3 pre-existing subject-class contract failures unrelated to SEC-001. SEC-001 remains IN_PROGRESS. |
@@ -294,3 +295,12 @@ Update this summary whenever a task status changes.
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 10: make successful login state, session/token/device issuance and success auditing one atomic transaction with rollback coverage. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 10 completed: successful-login state, login-attempt telemetry, session, initial refresh token, remembered device and success audit now commit through the same transaction. Failures return no credentials and roll back the entire issuance. Nine focused auth/session tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+=======
+
+| 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 9: reject access tokens without expiry, with empty identity claims or inconsistent session aliases; preserve valid legacy sid-only tokens. |
+
+| 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 9 implemented: access tokens require HS256, finite expiry, nonblank identity and consistent session aliases while retaining valid sid-only compatibility. All 13 focused token tests, backend build, focused lint and diff check pass. Full backend suite fails in subject-creation coverage requiring classAssignments (including recordCode.test.js and subjectDomain.test.js); subject implementation was not modified by this checkpoint. SEC-001 remains IN_PROGRESS, full-suite acceptance not achieved. |
+
+User-directed scope change, 2026-09-07: prioritize application-wide CRUD completion. Begin with subject end-to-end editing and soft deletion; inventory in docs/audit/crud-coverage-2026-09-07.md. SEC-001 remains unfinished; no completion claim.
+
+> > > > > > > dfc4a1a7f92aa2e0b7f89199edb91dc58ec5dfe9

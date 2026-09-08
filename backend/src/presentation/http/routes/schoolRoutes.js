@@ -17,13 +17,13 @@ router.get('/', requirePermission('schools.read'), controller.list);
 router.get('/:id/branches', requirePermission('schools.read'), controller.listBranches);
 router.post(
   '/:id/branches',
-  requirePermission('schools.manage_branches'),
+  requirePermission('schools.branches'),
   validate(branchSchema),
   controller.createBranch
 );
 router.patch(
   '/:id/branches/:branchId',
-  requirePermission('schools.manage_branches'),
+  requirePermission('schools.branches'),
   validate(branchSchema),
   controller.updateBranch
 );
@@ -37,9 +37,9 @@ router.put(
 );
 router.delete('/:id', requirePermission('schools.delete'), controller.remove);
 for (const [model, permission] of [
-  ['schoolBranch', 'schools.manage_branches'],
-  ['department', 'schools.manage_departments'],
-  ['gradeLevel', 'schools.manage_grades'],
+  ['schoolBranch', 'schools.branches'],
+  ['department', 'schools.departments'],
+  ['gradeLevel', 'schools.grades'],
 ]) {
   router.get(
     '/:id/' + model,

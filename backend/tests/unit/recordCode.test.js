@@ -51,8 +51,9 @@ test('school, subject and digital classroom create scoped codes when omitted', a
   assert.match(school.code, /^sch-oakaca-/);
   assert.equal(school.slug, school.code);
   db.subject = { create: async ({ data }) => data };
+  db.class = { findMany: async () => [{ id: 'class' }] };
   const subject = await subjects.create(
-    { name: 'Mathematics' },
+    { name: 'Mathematics', classAssignments: [{ classId: 'class' }] },
     { tenantId: 'tenant', schoolId: 'school' }
   );
   assert.match(subject.code, /^SUB-MATHEM-/);

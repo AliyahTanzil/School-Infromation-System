@@ -45,11 +45,16 @@ export function verifyAccessToken(token) {
   const payload = jwt.verify(token, config.auth.accessTokenSecret, {
     issuer: config.auth.issuer,
     audience: config.auth.audience,
+    algorithms: ['HS256'],
   });
   if (
     payload.tokenType !== 'access' ||
     typeof payload.sub !== 'string' ||
-    typeof payload.sid !== 'string'
+    !payload.sub.trim() ||
+    typeof payload.sid !== 'string' ||
+    !payload.sid.trim() ||
+    !Number.isFinite(payload.exp) ||
+    (payload.sessionId !== undefined && payload.sessionId !== payload.sid)
   ) {
     throw new AuthenticationError('Invalid access token');
   }
