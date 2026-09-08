@@ -25,9 +25,9 @@ function refreshExpiry() {
 
 /**
  * Create a brand-new session for a user and mint the first token pair.
- * @param {{ user: any, context: { ipAddress: string, userAgent: string, deviceType: string, deviceFingerprint: string }, deviceName?: string }} params
+ * @param {{ user: any, context: { ipAddress: string, userAgent: string, deviceType: string, deviceFingerprint: string }, deviceName?: string, onIssued?: (details: { tx: any, session: any, roles: string[] }) => Promise<void> }} params
  */
-export async function issueSession({ user, context, deviceName }) {
+export async function issueSession({ user, context, deviceName, onIssued }) {
   return prisma.$transaction(async (tx) => {
     const session = await sessionRepository.create(
       {
@@ -73,6 +73,8 @@ export async function issueSession({ user, context, deviceName }) {
       sessionId: session.id,
       roles,
     });
+
+    await onIssued?.({ tx, session, roles });
 
     return { accessToken, refreshToken, session, roles };
   });

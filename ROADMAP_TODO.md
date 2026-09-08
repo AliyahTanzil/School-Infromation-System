@@ -286,3 +286,11 @@ Update this summary whenever a task status changes.
 | 2026-09-07 | SEC-001 | Codex | IN_PROGRESS | Phase 8: prevent email verification from activating accounts; transactional single-use link consumption and verification audit with lifecycle regression tests. |
 
 | 2026-09-07 | SEC-001 | Codex | CHECKPOINT | Phase 8 completed: email verification preserves account lifecycle and atomically consumes verification links, updates email ownership and records audit. Ten regressions pass; full backend suite 336 passed/1 intentional skip, build, lint and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 9: remove sign-in account enumeration across missing, suspended, pending and temporarily locked identities while retaining internal failure telemetry. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 9 completed: sign-in now returns one generic authentication failure for missing, suspended, pending and locked accounts, performs bcrypt work for unknown identities, and retains specific internal failure telemetry. The focused regression, backend build, targeted lint and diff check pass. Full backend suite reports 336 passed/1 intentional skip/3 pre-existing subject-class contract failures unrelated to SEC-001. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 10: make successful login state, session/token/device issuance and success auditing one atomic transaction with rollback coverage. |
+
+| 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 10 completed: successful-login state, login-attempt telemetry, session, initial refresh token, remembered device and success audit now commit through the same transaction. Failures return no credentials and roll back the entire issuance. Nine focused auth/session tests, backend build, targeted lint and diff check pass. SEC-001 remains IN_PROGRESS. |

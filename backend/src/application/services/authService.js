@@ -28,6 +28,10 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
  */
 
 const GENERIC_LOGIN_ERROR = 'Invalid email or password';
+// Keep nonexistent-account authentication on the same expensive bcrypt path as
+// real accounts. This value is a bcrypt hash of a non-secret sentinel and must
+// never be used as an application credential.
+const DUMMY_PASSWORD_HASH = '$2a$12$F04/dVjHoyrDwNb/fmRr2.DHt.iAVmo.mENbzIHoqYzcJGoY6gRvG';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -209,6 +213,11 @@ export async function login({ email, password, deviceName, context }) {
     });
   };
 
+  const passwordOk = await passwordService.verifyPassword(
+    password,
+    user?.passwordHash ?? DUMMY_PASSWORD_HASH
+  );
+
   if (!user) {
     await recordFailure('user_not_found');
     throw new AuthenticationError(GENERIC_LOGIN_ERROR);
@@ -216,23 +225,21 @@ export async function login({ email, password, deviceName, context }) {
 
   if (user.status === 'SUSPENDED') {
     await recordFailure('account_suspended', user.id);
-    throw new AuthenticationError('This account has been suspended');
-  }
-  if (user.status !== 'ACTIVE') {
-    await recordFailure('account_pending_activation', user.id);
-    throw new AuthenticationError('This account is awaiting activation by the application owner');
+    throw new AuthenticationError(GENERIC_LOGIN_ERROR);
   }
 
   // Honor an active lockout; auto-clear it once the window elapses.
   if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
     await recordFailure('account_locked', user.id);
-    throw new AuthenticationError('Account is temporarily locked. Please try again later.');
+    throw new AuthenticationError(GENERIC_LOGIN_ERROR);
   }
   if (user.status === 'LOCKED' && (!user.lockedUntil || user.lockedUntil.getTime() <= Date.now())) {
     await userRepository.unlock(user.id);
+  } else if (user.status !== 'ACTIVE') {
+    await recordFailure('account_pending_activation', user.id);
+    throw new AuthenticationError(GENERIC_LOGIN_ERROR);
   }
 
-  const passwordOk = await passwordService.verifyPassword(password, user.passwordHash);
   if (!passwordOk) {
     const nextCount = user.failedLoginCount + 1;
     const shouldLock = nextCount >= config.auth.maxFailedLogins;
@@ -249,28 +256,33 @@ export async function login({ email, password, deviceName, context }) {
     throw new AuthenticationError(GENERIC_LOGIN_ERROR);
   }
 
-  // Success.
-  await userRepository.recordSuccessfulLogin(user.id);
-  await loginAttemptRepository.record({
-    userId: user.id,
-    email,
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
-    succeeded: true,
-  });
-
   const { accessToken, refreshToken, session, roles } = await sessionService.issueSession({
     user,
     context,
     deviceName,
-  });
-
-  await auditLoginRepository.record({
-    userId: user.id,
-    sessionId: session.id,
-    event: 'LOGIN_SUCCEEDED',
-    ipAddress: context.ipAddress,
-    userAgent: context.userAgent,
+    onIssued: async ({ tx, session: issuedSession }) => {
+      await userRepository.recordSuccessfulLogin(user.id, tx);
+      await loginAttemptRepository.record(
+        {
+          userId: user.id,
+          email,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+          succeeded: true,
+        },
+        tx
+      );
+      await auditLoginRepository.record(
+        {
+          userId: user.id,
+          sessionId: issuedSession.id,
+          event: 'LOGIN_SUCCEEDED',
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        },
+        tx
+      );
+    },
   });
 
   return {
