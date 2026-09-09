@@ -10,9 +10,17 @@ import {
   resultStatusSchema,
 } from '../../../application/validators/resultValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'));
-router.get('/statistics', validate(resultQuerySchema), controller.statistics);
-router.get('/', validate(resultQuerySchema), controller.list);
-router.post('/process', validate(resultProcessSchema), controller.process);
-router.patch('/:id/status', validate(resultStatusSchema), controller.changeStatus);
+const readResults = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER');
+const administerResults = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
+
+router.use(authenticate, teacherContext);
+router.get('/statistics', readResults, validate(resultQuerySchema), controller.statistics);
+router.get('/', readResults, validate(resultQuerySchema), controller.list);
+router.post('/process', administerResults, validate(resultProcessSchema), controller.process);
+router.patch(
+  '/:id/status',
+  administerResults,
+  validate(resultStatusSchema),
+  controller.changeStatus
+);
 export default router;

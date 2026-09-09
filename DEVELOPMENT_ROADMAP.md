@@ -57,6 +57,12 @@ Exit criteria: protected pages cannot be accessed anonymously, each role lands o
 
 Target: minimum usable product
 
+- [x] Class creation uses a year-only selector and the canonical Pre-School Nursery, Primary School, Junior Secondary, and Senior Secondary stages; missing year/stage records are provisioned atomically within the authenticated school context.
+- [x] Attendance derives the school from the authenticated session, uses an assigned-class selector, and limits teacher access to current class or teaching assignments.
+- [x] Canonical student administration validates strict student and guardian inputs, derives tenant ownership from the authenticated school context, bounds list pagination, and reports only persisted student metrics.
+- [x] Teacher administration applies authenticated school scope to self-service and administrator routes, validates lifecycle identifiers and strict payloads, and bounds staff-directory queries.
+- [x] User administration validates every dynamic identity route, tenant-scopes profile and image operations, prevents push-token ownership forgery, and exposes only supported non-administrator account types in normal provisioning.
+- [x] School administration validates main-school and Campus branch requests, derives ownership from authentication, forbids deleting the configured main school, and fails unavailable administrator assignments closed.
 - [ ] Administrator: school setup, users, academic periods, classes, sections, subjects, enrollment, and staff assignment.
 - [ ] Teacher: assigned classes, timetable, attendance, classwork, assessments, mark entry, gradebook, and feedback.
 - [ ] Student: timetable, attendance, classwork, submissions, results, announcements, and account profile.
@@ -172,3 +178,31 @@ Database-dependent releases must additionally validate migrations against a disp
 - Use `PROJECT_PROGRESS.md` for measured completion evidence.
 - Review this roadmap after every milestone or material architecture change.
 - Each active milestone should have one owner, a target date, named dependencies, and linked acceptance evidence.
+
+SEC-001 Phase 29 checkpoint (2026-09-09): canonical subject administration now validates UUID identifiers on detail, edit, delete and status routes; rejects unknown list-query and nested assignment fields; and rejects empty updates. Eight focused tests and the full backend suite pass (402 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 30 checkpoint (2026-09-09): class administration now validates route UUIDs, rejects unknown request and nested subject fields, bounds pagination and validates list lifecycle states. Controllers preserve authenticated tenant/school scope, actor and route identities after applying client input. Ten focused class tests and the full backend suite pass (406 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 31 checkpoint (2026-09-09): academic-period requests now reject unknown fields; controllers preserve authenticated context and route identity; year, term and event lifecycle writes include ownership predicates. Calendar creation sends only endpoint-supported fields. Full backend suite: 410 passed, one intentional live-database skip. Two focused frontend tests, both production builds, targeted lint, formatting and diff checks pass. SEC-001 remains in progress. The pre-existing academic-year CLOSED-state persistence limitation is documented in docs/security/security-administration-phase31.md.
+
+SEC-001 Phase 32 checkpoint (2026-09-09): parent profile and unlink writes enforce parent tenant/school ownership and non-deleted state; link requests verify parent and student through the same transaction as persistence; portal relationships explicitly require student tenant ownership. Missing service scope fails closed. Ten focused tests and a clean full backend rerun pass (415 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 33 checkpoint (2026-09-09): academic-policy creation validates referenced subject tenant/school ownership within its persistence transaction. Detail UUID validation, strict top-level/nested schemas and scoped lifecycle writes close request-boundary gaps. Seven focused tests and the full backend suite pass (420 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 34 checkpoint (2026-09-09): communication schemas reject unknown fields and malformed quiet-hour values; services require tenant/school context; recipient ownership checks share the event/delivery transaction. Nine focused tests and the full backend suite pass (425 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 35 checkpoint (2026-09-09): finance writes persist only supported tenant/school context fields, balance updates retain ownership, request schemas reject unknown fields and transaction listing validates limits. Seven focused tests and the full backend suite pass (429 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 36 checkpoint (2026-09-09): existing payment idempotency keys require matching amount, provider and reference as well as tenant, school and invoice. Conflicting retries return 409 before writes; equivalent decimal representations remain accepted. Eight focused tests and the full backend suite pass (433 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 37 checkpoint (2026-09-09): invoice student and optional active fee eligibility checks now share the invoice creation transaction; invalid amounts fail before opening the transaction. Nine focused tests and the full backend suite pass (438 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 38 checkpoint (2026-09-09): payment transactions conditionally claim the scoped invoice balance before creating payment and ledger records; stale balance claims return 409. Eleven focused tests and the full backend suite pass (441 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. Live concurrency verification remains outstanding; SEC-001 remains in progress.
+
+SEC-001 Phase 39 checkpoint (2026-09-09): payment amounts require positive two-decimal values within the ledger integer limit; service and HTTP validation share a predicate; balance subtraction and ledger values use validated minor units. Fourteen focused tests and the full backend suite pass (444 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 40 checkpoint (2026-09-09): invoice subtotal and discount require two-decimal nonnegative values within Decimal(12,2) bounds, with discount no greater than subtotal. Domain totals use integer minor-unit subtraction. Sixteen focused tests and the full backend suite pass (448 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. SEC-001 remains in progress.
+
+SEC-001 Phase 41 checkpoint (2026-09-09): failed concurrent payment submissions re-read the idempotency key after transaction exit and return only a matching committed payment. Ownership/payload mismatches remain conflicts; unrelated persistence errors propagate. Eleven focused tests and the full backend suite pass (448 passed, one intentional live-database skip), including all four new race-recovery tests. Backend build, targeted lint, formatting and diff checks pass. Live database race verification remains outstanding; SEC-001 remains in progress.
+
+SEC-001 Phase 42 checkpoint (2026-09-09): HR services reject missing school ownership; controllers preserve authenticated ownership and approver identity; employee and leave reference checks share creation transactions; employee, leave and payroll initial status and scope remain server-controlled. Strict employee queries and identifier objects reject unknown fields. Twelve focused HR tests and the full backend suite pass (459 passed, one intentional live-database skip). Backend build, targeted lint, formatting and diff checks pass. No schema or live HR/payroll data changes. SEC-001 remains in progress; live concurrency verification and payroll monetary limits remain outstanding.

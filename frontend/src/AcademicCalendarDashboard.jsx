@@ -61,14 +61,19 @@ export default function AcademicCalendarDashboard() {
     setError('');
     try {
       const payload = {
-        ...form,
-        parentId: form.parentId || undefined,
+        name: form.name,
+        type: form.type,
+        startsAt: form.startsAt,
+        endsAt: form.endsAt,
         code: form.code || undefined,
-        description: form.description || undefined,
       };
       if (['BREAK', 'EXAM', 'EVENT'].includes(form.type))
-        await api.post('/academic-periods/events', payload);
-      else await api.post('/academic-periods', payload);
+        await api.post('/academic-periods/events', {
+          ...payload,
+          description: form.description || undefined,
+        });
+      else
+        await api.post('/academic-periods', { ...payload, parentId: form.parentId || undefined });
       setForm(emptyForm);
       setShowForm(false);
       await load();

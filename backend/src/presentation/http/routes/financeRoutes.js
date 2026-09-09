@@ -10,14 +10,20 @@ import {
   invoiceQuerySchema,
   paymentParamsSchema,
   paymentSchema,
+  transactionQuerySchema,
 } from '../../../application/validators/financeValidators.js';
 const router = Router();
 router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
 router.get('/summary', async (req, res) =>
   res.json({ data: await financeService.summary(req.schoolContext) })
 );
-router.get('/transactions', async (req, res) =>
-  res.json({ data: await financeService.listTransactions(req.schoolContext, req.query.limit) })
+router.get('/transactions', validate(transactionQuerySchema), async (req, res) =>
+  res.json({
+    data: await financeService.listTransactions(
+      req.schoolContext,
+      (req.validatedQuery ?? req.query).limit
+    ),
+  })
 );
 router.get('/invoices', validate(invoiceQuerySchema), controller.list);
 router.get('/payments/:paymentId', validate(paymentParamsSchema), controller.status);

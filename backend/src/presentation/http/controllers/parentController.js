@@ -5,7 +5,7 @@ export default {
   portal: async (req, res) =>
     send(res, await parentService.getPortal(req.parent.id, req.schoolContext, req)),
   updateProfile: async (req, res) =>
-    send(res, await parentService.updateProfile(req.parent.id, req.body)),
+    send(res, await parentService.updateProfile(req.parent.id, req.body, req.schoolContext)),
   link: async (req, res) =>
     send(
       res,
@@ -18,5 +18,5 @@ export default {
       201
     ),
   unlink: async (req, res) =>
-    send(res, await parentService.unlink(req.parent.id, req.params.studentId)),
+    send(res, await parentService.unlink(req.parent.id, req.params.studentId, req.schoolContext)),
 };

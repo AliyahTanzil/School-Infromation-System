@@ -6,6 +6,13 @@ import * as repository from '../../infrastructure/repositories/classRepository.j
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
+const gradeLevelNames = Object.freeze({
+  PRE_SCHOOL_NURSERY: 'Pre-School Nursery',
+  PRIMARY_SCHOOL: 'Primary School',
+  JUNIOR_SECONDARY: 'Junior Secondary',
+  SENIOR_SECONDARY: 'Senior Secondary',
+});
+
 export async function list({
   tenantId,
   schoolId,
@@ -46,34 +53,96 @@ export async function list({
 }
 
 export async function create(input) {
-  const data = {
-    ...input,
-    code:
-      input.code ||
-      generateRecordCode('CLS', input.schoolId, [input.name, input.section, input.academicYearId]),
-    tenantId: input.tenantId,
-    schoolId: input.schoolId,
-  };
-  assertCapacity(data.capacity, 0);
   const prisma = repository.getClient();
-  const [year, grade, room] = await Promise.all([
-    prisma.academicYear.findFirst({
-      where: { id: data.academicYearId, tenantId: data.tenantId, schoolId: data.schoolId },
-    }),
-    prisma.gradeLevel.findFirst({
-      where: { id: data.gradeLevelId, tenantId: data.tenantId, schoolId: data.schoolId },
-    }),
-    data.classroomId
-      ? prisma.classroom.findFirst({
-          where: { id: data.classroomId, tenantId: data.tenantId, schoolId: data.schoolId },
+  assertCapacity(input.capacity, 0);
+
+  return prisma.$transaction(async (tx) => {
+    let year;
+    if (input.academicYearId) {
+      year = await tx.academicYear.findFirst({
+        where: { id: input.academicYearId, tenantId: input.tenantId },
+      });
+    } else {
+      const startsOn = new Date(Date.UTC(input.academicYear, 0, 1));
+      const nextYear = new Date(Date.UTC(input.academicYear + 1, 0, 1));
+      year = await tx.academicYear.findFirst({
+        where: { tenantId: input.tenantId, startsOn: { gte: startsOn, lt: nextYear } },
+        orderBy: { startsOn: 'asc' },
+      });
+      year ??= await tx.academicYear.upsert({
+        where: {
+          tenantId_name: { tenantId: input.tenantId, name: String(input.academicYear) },
+        },
+        update: {},
+        create: {
+          tenantId: input.tenantId,
+          name: String(input.academicYear),
+          startsOn,
+          endsOn: new Date(Date.UTC(input.academicYear, 11, 31)),
+        },
+      });
+    }
+
+    let grade;
+    if (input.gradeLevelId) {
+      grade = await tx.gradeLevel.findFirst({
+        where: {
+          id: input.gradeLevelId,
+          tenantId: input.tenantId,
+          schoolId: input.schoolId,
+        },
+      });
+    } else {
+      grade = await tx.gradeLevel.upsert({
+        where: {
+          tenantId_schoolId_code: {
+            tenantId: input.tenantId,
+            schoolId: input.schoolId,
+            code: input.gradeLevelCode,
+          },
+        },
+        update: { name: gradeLevelNames[input.gradeLevelCode] },
+        create: {
+          tenantId: input.tenantId,
+          schoolId: input.schoolId,
+          code: input.gradeLevelCode,
+          name: gradeLevelNames[input.gradeLevelCode],
+        },
+      });
+    }
+
+    const room = input.classroomId
+      ? await tx.classroom.findFirst({
+          where: {
+            id: input.classroomId,
+            tenantId: input.tenantId,
+            schoolId: input.schoolId,
+          },
         })
-      : null,
-  ]);
-  if (!year || !grade || (data.classroomId && !room))
-    throw new ValidationError(
-      'Academic year, grade level, or classroom is outside the selected school'
-    );
-  return repository.createClass(data);
+      : null;
+    if (!year || !grade || (input.classroomId && !room)) {
+      throw new ValidationError(
+        'Academic year, grade level, or classroom is outside the selected school'
+      );
+    }
+
+    const data = {
+      tenantId: input.tenantId,
+      schoolId: input.schoolId,
+      academicYearId: year.id,
+      gradeLevelId: grade.id,
+      classroomId: input.classroomId,
+      name: input.name,
+      code:
+        input.code ||
+        generateRecordCode('CLS', input.schoolId, [input.name, input.section, year.id]),
+      section: input.section,
+      capacity: input.capacity,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+    };
+    return repository.createClass(data, tx);
+  });
 }
 
 export async function get({ id, tenantId, schoolId }) {

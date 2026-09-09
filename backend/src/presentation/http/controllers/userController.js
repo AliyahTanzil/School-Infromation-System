@@ -10,22 +10,24 @@ const context = (req) => ({
   userAgent: req.get('user-agent'),
 });
 const send = (res, data, status = 200) => res.status(status).json({ success: true, data });
+const tenantId = (req) => req.schoolContext.tenantId;
 
 export default {
-  list: async (req, res) => send(res, await userService.listUsers(req.query, req.auth.tenantId)),
+  list: async (req, res) =>
+    send(res, await userService.listUsers(req.validatedQuery ?? req.query, tenantId(req))),
   get: async (req, res) =>
     send(
       res,
       await userService.getUser(
         req.params.id,
-        req.auth.tenantId,
-        req.query.includeDeleted === 'true'
+        tenantId(req),
+        (req.validatedQuery ?? req.query).includeDeleted === 'true'
       )
     ),
   create: async (req, res) =>
     send(
       res,
-      await userService.createUser(req.body, req.user.id, req.auth.tenantId, context(req)),
+      await userService.createUser(req.body, req.user.id, tenantId(req), context(req)),
       201
     ),
   update: async (req, res) =>
@@ -35,7 +37,7 @@ export default {
         req.params.id,
         req.body,
         req.user.id,
-        req.auth.tenantId,
+        tenantId(req),
         context(req)
       )
     ),
@@ -46,7 +48,7 @@ export default {
         req.params.id,
         req.body.status,
         req.user.id,
-        req.auth.tenantId,
+        tenantId(req),
         req.body.reason,
         context(req)
       )
@@ -57,7 +59,7 @@ export default {
       await userService.deleteUser(
         req.params.id,
         req.user.id,
-        req.auth.tenantId,
+        tenantId(req),
         req.body?.reason,
         context(req)
       )
@@ -65,11 +67,21 @@ export default {
   restore: async (req, res) =>
     send(
       res,
-      await userService.restoreUser(req.params.id, req.user.id, req.auth.tenantId, context(req))
+      await userService.restoreUser(req.params.id, req.user.id, tenantId(req), context(req))
     ),
   registerPushToken: async (req, res) =>
-    send(res, await deviceService.registerPushToken({ userId: req.user.id, ...req.body }), 201),
-  profile: async (req, res) => send(res, await profileService.getProfile(req.params.id)),
+    send(
+      res,
+      await deviceService.registerPushToken({
+        userId: req.user.id,
+        deviceFingerprint: req.body.deviceFingerprint,
+        platform: req.body.platform,
+        pushToken: req.body.pushToken,
+      }),
+      201
+    ),
+  profile: async (req, res) =>
+    send(res, await profileService.getProfile(req.params.id, tenantId(req))),
   updateProfile: async (req, res) =>
     send(
       res,
@@ -78,11 +90,16 @@ export default {
         req.body.profile,
         req.body.preference,
         req.user.id,
+        tenantId(req),
         context(req)
       )
     ),
   uploadImage: async (req, res) =>
-    send(res, await imageService.upload(req.params.id, req.file, req.user.id, context(req)), 201),
+    send(
+      res,
+      await imageService.upload(req.params.id, req.file, req.user.id, tenantId(req), context(req)),
+      201
+    ),
   deleteImage: async (req, res) =>
-    send(res, await imageService.remove(req.params.id, req.user.id, context(req))),
+    send(res, await imageService.remove(req.params.id, req.user.id, tenantId(req), context(req))),
 };

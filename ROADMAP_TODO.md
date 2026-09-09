@@ -100,7 +100,7 @@ A feature task is complete only when all applicable layers exist:
 
 ## Current task specification
 
-### DB-001 — Reconcile active Prisma schema with services and routes
+### DB-001 â€” Reconcile active Prisma schema with services and routes
 
 **Objective:** Make `backend/prisma/schema.prisma` the truthful, executable persistence contract for the backend.
 
@@ -351,3 +351,85 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-08 | SEC-001 | Codex | IN_PROGRESS | Phase 22: audit parent-to-student authorization, configured-school boundaries and mutation validation. |
 
 | 2026-09-08 | SEC-001 | Codex | CHECKPOINT | Phase 22 authorization wave 5 completed: parent routes now resolve the configured school before parent context; portal relationships and link targets require active enrollment in that school; self-requested links remain pending; and profile/link/unlink schemas now match the shared validator with strict body and UUID validation. Eight focused tests, backend build, targeted lint and diff check pass. Full backend suite passes: 378 tests, one intentional live-database skip. SEC-001 remains IN_PROGRESS for remaining mounted routers and compliance controls. |
+
+| 2026-09-09 | CLS-001 | Codex | CHECKPOINT | Class setup refinement completed: the UI offers a year-only selector and exactly four canonical school stages (Pre-School Nursery, Primary School, Junior Secondary, Senior Secondary). The API validates the taxonomy, reuses or provisions the selected tenant academic year and school grade level, and creates the class in one transaction. Six focused backend tests, one focused frontend behavior test, both production builds, targeted lint and diff check pass. Full backend suite: 380 passed, one intentional database skip. Full frontend suite: 41 passed. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 23: audit examination and result lifecycle authorization, teacher mark-entry ownership, school-scoped candidate lookup, and route identifier validation. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 23 authorization wave 6 completed: teachers retain scoped examination/result reads but exam creation, candidate/schedule administration, lifecycle transitions, result processing, publishing and locking require platform or school administration. Teacher mark entry now requires an active school teacher identity and matching active class-subject teaching assignment; administrators retain override access. Candidate lookup includes tenant, school and soft-delete scope, and examination detail IDs require UUID validation. Twenty-one focused tests, backend build, targeted lint and diff check pass. Full backend suite: 386 passed, one intentional live-database skip. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 24: audit attendance teacher ownership, session identifier validation, authenticated actor persistence, and removal of manual school/class UUIDs from the normal workflow. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 24 authorization wave 7 completed: attendance list/options/create/read/mark/status operations now limit teachers to active class or teaching assignments while administrators retain school-wide access. Session IDs are UUID-validated, session creation records the authenticated actor correctly, and the UI derives school scope from authentication and uses an authorized class selector instead of School/Class UUID fields. Eight focused backend tests and one focused frontend behavior test pass. Full backend suite: 390 passed, one intentional live-database skip; full frontend suite: 42 passed. Both builds, targeted lint, formatting and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 25: audit canonical student-administration input validation, authenticated tenant ownership, bounded listing, and dashboard evidence accuracy. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 25 authorization wave 8 completed: student list/detail/create/update/guardian requests now use strict bounded schemas, validate UUIDs, reject future birth dates and caller-controlled ownership fields, and derive tenant scope only from the authenticated school context. The dashboard now displays persisted totals and visible records instead of fabricated enrollment/review metrics. Five focused backend tests and one focused frontend behavior test pass. Full backend suite: 393 passed, one intentional live-database skip; full frontend suite: 42 passed. Both builds, targeted lint, formatting and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 26: audit canonical teacher self-service and administration for configured-school ownership, strict lifecycle inputs, bounded directory reads, and removal of client-selected school headers. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 26 authorization wave 9 completed: teacher self-service now resolves the authenticated single-school context before a tenant-and-school-scoped profile lookup. Administrator list/detail/create/status routes include platform owners, validate strict persisted fields and UUIDs, reject forged ownership and unsupported status values, and cap pages at 100 records. The teacher workspace no longer reads or sends a school-selection header. Focused backend teacher suite: 5 passed; focused frontend contract: 1 passed. Full backend suite: 395 passed, one intentional live-database skip; full frontend suite: 43 passed. Both builds, targeted lint, formatting and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 27: audit canonical user-management identity scoping, dynamic-route validation, profile/image transaction boundaries, push-token ownership, and provisioning UI account types. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 27 authorization wave 10 completed: all dynamic user routes validate UUIDs and strict active-schema inputs; profile and profile-image operations verify authenticated tenant ownership and commit mutations with their audits; push-token registration cannot override the authenticated user; preference fields map into the persisted JSON settings column; and the provisioning UI exposes only supported non-administrator account types with page-limited metrics labeled as visible. Focused backend user suite: 6 passed; focused frontend contract: 1 passed. Full backend suite: 399 passed, one intentional live-database skip; full frontend suite: 44 passed. Both builds, targeted lint, formatting and diff check pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 28: audit canonical school administration for active-schema validation, authenticated tenant ownership, main-school lifecycle safety, and unsupported child-resource behavior. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 28 authorization wave 11 completed: school/list/branch requests use strict bounded schemas and UUID validation; controller-level tenant derivation rejects client scope overrides; real Campus branch routes remain mounted; and obsolete school-context plus generic nonexistent-model routes were removed. Deleting the configured main school returns a controlled conflict. Administrator-assignment routes require `schools.assign` and then fail closed with `501 FEATURE_NOT_IMPLEMENTED` tied to RBAC-002 until persistence exists. Branch loading/saving replacement characters were fixed. Eleven focused backend tests and one focused frontend contract test pass. Full backend suite: 401 passed, one intentional live-database skip; full frontend suite: 45 passed. Both production builds pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 29: harden canonical subject identifiers, nested assignment payloads and strict request contracts. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 29 completed: strict subject UUIDs, queries, nested assignments and nonempty updates. Eight focused tests; full backend 402 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 30: harden class administration request contracts and controller-derived ownership. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 30 completed: strict class request contracts and controller-owned scope. Ten focused tests; full backend 406 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 31: harden academic-period request ownership and scoped lifecycle writes. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 31 completed: academic-period request contracts, controller ownership and scoped lifecycle writes; calendar payload alignment. Backend 410 passed/one intentional skip; two frontend tests, both builds, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS; academic-year CLOSED-state persistence limitation documented. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 32: enforce parent-portal mutation ownership and exclude deleted or foreign students. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 32 completed: parent mutation ownership, transactional link eligibility and scoped portal students. Ten focused tests; backend 415 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 33: academic-policy subject ownership, strict payloads and scoped lifecycle writes. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 33 completed: academic-policy subject ownership, strict payloads and scoped lifecycle writes. Seven focused tests; backend 420 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 34: communication request contracts, required scope and transactional recipient checks. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 34 completed: strict communication contracts, required service scope and transactional recipient checks. Nine focused tests; backend 425 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 35: finance schema-safe ownership, strict requests and transaction pagination validation. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 35 completed: schema-safe finance ownership, strict requests and validated transaction limits. Seven focused tests; backend 429 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 36: reject payment idempotency-key reuse with changed payment details. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 36 completed: payment idempotency payload matching. Eight focused tests; backend 433 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 37: transactionally verify invoice student and fee eligibility before persistence. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 37 completed: transactional invoice eligibility. Nine focused tests; backend 438 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 38: conditional invoice balance updates prevent stale concurrent payment writes. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 38 completed: conditional payment balance updates. Eleven focused tests; backend 441 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. Live concurrency verification outstanding. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 39: validate payment precision and ledger-compatible monetary bounds. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 39 completed: payment precision and ledger-compatible bounds. Fourteen focused tests; backend 444 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 40: invoice monetary precision, decimal-column bounds and minor-unit totals. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 40 completed: invoice precision, decimal bounds and minor-unit totals. Sixteen focused tests; backend 448 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 41: recover matching committed payments after concurrent submission conflicts. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 41 completed: matching committed-payment recovery after submission conflicts. Eleven focused tests; backend 448 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 42: audit HR request validation, controller-derived ownership, and scoped employee, leave and payroll operations. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 42 completed: HR ownership guards, authenticated controller identity, transactional employee/leave reference checks, strict request boundaries and server-controlled creation defaults. Twelve focused tests; full backend 459 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. API contract: docs/backend/hr-administration-api.md. SEC-001 remains IN_PROGRESS. |

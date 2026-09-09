@@ -1,7 +1,6 @@
 import service from '../../../application/services/studentDomainService.js';
 
-const tenantId = (req) => req.schoolContext?.tenantId || req.auth?.tenantId || req.user?.tenantId;
-const body = (req) => req.body || {};
+const tenantId = (req) => req.schoolContext.tenantId;
 
 export async function list(req, res, next) {
   try {
@@ -9,9 +8,7 @@ export async function list(req, res, next) {
       success: true,
       data: await service.list({
         tenantId: tenantId(req),
-        search: req.query.search,
-        page: req.query.page,
-        pageSize: req.query.pageSize,
+        ...(req.validatedQuery ?? req.query),
       }),
     });
   } catch (error) {
@@ -32,7 +29,7 @@ export async function create(req, res, next) {
   try {
     res.status(201).json({
       success: true,
-      data: await service.create({ tenantId: tenantId(req), input: body(req) }),
+      data: await service.create({ tenantId: tenantId(req), input: req.body }),
     });
   } catch (error) {
     next(error);
@@ -42,7 +39,7 @@ export async function update(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.update({ tenantId: tenantId(req), id: req.params.id, input: body(req) }),
+      data: await service.update({ tenantId: tenantId(req), id: req.params.id, input: req.body }),
     });
   } catch (error) {
     next(error);
@@ -55,7 +52,7 @@ export async function addGuardian(req, res, next) {
       data: await service.addGuardian({
         tenantId: tenantId(req),
         studentId: req.params.id,
-        input: body(req),
+        input: req.body,
       }),
     });
   } catch (error) {

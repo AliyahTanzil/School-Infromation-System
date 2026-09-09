@@ -4,8 +4,16 @@ import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
 
+const currentYear = new Date().getFullYear();
+const academicYears = Array.from({ length: 16 }, (_, index) => currentYear - 5 + index);
+const gradeLevels = [
+  { code: 'PRE_SCHOOL_NURSERY', name: 'Pre-School Nursery' },
+  { code: 'PRIMARY_SCHOOL', name: 'Primary School' },
+  { code: 'JUNIOR_SECONDARY', name: 'Junior Secondary' },
+  { code: 'SENIOR_SECONDARY', name: 'Senior Secondary' },
+];
+
 export default function ClassDashboard() {
-  const [options, setOptions] = useState({ academicYears: [], gradeLevels: [] });
   const [classes, setClasses] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -13,8 +21,8 @@ export default function ClassDashboard() {
   const [form, setForm] = useState({
     name: '',
     code: '',
-    academicYearId: '',
-    gradeLevelId: '',
+    academicYear: currentYear,
+    gradeLevelCode: '',
     section: '',
     capacity: 30,
   });
@@ -23,12 +31,8 @@ export default function ClassDashboard() {
     setLoading(true);
     setError('');
     try {
-      const [response, choices] = await Promise.all([
-        api.get('/classes', { params: { query } }),
-        api.get('/classes/options'),
-      ]);
+      const response = await api.get('/classes', { params: { query } });
       setClasses(response.data.data?.items ?? []);
-      setOptions(choices.data.data);
     } catch (requestError) {
       setError(getApiErrorMessage(requestError));
     } finally {
@@ -52,8 +56,8 @@ export default function ClassDashboard() {
       setForm({
         name: '',
         code: '',
-        academicYearId: '',
-        gradeLevelId: '',
+        academicYear: currentYear,
+        gradeLevelCode: '',
         section: '',
         capacity: 30,
       });
@@ -144,26 +148,39 @@ export default function ClassDashboard() {
             </label>
           ))}
 
-          {[
-            ['academicYearId', 'Academic year', options.academicYears],
-            ['gradeLevelId', 'Grade level', options.gradeLevels],
-          ].map(([field, label, items]) => (
-            <label className="form-field" key={field}>
-              <span>{label}</span>
-              <select
-                required
-                value={form[field]}
-                onChange={(event) => setForm({ ...form, [field]: event.target.value })}
-              >
-                <option value="">Select {label.toLowerCase()}</option>
-                {items.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
+          <label className="form-field">
+            <span className="form-field__label">Academic year</span>
+            <select
+              required
+              value={form.academicYear}
+              onChange={(event) => setForm({ ...form, academicYear: Number(event.target.value) })}
+              aria-label="Academic year"
+              aria-describedby="academic-year-help"
+            >
+              {academicYears.map((year) => (
+                <option key={year} value={year}>
+                  {year}
+                </option>
+              ))}
+            </select>
+            <small id="academic-year-help">Choose the starting year for this class.</small>
+          </label>
+
+          <label className="form-field">
+            <span className="form-field__label">Grade level</span>
+            <select
+              required
+              value={form.gradeLevelCode}
+              onChange={(event) => setForm({ ...form, gradeLevelCode: event.target.value })}
+            >
+              <option value="">Select grade level</option>
+              {gradeLevels.map((gradeLevel) => (
+                <option key={gradeLevel.code} value={gradeLevel.code}>
+                  {gradeLevel.name}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="form-field">
             <span className="form-field__label">Capacity</span>
             <input

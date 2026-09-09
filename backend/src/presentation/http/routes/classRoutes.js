@@ -6,6 +6,7 @@ import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/classController.js';
 import {
   classCreateSchema,
+  classIdSchema,
   classStatusSchema,
   classQuerySchema,
   enrollmentSchema,
@@ -20,7 +21,7 @@ router.use(
 router.get('/options', controller.options);
 router.get('/', validate(classQuerySchema), controller.list);
 router.post('/', validate(classCreateSchema), controller.create);
-router.get('/:id', controller.get);
+router.get('/:id', validate(classIdSchema), controller.get);
 router.patch('/:id/status', validate(classStatusSchema), controller.changeStatus);
 router.post('/:id/enrollments', validate(enrollmentSchema), controller.enroll);
 router.post('/:id/subjects', validate(classSubjectSchema), controller.addSubject);

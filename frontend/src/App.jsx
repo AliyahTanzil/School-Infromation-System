@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import SetupGuide from './SetupGuide.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 
 /* =========================================================
@@ -993,6 +994,7 @@ export default function App() {
       <AuthProvider>
         <Toaster position="top-right" />
         <AppBackNavigation />
+        <SetupGuide />
 
         <Suspense
           fallback={

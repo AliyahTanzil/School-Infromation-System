@@ -2,10 +2,15 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
 import ConflictError from '../../shared/errors/ConflictError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 
-const scope = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+const scope = ({ tenantId, schoolId } = {}) => {
+  if (!tenantId || !schoolId) throw new AuthorizationError('School context is required');
+  return { tenantId, schoolId };
+};
 
 export async function dashboard({ tenantId, schoolId }) {
+  scope({ tenantId, schoolId });
   const [employees, pendingLeave, payrollRuns, departments, positions] = await Promise.all([
     prisma.employee.count({
       where: { tenantId, schoolId, status: { in: ['ACTIVE', 'ON_LEAVE'] } },
@@ -29,6 +34,7 @@ export async function dashboard({ tenantId, schoolId }) {
 }
 
 export async function listEmployees({ tenantId, schoolId, status }) {
+  scope({ tenantId, schoolId });
   return prisma.employee.findMany({
     where: { tenantId, schoolId, ...(status ? { status } : {}) },
     orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
@@ -38,19 +44,21 @@ export async function listEmployees({ tenantId, schoolId, status }) {
 
 export async function createEmployee(context, data) {
   const ownership = scope(context);
-  const references = [
-    data.departmentId
-      ? prisma.hRDepartment.count({ where: { id: data.departmentId, ...ownership, active: true } })
-      : Promise.resolve(1),
-    data.positionId
-      ? prisma.hRPosition.count({ where: { id: data.positionId, ...ownership, active: true } })
-      : Promise.resolve(1),
-  ];
-  const [departmentExists, positionExists] = await Promise.all(references);
-  if (!departmentExists || !positionExists)
-    throw new ValidationError('Department or position is outside the active school context');
-  return prisma.employee.create({
-    data: { ...ownership, emergencyContact: {}, status: 'APPLICANT', ...data },
+  return prisma.$transaction(async (tx) => {
+    const references = [
+      data.departmentId
+        ? tx.hRDepartment.count({ where: { id: data.departmentId, ...ownership, active: true } })
+        : Promise.resolve(1),
+      data.positionId
+        ? tx.hRPosition.count({ where: { id: data.positionId, ...ownership, active: true } })
+        : Promise.resolve(1),
+    ];
+    const [departmentExists, positionExists] = await Promise.all(references);
+    if (!departmentExists || !positionExists)
+      throw new ValidationError('Department or position is outside the active school context');
+    return tx.employee.create({
+      data: { ...data, ...ownership, emergencyContact: {}, status: 'APPLICANT' },
+    });
   });
 }
 
@@ -64,14 +72,20 @@ export async function listLeaveRequests(context) {
 
 export async function requestLeave(context, data) {
   const ownership = scope(context);
-  const employee = await prisma.employee.findFirst({
-    where: { id: data.employeeId, ...ownership },
+  return prisma.$transaction(async (tx) => {
+    const employee = await tx.employee.findFirst({
+      where: { id: data.employeeId, ...ownership },
+    });
+    if (!employee) throw new NotFoundError('Employee not found');
+    return tx.leaveRequest.create({ data: { ...data, ...ownership, status: 'PENDING' } });
   });
-  if (!employee) throw new NotFoundError('Employee not found');
-  return prisma.leaveRequest.create({ data: { ...ownership, status: 'PENDING', ...data } });
 }
 
 export async function approveLeave({ tenantId, schoolId, id, approvedById, status }) {
+  scope({ tenantId, schoolId });
+  if (!approvedById) throw new AuthorizationError('Approver identity is required');
+  if (!['APPROVED', 'REJECTED'].includes(status))
+    throw new ValidationError('Invalid leave decision');
   const result = await prisma.leaveRequest.updateMany({
     where: { id, tenantId, schoolId, status: 'PENDING' },
     data: { status, approvedById, approvedAt: new Date() },
@@ -95,7 +109,9 @@ export async function createPayrollRun(context, data) {
       (sum, item) => sum + (salaries.get(item.positionId) ?? 0),
       0
     );
-    const run = await tx.payrollRun.create({ data: { ...ownership, ...data, totalMinor } });
+    const run = await tx.payrollRun.create({
+      data: { ...data, ...ownership, status: 'DRAFT', totalMinor },
+    });
     if (employees.length) {
       await tx.payrollItem.createMany({
         data: employees.map((employee) => {

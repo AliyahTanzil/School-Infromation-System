@@ -1,72 +1,57 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import requirePermission from '../../../middleware/auth/permissionMiddleware.js';
-import requireSchoolContext from '../../../middleware/auth/schoolContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import controller from '../controllers/schoolController.js';
 import {
   schoolSchema,
-  branchSchema,
+  schoolListSchema,
+  schoolIdSchema,
+  branchListSchema,
+  branchCreateSchema,
+  branchUpdateSchema,
   updateSchoolSchema,
-  childSchema,
-  adminSchema,
 } from '../../../application/validators/schoolValidators.js';
+import { featureUnavailableRoutes } from './featureUnavailableRoutes.js';
 const router = Router();
 router.use(authenticate);
-router.get('/', requirePermission('schools.read'), controller.list);
-router.get('/:id/branches', requirePermission('schools.read'), controller.listBranches);
+router.get('/', requirePermission('schools.read'), validate(schoolListSchema), controller.list);
+router.get(
+  '/:id/branches',
+  requirePermission('schools.read'),
+  validate(branchListSchema),
+  controller.listBranches
+);
 router.post(
   '/:id/branches',
   requirePermission('schools.branches'),
-  validate(branchSchema),
+  validate(branchCreateSchema),
   controller.createBranch
 );
 router.patch(
   '/:id/branches/:branchId',
   requirePermission('schools.branches'),
-  validate(branchSchema),
+  validate(branchUpdateSchema),
   controller.updateBranch
 );
 router.post('/', requirePermission('schools.create'), validate(schoolSchema), controller.create);
-router.get('/:id', requireSchoolContext, requirePermission('schools.read'), controller.get);
+router.get('/:id', requirePermission('schools.read'), validate(schoolIdSchema), controller.get);
 router.put(
   '/:id',
   requirePermission('schools.update'),
   validate(updateSchoolSchema),
   controller.update
 );
-router.delete('/:id', requirePermission('schools.delete'), controller.remove);
-for (const [model, permission] of [
-  ['schoolBranch', 'schools.branches'],
-  ['department', 'schools.departments'],
-  ['gradeLevel', 'schools.grades'],
-]) {
-  router.get(
-    '/:id/' + model,
-    requireSchoolContext,
-    requirePermission(permission),
-    (req, res, next) => {
-      req.params.model = model;
-      controller.children(req, res, next);
-    }
-  );
-  router.post(
-    '/:id/' + model,
-    requireSchoolContext,
-    requirePermission(permission),
-    validate(childSchema),
-    (req, res, next) => {
-      req.params.model = model;
-      controller.addChild(req, res, next);
-    }
-  );
-}
-router.get('/:id/admins', requirePermission('schools.assign'), controller.admins);
-router.post(
+router.delete(
+  '/:id',
+  requirePermission('schools.delete'),
+  validate(schoolIdSchema),
+  controller.remove
+);
+router.use(
   '/:id/admins',
   requirePermission('schools.assign'),
-  validate(adminSchema),
-  controller.assignAdmin
+  validate(schoolIdSchema),
+  featureUnavailableRoutes('School administrator assignments', 'RBAC-002')
 );
-router.delete('/:id/admins/:userId', requirePermission('schools.assign'), controller.revokeAdmin);
 export default router;

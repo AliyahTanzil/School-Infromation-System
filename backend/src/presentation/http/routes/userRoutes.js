@@ -9,21 +9,20 @@ import {
   updateUserSchema,
   statusSchema,
   profileSchema,
+  pushTokenSchema,
   reasonSchema,
+  getUserSchema,
+  userIdSchema,
 } from '../../../application/validators/userValidators.js';
 import profileImageUpload from '../../../middleware/uploads/profileImageUpload.js';
 import singleSchoolContext from '../../../middleware/auth/singleSchoolContext.js';
 
 const router = Router();
 router.use(authenticate, singleSchoolContext);
-router.get(
-  '/',
-  requirePermission('users.read'),
-  validate(listUsersSchema, 'query'),
-  controller.list
-);
+router.get('/', requirePermission('users.read'), validate(listUsersSchema), controller.list);
 router.post('/', requirePermission('users.create'), validate(createUserSchema), controller.create);
-router.get('/:id', requirePermission('users.read'), controller.get);
+router.post('/me/push-token', validate(pushTokenSchema), controller.registerPushToken);
+router.get('/:id', requirePermission('users.read'), validate(getUserSchema), controller.get);
 router.put(
   '/:id',
   requirePermission('users.update'),
@@ -37,9 +36,18 @@ router.patch(
   controller.status
 );
 router.delete('/:id', requirePermission('users.delete'), validate(reasonSchema), controller.remove);
-router.post('/:id/restore', requirePermission('users.restore'), controller.restore);
-router.post('/me/push-token', controller.registerPushToken);
-router.get('/:id/profile', requirePermission('users.read'), controller.profile);
+router.post(
+  '/:id/restore',
+  requirePermission('users.restore'),
+  validate(userIdSchema),
+  controller.restore
+);
+router.get(
+  '/:id/profile',
+  requirePermission('users.read'),
+  validate(userIdSchema),
+  controller.profile
+);
 router.put(
   '/:id/profile',
   requirePermission('users.update'),
@@ -49,8 +57,14 @@ router.put(
 router.post(
   '/:id/profile-image',
   requirePermission('users.update'),
+  validate(userIdSchema),
   profileImageUpload,
   controller.uploadImage
 );
-router.delete('/:id/profile-image', requirePermission('users.update'), controller.deleteImage);
+router.delete(
+  '/:id/profile-image',
+  requirePermission('users.update'),
+  validate(userIdSchema),
+  controller.deleteImage
+);
 export default router;

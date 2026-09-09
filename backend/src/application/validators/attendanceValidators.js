@@ -22,7 +22,12 @@ export const attendanceSessionCreateSchema = z.object({
     .strict(),
 });
 
+export const attendanceSessionIdSchema = z.object({
+  params: z.object({ id: z.string().uuid() }),
+});
+
 export const attendanceSessionStatusSchema = z.object({
+  params: z.object({ id: z.string().uuid() }),
   body: z
     .object({
       status: z.enum(['OPEN', 'LOCKED', 'ARCHIVED']),
@@ -32,6 +37,7 @@ export const attendanceSessionStatusSchema = z.object({
 });
 
 export const attendanceBulkSchema = z.object({
+  params: z.object({ id: z.string().uuid() }),
   body: z
     .object({
       records: z

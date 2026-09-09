@@ -8,6 +8,7 @@ import AcademicCalendarDashboard from './AcademicCalendarDashboard.jsx';
 vi.mock('./api/auth.js', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
 beforeEach(() => {
+  vi.clearAllMocks();
   api.get.mockResolvedValue({ data: { data: [] } });
   api.post.mockResolvedValue({ data: { data: {} } });
   api.patch.mockResolvedValue({ data: { data: {} } });
@@ -31,6 +32,7 @@ describe('Academic calendar dashboard', () => {
         expect.objectContaining({ name: '2027 Academic Year', type: 'YEAR' })
       )
     );
+    expect(api.post.mock.calls[0][1]).not.toHaveProperty('description');
   });
 
   it('creates a persisted school event through the event endpoint', async () => {
@@ -50,5 +52,6 @@ describe('Academic calendar dashboard', () => {
         expect.objectContaining({ type: 'EVENT', code: 'FOUNDERS-27' })
       )
     );
+    expect(api.post.mock.calls[0][1]).not.toHaveProperty('parentId');
   });
 });

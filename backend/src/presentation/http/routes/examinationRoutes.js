@@ -7,18 +7,32 @@ import * as controller from '../controllers/examinationController.js';
 import {
   examinationCandidateSchema,
   examinationCreateSchema,
+  examinationIdSchema,
   examinationMarkSchema,
   examinationQuerySchema,
   examinationScheduleSchema,
   examinationStatusSchema,
 } from '../../../application/validators/examinationValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'));
-router.get('/', validate(examinationQuerySchema), controller.list);
-router.post('/', validate(examinationCreateSchema), controller.create);
-router.get('/:id', controller.get);
-router.post('/:id/candidates', validate(examinationCandidateSchema), controller.addCandidate);
-router.post('/:id/schedules', validate(examinationScheduleSchema), controller.addSchedule);
-router.patch('/:id/status', validate(examinationStatusSchema), controller.changeStatus);
-router.put('/:id/marks', validate(examinationMarkSchema), controller.upsertMark);
+const readOrMark = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER');
+const administer = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
+
+router.use(authenticate, teacherContext);
+router.get('/', readOrMark, validate(examinationQuerySchema), controller.list);
+router.post('/', administer, validate(examinationCreateSchema), controller.create);
+router.get('/:id', readOrMark, validate(examinationIdSchema), controller.get);
+router.post(
+  '/:id/candidates',
+  administer,
+  validate(examinationCandidateSchema),
+  controller.addCandidate
+);
+router.post(
+  '/:id/schedules',
+  administer,
+  validate(examinationScheduleSchema),
+  controller.addSchedule
+);
+router.patch('/:id/status', administer, validate(examinationStatusSchema), controller.changeStatus);
+router.put('/:id/marks', readOrMark, validate(examinationMarkSchema), controller.upsertMark);
 export default router;

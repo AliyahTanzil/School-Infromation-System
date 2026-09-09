@@ -57,7 +57,7 @@ export default function SchoolBranches({ schoolId }) {
         reference code.
       </p>
       {error && <p role="alert">{error}</p>}
-      {!loaded && !error && <p>Loading branches�</p>}
+      {!loaded && !error && <p>Loading branches...</p>}
       {loaded && !branches.length && <p className="my-4">No branches yet.</p>}
       <ul className="my-4 space-y-3">
         {branches.map((branch) => (
@@ -90,7 +90,7 @@ export default function SchoolBranches({ schoolId }) {
           />
         </label>
         <button className="primary-button" disabled={busy || !loaded}>
-          {busy ? 'Saving�' : editing ? 'Save branch' : 'Add branch'}
+          {busy ? 'Saving...' : editing ? 'Save branch' : 'Add branch'}
         </button>
         {editing && (
           <button

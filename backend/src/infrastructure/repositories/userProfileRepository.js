@@ -12,11 +12,25 @@ export function upsert(userId, data, tx) {
 export function findByUserId(userId, tx) {
   return db(tx).userProfile.findUnique({ where: { userId } });
 }
-export function upsertPreference(userId, data, tx) {
-  return db(tx).userPreference.upsert({
+export async function upsertPreference(userId, data, tx) {
+  const client = db(tx);
+  const { locale, timezone, ...settingChanges } = data;
+  const existing = await client.userPreference.findUnique({ where: { userId } });
+  const currentSettings =
+    existing?.settings && typeof existing.settings === 'object' && !Array.isArray(existing.settings)
+      ? existing.settings
+      : {};
+  const preferenceData = {
+    ...(locale ? { locale } : {}),
+    ...(timezone ? { timezone } : {}),
+    ...(Object.keys(settingChanges).length
+      ? { settings: { ...currentSettings, ...settingChanges } }
+      : {}),
+  };
+  return client.userPreference.upsert({
     where: { userId },
-    create: { userId, ...data },
-    update: data,
+    create: { userId, ...preferenceData },
+    update: preferenceData,
   });
 }
 export function findPreference(userId, tx) {

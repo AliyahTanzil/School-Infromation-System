@@ -18,6 +18,6 @@ export const list = (context, status) =>
   });
 export const find = (id, context) =>
   prisma.gradeScheme.findFirst({ where: { id, ...scope(context) }, include });
-export const create = (data) => prisma.gradeScheme.create({ data, include });
+export const create = (data, tx = prisma) => tx.gradeScheme.create({ data, include });
 export const transaction = (operation) => prisma.$transaction(operation);
 export { prisma };

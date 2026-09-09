@@ -11,11 +11,20 @@ const classId = '00000000-0000-4000-8000-000000000001';
 test('subject PATCH validates reassignment and rejects forged ownership', () => {
   assert.ok(
     subjectUpdateSchema.parse({
+      params: { id: classId },
       body: { classAssignments: [{ classId, teachingFocus: 'Algebra' }] },
     })
   );
-  assert.equal(subjectUpdateSchema.safeParse({ body: { classAssignments: [] } }).success, false);
-  assert.equal(subjectUpdateSchema.safeParse({ body: { tenantId: 'forged' } }).success, false);
+  assert.equal(
+    subjectUpdateSchema.safeParse({ params: { id: classId }, body: { classAssignments: [] } })
+      .success,
+    false
+  );
+  assert.equal(
+    subjectUpdateSchema.safeParse({ params: { id: classId }, body: { tenantId: 'forged' } })
+      .success,
+    false
+  );
 });
 
 test('subject edits persist fields and replace class links in one scoped transaction', async () => {

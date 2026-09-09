@@ -1,7 +1,15 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 const channels = ['IN_APP', 'EMAIL', 'SMS', 'PUSH'];
-const scopeWhere = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+const scopeWhere = (scope) => {
+  if (!scope?.tenantId || !scope?.schoolId)
+    throw new AuthorizationError(
+      'Communication school context is required',
+      'SCHOOL_CONTEXT_REQUIRED'
+    );
+  return { tenantId: scope.tenantId, schoolId: scope.schoolId };
+};
 const hydrateDelivery = async (delivery, db = prisma) => ({
   ...delivery,
   event: await db.notificationEvent.findFirst({
@@ -30,18 +38,19 @@ const communicationService = {
     return Promise.all(rows.map((row) => hydrateDelivery(row)));
   },
   async createNotification(scope, input) {
+    const ownership = scopeWhere(scope);
     const recipients = [...new Set(input.userIds)];
     const selectedChannels = [...new Set(input.channels)].filter((channel) =>
       channels.includes(channel)
     );
     if (!selectedChannels.length)
       throw new ValidationError('At least one valid delivery channel is required');
-    const validRecipients = await prisma.user.count({
-      where: { id: { in: recipients }, tenantId: scope.tenantId, deletedAt: null },
-    });
-    if (validRecipients !== recipients.length)
-      throw new ValidationError('One or more recipients are outside the authenticated tenant');
     return prisma.$transaction(async (tx) => {
+      const validRecipients = await tx.user.count({
+        where: { id: { in: recipients }, tenantId: ownership.tenantId, deletedAt: null },
+      });
+      if (validRecipients !== recipients.length)
+        throw new ValidationError('One or more recipients are outside the authenticated tenant');
       const event = await tx.notificationEvent.create({
         data: {
           ...scopeWhere(scope),

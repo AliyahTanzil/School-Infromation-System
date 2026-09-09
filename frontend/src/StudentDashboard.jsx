@@ -15,6 +15,7 @@ const emptyForm = {
 
 export default function StudentDashboard() {
   const [students, setStudents] = useState([]);
+  const [totalStudents, setTotalStudents] = useState(0);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,6 +33,7 @@ export default function StudentDashboard() {
           signal,
         });
         setStudents(response.data.data?.items ?? []);
+        setTotalStudents(response.data.data?.pagination?.total ?? 0);
       } catch (requestError) {
         if (requestError.name !== 'CanceledError') {
           setError(getApiErrorMessage(requestError, 'Unable to load students'));
@@ -73,9 +75,8 @@ export default function StudentDashboard() {
   };
 
   const summary = [
-    { label: 'Total students', value: students.length || '0' },
-    { label: 'Active enrolment', value: '94.8%' },
-    { label: 'Pending review', value: '12' },
+    { label: 'Total students', value: totalStudents },
+    { label: 'Visible records', value: students.length },
   ];
 
   return (

@@ -17,16 +17,35 @@ export async function create(input, context) {
   assertBands(input.bands);
   if (input.effectiveTo && input.effectiveTo <= input.effectiveFrom)
     throw new ValidationError('effectiveTo must be after effectiveFrom');
-  return repository.create({
-    tenantId: context.tenantId,
-    schoolId: context.schoolId,
-    name: input.name,
-    code: input.code,
-    passMark: input.passMark,
-    effectiveFrom: input.effectiveFrom,
-    effectiveTo: input.effectiveTo,
-    bands: { create: input.bands.map((item, index) => ({ ...item, sortOrder: index })) },
-    weights: { create: input.weights },
+  return repository.transaction(async (tx) => {
+    const subjectIds = [...new Set(input.weights.map((item) => item.subjectId).filter(Boolean))];
+    if (subjectIds.length) {
+      const subjects = await tx.subject.findMany({
+        where: {
+          id: { in: subjectIds },
+          tenantId: context.tenantId,
+          schoolId: context.schoolId,
+          deletedAt: null,
+        },
+        select: { id: true },
+      });
+      if (subjects.length !== subjectIds.length)
+        throw new NotFoundError('One or more assessment subjects were not found in this school');
+    }
+    return repository.create(
+      {
+        tenantId: context.tenantId,
+        schoolId: context.schoolId,
+        name: input.name,
+        code: input.code,
+        passMark: input.passMark,
+        effectiveFrom: input.effectiveFrom,
+        effectiveTo: input.effectiveTo,
+        bands: { create: input.bands.map((item, index) => ({ ...item, sortOrder: index })) },
+        weights: { create: input.weights },
+      },
+      tx
+    );
   });
 }
 export async function changeStatus(id, input, context) {
@@ -64,7 +83,7 @@ export async function changeStatus(id, input, context) {
       },
     });
     return tx.gradeScheme.update({
-      where: { id },
+      where: { id, tenantId: context.tenantId, schoolId: context.schoolId, deletedAt: null },
       data: { status: input.status },
       include: {
         bands: { orderBy: { sortOrder: 'desc' } },

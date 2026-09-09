@@ -8,8 +8,8 @@ export async function list(context, filters) {
 export async function get(id, context) {
   return repository.findTeacher(id, context);
 }
-export async function getMe(userId, tenantId) {
-  const teacher = await repository.findTeacherByUser(userId, tenantId);
+export async function getMe(userId, context) {
+  const teacher = await repository.findTeacherByUser(userId, context);
   if (!teacher) throw new NotFoundError('Teacher profile not found');
   return teacher;
 }

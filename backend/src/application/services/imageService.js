@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import prisma from '../../infrastructure/orm/prismaClient.js';
+import auditRepo from '../../infrastructure/repositories/userAuditRepository.js';
 import { ConflictError, NotFoundError } from '../../shared/errors/index.js';
 
 const allowed = new Set(['image/jpeg', 'image/png', 'image/webp']);
@@ -11,7 +12,7 @@ function sniff(buffer) {
     return 'image/webp';
   return null;
 }
-export async function upload(userId, file, actorId, context = {}) {
+export async function upload(userId, file, actorId, tenantId, context = {}) {
   if (!file || file.size > maxBytes)
     throw new ConflictError('Profile image must be smaller than 5 MB');
   const mimeType = sniff(file.buffer);
@@ -20,6 +21,11 @@ export async function upload(userId, file, actorId, context = {}) {
   const checksum = crypto.createHash('sha256').update(file.buffer).digest('hex');
   const objectKey = `private/profile-images/${userId}/${crypto.randomUUID()}`;
   const image = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findFirst({
+      where: { id: userId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!user) throw new NotFoundError('User not found');
     await tx.profileImage.updateMany({
       where: { userId, status: 'ACTIVE' },
       data: { status: 'REPLACED' },
@@ -27,15 +33,16 @@ export async function upload(userId, file, actorId, context = {}) {
     const created = await tx.profileImage.create({
       data: { userId, objectKey, mimeType, byteSize: file.size, checksum, status: 'ACTIVE' },
     });
-    await tx.userAudit.create({
-      data: {
+    await auditRepo.create(
+      {
         actorId,
         subjectId: userId,
         eventType: 'IMAGE_UPLOADED',
         afterJson: { objectKey, mimeType, byteSize: file.size },
         ...context,
       },
-    });
+      tx
+    );
     return created;
   });
   return {
@@ -46,20 +53,26 @@ export async function upload(userId, file, actorId, context = {}) {
     objectKey: image.objectKey,
   };
 }
-export async function remove(userId, actorId, context = {}) {
-  const image = await prisma.profileImage.findFirst({ where: { userId, status: 'ACTIVE' } });
-  if (!image) throw new NotFoundError('Profile image not found');
+export async function remove(userId, actorId, tenantId, context = {}) {
   await prisma.$transaction(async (tx) => {
+    const user = await tx.user.findFirst({
+      where: { id: userId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!user) throw new NotFoundError('User not found');
+    const image = await tx.profileImage.findFirst({ where: { userId, status: 'ACTIVE' } });
+    if (!image) throw new NotFoundError('Profile image not found');
     await tx.profileImage.update({ where: { id: image.id }, data: { status: 'DELETED' } });
-    await tx.userAudit.create({
-      data: {
+    await auditRepo.create(
+      {
         actorId,
         subjectId: userId,
         eventType: 'IMAGE_DELETED',
         beforeJson: { objectKey: image.objectKey },
         ...context,
       },
-    });
+      tx
+    );
   });
   return { deleted: true };
 }

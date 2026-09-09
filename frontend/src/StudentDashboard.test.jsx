@@ -11,5 +11,8 @@ describe('StudentDashboard', () => {
     expect(source).toContain("api.post('/students'");
     expect(source).not.toContain('href="/students/new"');
     expect(source).toContain('student.firstName');
+    expect(source).toContain('pagination?.total');
+    expect(source).not.toContain('94.8%');
+    expect(source).not.toContain("label: 'Pending review'");
   });
 });

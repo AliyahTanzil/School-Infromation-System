@@ -30,11 +30,6 @@ export const find = (id, tenantId, tx) => db(tx).school.findFirst({ where: { id,
 export const create = (data, tx) => db(tx).school.create({ data });
 export const update = (id, tenantId, data, tx) =>
   db(tx).school.update({ where: { id, tenantId }, data });
-export const remove = (id, tenantId, tx) =>
-  db(tx).school.update({
-    where: { id, tenantId },
-    data: { deletedAt: new Date(), status: 'DELETED' },
-  });
 export const findChild = (model, id, schoolId, tx) =>
   db(tx)[model].findFirst({ where: { id, schoolId, deletedAt: null } });
 export const listChildren = (model, schoolId, tx) =>
@@ -71,7 +66,6 @@ export default {
   find,
   create,
   update,
-  remove,
   findChild,
   listChildren,
   createChild,

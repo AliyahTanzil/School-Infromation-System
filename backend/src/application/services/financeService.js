@@ -1,10 +1,19 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
-import { calculateInvoice, nextInvoiceStatus } from '../../domain/financeCalculations.js';
+import {
+  calculateInvoice,
+  nextInvoiceStatus,
+  paymentMinorUnits,
+} from '../../domain/financeCalculations.js';
 import ConflictError from '../../shared/errors/ConflictError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 
-const scopeWhere = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+const scopeWhere = (scope) => {
+  if (!scope?.tenantId || !scope?.schoolId)
+    throw new AuthorizationError('Finance school context is required', 'SCHOOL_CONTEXT_REQUIRED');
+  return { tenantId: scope.tenantId, schoolId: scope.schoolId };
+};
 async function hydrateInvoice(invoice, db = prisma) {
   const [student, fee, payments] = await Promise.all([
     db.student.findFirst({ where: { id: invoice.studentId, tenantId: invoice.tenantId } }),
@@ -61,18 +70,20 @@ export async function listTransactions(scope, limit = 50) {
   });
 }
 export async function createInvoice(scope, data) {
-  const { tenantId, schoolId } = scope;
-  const student = await prisma.student.findFirst({ where: { id: data.studentId, tenantId } });
-  if (!student) throw new NotFoundError('Student not found');
-  if (data.feeId) {
-    const fee = await prisma.fee.findFirst({
-      where: { id: data.feeId, tenantId, schoolId, active: true },
-    });
-    if (!fee) throw new ValidationError('Fee is outside the selected school or inactive');
-  }
+  const { tenantId, schoolId } = scopeWhere(scope);
   const amounts = calculateInvoice(data);
-  return prisma.invoice.create({
-    data: { ...data, ...scope, ...amounts, status: 'ISSUED', issuedAt: new Date() },
+  return prisma.$transaction(async (tx) => {
+    const student = await tx.student.findFirst({ where: { id: data.studentId, tenantId } });
+    if (!student) throw new NotFoundError('Student not found');
+    if (data.feeId) {
+      const fee = await tx.fee.findFirst({
+        where: { id: data.feeId, tenantId, schoolId, active: true },
+      });
+      if (!fee) throw new ValidationError('Fee is outside the selected school or inactive');
+    }
+    return tx.invoice.create({
+      data: { ...data, tenantId, schoolId, ...amounts, status: 'ISSUED', issuedAt: new Date() },
+    });
   });
 }
 export async function getPayment(paymentId, scope) {
@@ -85,48 +96,73 @@ export async function getPayment(paymentId, scope) {
   });
   return { ...payment, invoice };
 }
+function matchingPayment(existing, scope, data) {
+  if (
+    existing.tenantId !== scope.tenantId ||
+    existing.schoolId !== scope.schoolId ||
+    existing.invoiceId !== data.invoiceId ||
+    Number(existing.amount) !== Number(data.amount) ||
+    existing.provider !== data.provider ||
+    existing.reference !== data.reference
+  )
+    throw new ConflictError('Payment idempotency key is already used for another transaction');
+  return existing;
+}
+
 export async function recordPayment(scope, data) {
-  const existing = await prisma.payment.findUnique({
-    where: { idempotencyKey: data.idempotencyKey },
-  });
-  if (existing) {
+  const ownership = scopeWhere(scope);
+  const amountMinor = paymentMinorUnits(data.amount);
+  const lookup = () =>
+    prisma.payment.findUnique({ where: { idempotencyKey: data.idempotencyKey } });
+  const existing = await lookup();
+  if (existing) return matchingPayment(existing, ownership, data);
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: { id: data.invoiceId, ...scopeWhere(scope) },
+      });
+      if (!invoice) throw new NotFoundError('Invoice not found');
+      if (Number(data.amount) > Number(invoice.balance))
+        throw new ValidationError('Payment exceeds the outstanding invoice balance');
+      const balance = Math.max(0, Math.round(Number(invoice.balance) * 100) - amountMinor) / 100;
+      const updated = await tx.invoice.updateMany({
+        where: { id: invoice.id, ...ownership, balance: invoice.balance },
+        data: { balance, status: nextInvoiceStatus(balance, Number(invoice.total)) },
+      });
+      if (updated.count !== 1)
+        throw new ConflictError(
+          'Invoice balance changed; retry the payment with the same idempotency key'
+        );
+      const payment = await tx.payment.create({
+        data: { ...data, ...ownership, status: 'SUCCEEDED', paidAt: new Date() },
+      });
+      await tx.financialTransaction.create({
+        data: {
+          ...ownership,
+          studentId: invoice.studentId,
+          invoiceId: invoice.id,
+          paymentId: payment.id,
+          type: 'PAYMENT',
+          amountMinor,
+          reference: `PAY-${payment.id}`,
+          metadata: { provider: data.provider, reference: data.reference },
+        },
+      });
+      return payment;
+    });
+  } catch (error) {
+    // The failed transaction has rolled back before checking a competing commit.
     if (
-      existing.tenantId !== scope.tenantId ||
-      existing.schoolId !== scope.schoolId ||
-      existing.invoiceId !== data.invoiceId
-    )
-      throw new ConflictError('Payment idempotency key is already used for another transaction');
-    return existing;
+      error instanceof ConflictError ||
+      error instanceof ValidationError ||
+      error.code === 'P2002' ||
+      error.code === 'P2034'
+    ) {
+      const committed = await lookup();
+      if (committed) return matchingPayment(committed, ownership, data);
+    }
+    throw error;
   }
-  return prisma.$transaction(async (tx) => {
-    const invoice = await tx.invoice.findFirst({
-      where: { id: data.invoiceId, ...scopeWhere(scope) },
-    });
-    if (!invoice) throw new NotFoundError('Invoice not found');
-    if (Number(data.amount) > Number(invoice.balance))
-      throw new ValidationError('Payment exceeds the outstanding invoice balance');
-    const payment = await tx.payment.create({
-      data: { ...data, ...scope, status: 'SUCCEEDED', paidAt: new Date() },
-    });
-    const balance = Math.max(0, Number(invoice.balance) - Number(data.amount));
-    await tx.invoice.update({
-      where: { id: invoice.id },
-      data: { balance, status: nextInvoiceStatus(balance, Number(invoice.total)) },
-    });
-    await tx.financialTransaction.create({
-      data: {
-        ...scope,
-        studentId: invoice.studentId,
-        invoiceId: invoice.id,
-        paymentId: payment.id,
-        type: 'PAYMENT',
-        amountMinor: Math.round(Number(data.amount) * 100),
-        reference: `PAY-${payment.id}`,
-        metadata: { provider: data.provider, reference: data.reference },
-      },
-    });
-    return payment;
-  });
 }
 export default {
   listInvoices,

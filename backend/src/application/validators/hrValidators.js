@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 const optionalUuid = z.string().uuid().nullish();
 export const employeeQuerySchema = z.object({
-  query: z.object({ status: z.enum(['APPLICANT', 'ACTIVE', 'ON_LEAVE', 'INACTIVE']).optional() }),
+  query: z
+    .object({ status: z.enum(['APPLICANT', 'ACTIVE', 'ON_LEAVE', 'INACTIVE']).optional() })
+    .strict(),
 });
 export const employeeCreateSchema = z.object({
   body: z
@@ -10,7 +12,7 @@ export const employeeCreateSchema = z.object({
       employeeNumber: z.string().trim().min(1).max(40),
       firstName: z.string().trim().min(1).max(80),
       lastName: z.string().trim().min(1).max(80),
-      email: z.string().email().nullish(),
+      email: z.string().trim().email().max(320).nullish(),
       departmentId: optionalUuid,
       positionId: optionalUuid,
     })
@@ -32,7 +34,7 @@ export const leaveCreateSchema = z.object({
     }),
 });
 export const leaveDecisionSchema = z.object({
-  params: z.object({ id: z.string().uuid() }),
+  params: z.object({ id: z.string().uuid() }).strict(),
   body: z.object({ status: z.enum(['APPROVED', 'REJECTED']) }).strict(),
 });
 export const payrollCreateSchema = z.object({
@@ -47,4 +49,6 @@ export const payrollCreateSchema = z.object({
       path: ['periodEnd'],
     }),
 });
-export const payrollParamsSchema = z.object({ params: z.object({ id: z.string().uuid() }) });
+export const payrollParamsSchema = z.object({
+  params: z.object({ id: z.string().uuid() }).strict(),
+});

@@ -6,6 +6,7 @@ import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/subjectController.js';
 import {
   subjectCreateSchema,
+  subjectIdSchema,
   subjectQuerySchema,
   subjectStatusSchema,
   subjectUpdateSchema,
@@ -19,8 +20,8 @@ router.use(
 );
 router.get('/', validate(subjectQuerySchema), controller.list);
 router.post('/', validate(subjectCreateSchema), controller.create);
-router.get('/:id', controller.get);
+router.get('/:id', validate(subjectIdSchema), controller.get);
 router.patch('/:id', validate(subjectUpdateSchema), controller.update);
-router.delete('/:id', controller.remove);
+router.delete('/:id', validate(subjectIdSchema), controller.remove);
 router.patch('/:id/status', validate(subjectStatusSchema), controller.changeStatus);
 export default router;

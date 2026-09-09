@@ -23,5 +23,11 @@ export const changeStatus = async (req, res) =>
   });
 export const upsertMark = async (req, res) =>
   res.json({
-    data: await service.upsertMark(req.params.id, req.schoolContext, req.body, req.user.id),
+    data: await service.upsertMark(
+      req.params.id,
+      req.schoolContext,
+      req.body,
+      req.user.id,
+      req.user.roles
+    ),
   });

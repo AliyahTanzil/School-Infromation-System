@@ -50,8 +50,8 @@ export function getClassDashboard(id, context) {
     },
   });
 }
-export function createClass(data) {
-  return prisma.class.create({ data, include });
+export function createClass(data, tx = prisma) {
+  return tx.class.create({ data, include });
 }
 export function updateClass(id, schoolId, data) {
   return prisma.class.update({ where: { id, schoolId }, data, include });

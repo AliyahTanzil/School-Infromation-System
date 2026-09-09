@@ -12,7 +12,7 @@ const include = {
 export function createTeacher(data) {
   return prisma.teacher.create({ data, include });
 }
-export function listTeachers({ tenantId, schoolId, status, query }) {
+export function listTeachers({ tenantId, schoolId, status, query, page = 1, pageSize = 50 }) {
   return prisma.teacher.findMany({
     where: {
       tenantId,
@@ -31,6 +31,8 @@ export function listTeachers({ tenantId, schoolId, status, query }) {
     },
     include,
     orderBy: { createdAt: 'desc' },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
   });
 }
 export function findTeacher(id, context) {
@@ -39,9 +41,14 @@ export function findTeacher(id, context) {
     include: { ...include, history: { orderBy: { createdAt: 'desc' }, take: 20 } },
   });
 }
-export function findTeacherByUser(userId, tenantId) {
+export function findTeacherByUser(userId, context) {
   return prisma.teacher.findFirst({
-    where: { userId, tenantId, deletedAt: null },
+    where: {
+      userId,
+      tenantId: context.tenantId,
+      schoolId: context.schoolId,
+      deletedAt: null,
+    },
     include: { ...include, history: { orderBy: { createdAt: 'desc' }, take: 20 } },
   });
 }

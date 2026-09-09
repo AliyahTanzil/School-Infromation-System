@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+const subjectId = z.object({ id: z.string().uuid() }).strict();
+export const subjectIdSchema = z.object({ params: subjectId });
+
 const fields = {
   code: z
     .string()
@@ -13,10 +16,12 @@ const fields = {
 };
 
 export const subjectQuerySchema = z.object({
-  query: z.object({
-    query: z.string().trim().max(100).optional(),
-    status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
-  }),
+  query: z
+    .object({
+      query: z.string().trim().max(100).optional(),
+      status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']).optional(),
+    })
+    .strict(),
 });
 export const subjectCreateSchema = z.object({
   body: z
@@ -24,16 +29,24 @@ export const subjectCreateSchema = z.object({
       ...fields,
       classAssignments: z
         .array(
-          z.object({
-            classId: z.string().uuid(),
-            teachingFocus: z.string().trim().max(500).optional(),
-          })
+          z
+            .object({
+              classId: z.string().uuid(),
+              teachingFocus: z.string().trim().max(500).optional(),
+            })
+            .strict()
         )
         .min(1, 'Select at least one class'),
     })
     .strict(),
 });
-export const subjectUpdateSchema = z.object({ body: subjectCreateSchema.shape.body.partial() });
+export const subjectUpdateSchema = z.object({
+  params: subjectId,
+  body: subjectCreateSchema.shape.body
+    .partial()
+    .refine((value) => Object.keys(value).length > 0, 'Provide at least one field to update'),
+});
 export const subjectStatusSchema = z.object({
+  params: subjectId,
   body: z.object({ status: z.enum(['ACTIVE', 'INACTIVE', 'ARCHIVED']) }).strict(),
 });

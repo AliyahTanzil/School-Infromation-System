@@ -7,8 +7,67 @@ import {
   summarizeAttendance,
 } from '../../domain/attendanceLifecycle.js';
 import prisma from '../../infrastructure/orm/prismaClient.js';
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+
+const isAttendanceAdmin = (roles = []) =>
+  roles.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN'].includes(role));
+
+export async function getTeacherAttendanceClassIds(
+  { tenantId, schoolId, actorId, roles },
+  db = prisma
+) {
+  if (isAttendanceAdmin(roles)) return null;
+  const teacher = await db.teacher.findFirst({
+    where: { userId: actorId, tenantId, schoolId, status: 'ACTIVE', deletedAt: null },
+    select: { id: true },
+  });
+  if (!teacher) return [];
+
+  const [classRoles, teachingAssignments] = await Promise.all([
+    db.classTeacher.findMany({
+      where: {
+        teacherId: teacher.id,
+        class: { tenantId, schoolId, deletedAt: null },
+      },
+      select: { classId: true },
+    }),
+    db.teacherTeachingAssignment.findMany({
+      where: { tenantId, schoolId, teacherId: teacher.id, status: 'ACTIVE' },
+      select: { classId: true },
+    }),
+  ]);
+  return [...new Set([...classRoles, ...teachingAssignments].map(({ classId }) => classId))];
+}
+
+export async function assertAttendanceClassAccess(context, classId, db = prisma) {
+  const allowedClassIds = await getTeacherAttendanceClassIds(context, db);
+  if (allowedClassIds === null || allowedClassIds.includes(classId)) return;
+  throw new AuthorizationError('You are not assigned to manage attendance for this class');
+}
+
+export async function attendanceOptions(context) {
+  const allowedClassIds = await getTeacherAttendanceClassIds(context);
+  return prisma.class.findMany({
+    where: {
+      tenantId: context.tenantId,
+      schoolId: context.schoolId,
+      deletedAt: null,
+      status: { in: ['PLANNED', 'ACTIVE'] },
+      ...(allowedClassIds === null ? {} : { id: { in: allowedClassIds } }),
+    },
+    select: {
+      id: true,
+      name: true,
+      code: true,
+      section: true,
+      gradeLevel: { select: { name: true } },
+      academicYear: { select: { name: true } },
+    },
+    orderBy: [{ name: 'asc' }, { section: 'asc' }],
+  });
+}
 
 export async function listSessions({
   tenantId,
@@ -17,15 +76,36 @@ export async function listSessions({
   status,
   dateFrom,
   dateTo,
+  actorId,
+  roles,
   page = 1,
   pageSize = 25,
 }) {
+  const allowedClassIds = await getTeacherAttendanceClassIds({
+    tenantId,
+    schoolId,
+    actorId,
+    roles,
+  });
   const take = Math.min(Math.max(Number(pageSize) || 25, 1), 100);
   const skip = (Math.max(Number(page) || 1, 1) - 1) * take;
   const where = {
     tenantId,
     schoolId,
-    ...(classId ? { classId } : {}),
+    ...(allowedClassIds === null
+      ? classId
+        ? { classId }
+        : {}
+      : {
+          classId: {
+            in:
+              classId && allowedClassIds.includes(classId)
+                ? [classId]
+                : classId
+                  ? []
+                  : allowedClassIds,
+          },
+        }),
     ...(status ? { status } : {}),
     ...(dateFrom || dateTo
       ? {
@@ -55,11 +135,12 @@ export async function listSessions({
   };
 }
 
-export async function createSession({ tenantId, schoolId, createdById, ...input }) {
+export async function createSession({ tenantId, schoolId, actorId, roles, ...input }) {
   const klass = await prisma.class.findFirst({
     where: { id: input.classId, tenantId, schoolId, deletedAt: null },
   });
   if (!klass) throw new NotFoundError('Class not found');
+  await assertAttendanceClassAccess({ tenantId, schoolId, actorId, roles }, klass.id);
   if (input.periodId) {
     const period = await prisma.academicTerm.findFirst({
       where: { id: input.periodId, academicYear: { tenantId } },
@@ -68,7 +149,7 @@ export async function createSession({ tenantId, schoolId, createdById, ...input 
   }
   return prisma.$transaction(async (tx) => {
     const session = await tx.attendanceSession.create({
-      data: { tenantId, schoolId, createdById, ...input },
+      data: { tenantId, schoolId, createdById: actorId, ...input },
     });
     const students = await tx.classEnrollment.findMany({
       where: { tenantId, schoolId, classId: input.classId, status: 'ACTIVE' },
@@ -92,7 +173,7 @@ export async function createSession({ tenantId, schoolId, createdById, ...input 
   });
 }
 
-export async function getSession({ id, tenantId, schoolId }) {
+export async function getSession({ id, tenantId, schoolId, actorId, roles }) {
   const session = await prisma.attendanceSession.findFirst({
     where: { id, tenantId, schoolId },
     include: {
@@ -105,12 +186,14 @@ export async function getSession({ id, tenantId, schoolId }) {
     },
   });
   if (!session) throw new NotFoundError('Attendance session not found');
+  await assertAttendanceClassAccess({ tenantId, schoolId, actorId, roles }, session.classId);
   return { ...session, summary: summarizeAttendance(session.records) };
 }
 
-export async function changeStatus({ id, tenantId, schoolId, status, actorId, reason }) {
+export async function changeStatus({ id, tenantId, schoolId, status, actorId, roles, reason }) {
   const current = await prisma.attendanceSession.findFirst({ where: { id, tenantId, schoolId } });
   if (!current) throw new NotFoundError('Attendance session not found');
+  await assertAttendanceClassAccess({ tenantId, schoolId, actorId, roles }, current.classId);
   assertSessionTransition(current.status, status);
   return prisma.$transaction(async (tx) => {
     const updated = await tx.attendanceSession.update({
@@ -135,9 +218,10 @@ export async function changeStatus({ id, tenantId, schoolId, status, actorId, re
   });
 }
 
-export async function markBulk({ id, tenantId, schoolId, actorId, records }) {
+export async function markBulk({ id, tenantId, schoolId, actorId, roles, records }) {
   const session = await prisma.attendanceSession.findFirst({ where: { id, tenantId, schoolId } });
   if (!session) throw new NotFoundError('Attendance session not found');
+  await assertAttendanceClassAccess({ tenantId, schoolId, actorId, roles }, session.classId);
   assertWritableSession(session.status);
   records.forEach((record) => assertAttendanceStatus(record.status));
   await prisma.$transaction(async (tx) => {
@@ -166,5 +250,5 @@ export async function markBulk({ id, tenantId, schoolId, actorId, records }) {
       },
     });
   });
-  return getSession({ id, tenantId, schoolId });
+  return getSession({ id, tenantId, schoolId, actorId, roles });
 }

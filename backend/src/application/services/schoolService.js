@@ -93,7 +93,7 @@ export async function update(id, tenantId, input) {
 }
 export async function remove(id, tenantId) {
   await ensure(id, tenantId);
-  return dto(await repo.remove(id, tenantId));
+  throw new ConflictError('The configured main school cannot be deleted');
 }
 export async function children(model, schoolId, tenantId) {
   await ensure(schoolId, tenantId);

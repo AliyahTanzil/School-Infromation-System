@@ -9,7 +9,7 @@ export async function get(req, res) {
   return res.json({ data });
 }
 export async function me(req, res) {
-  res.json({ data: await service.getMe(req.user.id, req.user.tenantId) });
+  res.json({ data: await service.getMe(req.user.id, req.schoolContext) });
 }
 export async function create(req, res) {
   res.status(201).json({ data: await service.create(req.body, req.schoolContext) });

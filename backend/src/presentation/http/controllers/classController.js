@@ -8,7 +8,7 @@ export async function list(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.list({ ...context(req), ...(req.validatedQuery ?? req.query) }),
+      data: await service.list({ ...(req.validatedQuery ?? req.query), ...context(req) }),
     });
   } catch (error) {
     next(error);
@@ -18,7 +18,7 @@ export async function create(req, res, next) {
   try {
     res
       .status(201)
-      .json({ success: true, data: await service.create({ ...context(req), ...req.body }) });
+      .json({ success: true, data: await service.create({ ...req.body, ...context(req) }) });
   } catch (error) {
     next(error);
   }
@@ -35,9 +35,9 @@ export async function addSubject(req, res, next) {
     res.status(201).json({
       success: true,
       data: await service.addSubject({
+        ...req.body,
         ...context(req),
         classId: req.params.id,
-        ...req.body,
       }),
     });
   } catch (error) {
@@ -49,10 +49,10 @@ export async function changeStatus(req, res, next) {
     res.json({
       success: true,
       data: await service.changeStatus({
+        ...req.body,
         ...context(req),
         actorId: req.user?.id,
         id: req.params.id,
-        ...req.body,
       }),
     });
   } catch (error) {

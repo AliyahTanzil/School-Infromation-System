@@ -7,6 +7,7 @@ const includePortal = ({ tenantId, schoolId }) => ({
       status: 'ACTIVE',
       revokedAt: null,
       student: {
+        tenantId,
         classEnrollments: { some: { tenantId, schoolId, status: 'ACTIVE' } },
       },
     },
@@ -53,17 +54,17 @@ export async function createWithProfile(data, profile) {
   });
 }
 
-export async function linkStudent(parentId, studentId, relationship) {
-  return prisma.parentStudentRelationship.upsert({
+export async function linkStudent(parentId, studentId, relationship, tx = prisma) {
+  return tx.parentStudentRelationship.upsert({
     where: { parentId_studentId: { parentId, studentId } },
     update: { relationship, status: 'PENDING', revokedAt: null },
     create: { parentId, studentId, relationship },
   });
 }
 
-export async function unlinkStudent(parentId, studentId) {
+export async function unlinkStudent(parentId, studentId, parentScope) {
   return prisma.parentStudentRelationship.update({
-    where: { parentId_studentId: { parentId, studentId } },
+    where: { parentId_studentId: { parentId, studentId }, parent: parentScope },
     data: { status: 'REVOKED', revokedAt: new Date() },
   });
 }

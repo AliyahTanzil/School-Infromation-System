@@ -96,7 +96,7 @@ export async function changeAcademicPeriodStatus({ tenantId, schoolId, id, statu
           data: { isCurrent: false },
         });
       const updated = await tx.academicYear.update({
-        where: { id },
+        where: { id, tenantId },
         data: { isCurrent: status === 'ACTIVE' },
       });
       return toDto(updated, 'YEAR');
@@ -105,12 +105,21 @@ export async function changeAcademicPeriodStatus({ tenantId, schoolId, id, statu
   const term = await prisma.academicTerm.findFirst({ where: { id, academicYear: { tenantId } } });
   if (term) {
     assertAcademicTransition(term.status, status);
-    return toDto(await prisma.academicTerm.update({ where: { id }, data: { status } }), 'TERM');
+    return toDto(
+      await prisma.academicTerm.update({
+        where: { id, academicYear: { tenantId } },
+        data: { status },
+      }),
+      'TERM'
+    );
   }
   const event = await prisma.academicCalendarEvent.findFirst({ where: { id, tenantId, schoolId } });
   if (!event) throw new NotFoundError('Academic period not found');
   assertAcademicTransition(event.status, status);
-  const updated = await prisma.academicCalendarEvent.update({ where: { id }, data: { status } });
+  const updated = await prisma.academicCalendarEvent.update({
+    where: { id, tenantId, schoolId },
+    data: { status },
+  });
   return toDto(updated, updated.type);
 }
 

@@ -4,8 +4,8 @@ export default {
   list: async (req, res) =>
     res.json({
       data: await academicPeriodService.listAcademicPeriods({
-        ...req.schoolContext,
         ...(req.validatedQuery ?? req.query),
+        ...req.schoolContext,
       }),
     }),
   create: async (req, res) =>
@@ -27,10 +27,10 @@ export default {
   changeStatus: async (req, res) =>
     res.json({
       data: await academicPeriodService.changeAcademicPeriodStatus({
+        ...req.body,
         ...req.schoolContext,
         actorId: req.user.id,
         id: req.params.id,
-        ...req.body,
       }),
     }),
 };

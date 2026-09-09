@@ -9,7 +9,7 @@ export default function UserManagement() {
     lastName: '',
     email: '',
     password: '',
-    accountType: 'APPLICATION_MANAGER',
+    accountType: 'STAFF',
     status: 'ACTIVE',
   };
   const [form, setForm] = useState(emptyForm);
@@ -44,7 +44,7 @@ export default function UserManagement() {
   };
 
   const metrics = [
-    { label: 'Total users', value: users.length },
+    { label: 'Visible users', value: users.length },
     { label: 'Active', value: users.filter((user) => user.status === 'ACTIVE').length },
     {
       label: 'Pending',
@@ -130,8 +130,6 @@ export default function UserManagement() {
               value={form.accountType}
               onChange={(event) => setForm({ ...form, accountType: event.target.value })}
             >
-              <option value="APPLICATION_MANAGER">Application manager</option>
-              <option value="TENANT_ADMIN">Tenant administrator</option>
               <option value="STAFF">Staff</option>
               <option value="TEACHER">Teacher</option>
               <option value="PARENT">Parent</option>
@@ -175,7 +173,7 @@ export default function UserManagement() {
             <h2>Backend users</h2>
             <p>Review recently created identities and their current account state.</p>
           </div>
-          <span className="status-chip">{users.length} total</span>
+          <span className="status-chip">{users.length} visible</span>
         </div>
 
         <div className="data-table-wrap">

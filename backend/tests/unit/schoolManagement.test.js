@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Prisma } from '@prisma/client';
+import {
+  branchCreateSchema,
+  branchUpdateSchema,
+  schoolIdSchema,
+  schoolListSchema,
+  schoolSchema,
+  updateSchoolSchema,
+} from '../../src/application/validators/schoolValidators.js';
 const db = { $on() {} };
 globalThis.__prisma = db;
 process.env.SINGLE_SCHOOL_ID = 'school';
@@ -92,7 +100,38 @@ test('school list ignores client tenant overrides and rejects unscoped non-owner
     res
   );
   assert.equal(calls[0].where.tenantId, 'tenant');
+  await controller.list(
+    {
+      user: { tenantId: 'tenant' },
+      query: { tenantId: 'other' },
+      headers: {},
+    },
+    res
+  );
+  assert.equal(calls.at(-2).where.tenantId, 'tenant');
   await assert.rejects(controller.list({ user: {}, query: {} }, res), /context is required/);
+});
+
+test('school and branch API inputs are strict, bounded, and UUID validated', () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  const branchId = '22222222-2222-4222-8222-222222222222';
+  assert.equal(schoolListSchema.safeParse({ query: { tenantId: id } }).success, false);
+  assert.equal(schoolListSchema.safeParse({ query: { pageSize: 101 } }).success, false);
+  assert.equal(schoolIdSchema.safeParse({ params: { id: 'school' } }).success, false);
+  assert.equal(
+    schoolSchema.safeParse({ body: { name: 'Academy', slug: 'academy', tenantId: id } }).success,
+    false
+  );
+  assert.equal(updateSchoolSchema.safeParse({ params: { id }, body: {} }).success, false);
+  assert.equal(
+    branchCreateSchema.safeParse({ params: { id }, body: { name: 'East', schoolId: id } }).success,
+    false
+  );
+  assert.equal(
+    branchUpdateSchema.safeParse({ params: { id, branchId }, body: { name: 'West', code: 'W' } })
+      .success,
+    false
+  );
 });
 
 // Branches share the main school's identity boundary without creating another School.
@@ -101,6 +140,10 @@ test('second school creation is blocked before any records are written', async (
   db.school.count = async () => 1;
   db.school.create = async () => assert.fail('Must not create another school');
   await assert.rejects(service.create({ name: 'Second', slug: 'second' }), /Add a branch instead/);
+});
+test('the configured main school cannot be deleted', async () => {
+  prepare();
+  await assert.rejects(service.remove('school', 'tenant'), /cannot be deleted/);
 });
 test('branch creation generates a code and branch edits remain school scoped', async () => {
   prepare();

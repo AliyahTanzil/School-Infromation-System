@@ -12,6 +12,9 @@ const statuses = [
 export const examinationQuerySchema = z.object({
   query: z.object({ status: z.enum(statuses).optional() }),
 });
+export const examinationIdSchema = z.object({
+  params: z.object({ id: z.string().uuid() }),
+});
 export const examinationCreateSchema = z.object({
   body: z.object({
     name: z.string().trim().min(1).max(160),

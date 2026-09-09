@@ -5,15 +5,20 @@ const source = await readFile('src/presentation/http/routes/schoolRoutes.js', 'u
 test('main-school branch routes are mounted with the real branch permission', () => {
   assert.match(
     source,
-    /router\.get\('\/:id\/branches', requirePermission\('schools\.read'\), controller\.listBranches\)/
+    /'\/:id\/branches',[\s\S]*?requirePermission\('schools\.read'\),[\s\S]*?validate\(branchListSchema\)/
   );
   assert.match(
     source,
-    /router\.post\(\s*'\/:id\/branches',\s*requirePermission\('schools\.branches'\)/
+    /router\.post\(\s*'\/:id\/branches',[\s\S]*?requirePermission\('schools\.branches'\),[\s\S]*?validate\(branchCreateSchema\)/
   );
   assert.match(
     source,
-    /router\.patch\(\s*'\/:id\/branches\/:branchId',\s*requirePermission\('schools\.branches'\)/
+    /router\.patch\(\s*'\/:id\/branches\/:branchId',[\s\S]*?requirePermission\('schools\.branches'\),[\s\S]*?validate\(branchUpdateSchema\)/
   );
   assert.doesNotMatch(source, /schools\.manage_branches/);
+  assert.doesNotMatch(source, /\['schoolBranch'|\['department'|\['gradeLevel'/);
+  assert.match(
+    source,
+    /featureUnavailableRoutes\('School administrator assignments', 'RBAC-002'\)/
+  );
 });

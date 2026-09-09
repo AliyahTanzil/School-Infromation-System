@@ -6,7 +6,8 @@ import service, {
 import AuthorizationError from '../../../shared/errors/AuthorizationError.js';
 const tenant = (req) => {
   if (req.user?.tenantId) return req.user.tenantId;
-  if (req.user?.platformRole === 'OWNER') return undefined;
+  if (req.user?.platformRole === 'OWNER' || req.user?.accountType === 'APPLICATION_MANAGER')
+    return undefined;
   throw new AuthorizationError('School account context is required');
 };
 const send = (res, data, status = 200) => res.status(status).json({ success: true, data });
@@ -20,15 +21,13 @@ export default {
     send(
       res,
       await service.list({
+        ...(req.validatedQuery ?? req.query),
         tenantId: tenant(req),
-        search: req.query.search,
-        page: req.query.page,
-        pageSize: req.query.pageSize,
       })
     ),
   get: async (req, res) => send(res, await service.get(req.params.id, tenant(req))),
   create: async (req, res) =>
-    send(res, await service.create({ ...req.body, tenantId: tenant(req) }, req.user.id), 201),
+    send(res, await service.create({ ...req.body, tenantId: tenant(req) }), 201),
   update: async (req, res) => send(res, await service.update(req.params.id, tenant(req), req.body)),
   remove: async (req, res) => send(res, await service.remove(req.params.id, tenant(req))),
   children: async (req, res) =>

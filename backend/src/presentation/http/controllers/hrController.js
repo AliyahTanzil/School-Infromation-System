@@ -11,7 +11,7 @@ export async function dashboard(req, res) {
 }
 export async function employees(req, res) {
   res.json({
-    data: await service.listEmployees({ ...context(req), ...(req.validatedQuery ?? req.query) }),
+    data: await service.listEmployees({ ...(req.validatedQuery ?? req.query), ...context(req) }),
   });
 }
 export async function createEmployee(req, res) {
@@ -23,10 +23,10 @@ export async function requestLeave(req, res) {
 export async function approveLeave(req, res) {
   res.json({
     data: await service.approveLeave({
+      status: req.body.status,
       ...context(req),
       id: req.params.id,
       approvedById: req.user.id,
-      ...req.body,
     }),
   });
 }

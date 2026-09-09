@@ -42,6 +42,9 @@ export function toUserListDto(user) {
     dto && {
       id: dto.id,
       email: dto.email,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      accountType: dto.accountType,
       status: dto.status,
       profile: dto.profile,
       roles: dto.roles,

@@ -22,16 +22,14 @@ export default function TeacherDashboard() {
   const [assignments, setAssignments] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [schoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
 
   const loadDashboard = useCallback(async () => {
-    const headers = schoolId ? { 'x-school-id': schoolId } : {};
     setLoading(true);
     setError('');
     try {
       const [teacherRes, classroomsRes] = await Promise.allSettled([
         api.get('/teachers/me'),
-        api.get('/lms/classrooms', { headers }),
+        api.get('/lms/classrooms'),
       ]);
 
       if (teacherRes.status === 'fulfilled') {
@@ -47,7 +45,6 @@ export default function TeacherDashboard() {
         if (rooms.length > 0) {
           const assignmentRequests = rooms.slice(0, 3).map((room) =>
             api.get('/lms/assignments', {
-              headers,
               params: { classroomId: room.id },
             })
           );
@@ -63,12 +60,11 @@ export default function TeacherDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [schoolId]);
+  }, []);
 
   useEffect(() => {
-    sessionStorage.setItem('sais.schoolId', schoolId);
     loadDashboard();
-  }, [loadDashboard, schoolId]);
+  }, [loadDashboard]);
 
   return (
     <main className="teacher-shell">
