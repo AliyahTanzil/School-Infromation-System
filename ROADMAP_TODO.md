@@ -453,3 +453,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 47: constrain library creation fields, verify active library/book references transactionally, and reject undeclared query/identifier fields. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 47: library creation fields and transactional active reference checks. Focused 17 passed; backend 489 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase47.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 48: enforce ownership throughout nested library reads and align overview counts with scoped catalog/circulation records. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 48: nested library read ownership and consistent overview counts. Focused 22 passed; backend 494 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase48.md. SEC-001 remains IN_PROGRESS. |

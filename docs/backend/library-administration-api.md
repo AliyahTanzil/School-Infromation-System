@@ -17,7 +17,7 @@ A stale duplicate return cannot release the copy after another request has retur
 
 ## Remaining audit scope
 
-Borrower identity semantics and eligibility, nested read ownership and circulation audit records remain under SEC-001 review. This checkpoint does not mark the full library authorization audit complete.
+Borrower identity semantics and eligibility and circulation audit records remain under SEC-001 review. This checkpoint does not mark the full library authorization audit complete.
 
 ## Creation and borrowing reference checks
 
@@ -28,3 +28,11 @@ Borrowing verifies an active scoped library in the transaction. Its conditional 
 Caller-provided ownership, identifiers, status and lifecycle timestamps cannot override these server-controlled creation fields. All declared path parameter objects reject unknown fields; book search accepts only optional `q` (trimmed, at most 100 characters). Existing strict mutation bodies remain in effect.
 
 Reference checks and inserts use the existing default transaction isolation. They do not lock libraries/books against concurrent administrative changes. Regression tests use persistence doubles; live race verification remains outstanding.
+
+## Catalog, circulation and overview reads
+
+Book search requires the book and its library to belong to the authenticated tenant/school and requested library. Included copies additionally require matching tenant/school/library ownership and a scoped book relationship. Only active books appear in search; the 100-book limit, title ordering and existing text search remain unchanged.
+
+Loan listing requires ownership throughout the loan, library, copy and book relationships before including copy/book details. Inconsistent relationships are excluded. The newest 100 loans remain available, including returned loans and records for archived books or inactive libraries owned by the same school. Historical visibility does not grant permission to borrow inactive stock.
+
+Overview counts use the same ownership predicates for books, copies and loans, excluding inconsistent relationships from totals. Overdue counts still require a BORROWED loan with a past due date. Unknown/foreign libraries return 404 for overview and empty catalog/loan lists. Tests exercise deliberately inconsistent fixtures through query predicates; no live database cleanup or concurrent read guarantees are claimed.
