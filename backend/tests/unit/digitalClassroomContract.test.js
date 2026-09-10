@@ -39,7 +39,7 @@ test('classroom membership and archival operations are exposed on both active mo
 test('classroom mutations require an administrator or teacher before ownership checks', async () => {
   const routes = await read('src/presentation/http/routes/digitalClassroomRoutes.js');
   const service = await read('src/application/services/digitalClassroomService.js');
-  const mutationRoleBoundary = /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/g;
+  const mutationRoleBoundary = /,\s*authorizeSchoolAdminOrTeacher,/g;
 
   assert.equal(
     [...routes.matchAll(mutationRoleBoundary)].length,

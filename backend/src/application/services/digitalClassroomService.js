@@ -5,27 +5,29 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const isAdministrator = (roles = []) =>
-  roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const isAdministrator = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 
-async function requireClassroom(scope, classroomId, userId, roles, db = prisma) {
+async function requireClassroom(scope, classroomId, userId, access, db = prisma) {
   const classroom = await db.digitalClassroom.findFirst({
     where: { id: classroomId, ...owned(scope), status: { not: 'ARCHIVED' } },
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Digital classroom not found');
-  if (!isAdministrator(roles) && classroom.ownerId !== userId && !classroom.memberships.length) {
+  if (!isAdministrator(access) && classroom.ownerId !== userId && !classroom.memberships.length) {
     throw new AuthorizationError('You are not a member of this classroom');
   }
   return classroom;
 }
 
-export function list(scope, userId, roles = []) {
+export function list(scope, userId, access = {}) {
   return prisma.digitalClassroom.findMany({
     where: {
       ...owned(scope),
       status: { not: 'ARCHIVED' },
-      ...(isAdministrator(roles)
+      ...(isAdministrator(access)
         ? {}
         : { OR: [{ ownerId: userId }, { memberships: { some: { userId, status: 'ACTIVE' } } }] }),
     },
@@ -59,13 +61,13 @@ export async function create(scope, userId, data) {
   });
 }
 
-export async function details(scope, classroomId, userId, roles) {
-  return requireClassroom(scope, classroomId, userId, roles);
+export async function details(scope, classroomId, userId, access) {
+  return requireClassroom(scope, classroomId, userId, access);
 }
 
-export async function addMember(scope, classroomId, actorId, roles, data) {
-  const classroom = await requireClassroom(scope, classroomId, actorId, roles);
-  if (!isAdministrator(roles) && classroom.ownerId !== actorId) {
+export async function addMember(scope, classroomId, actorId, access, data) {
+  const classroom = await requireClassroom(scope, classroomId, actorId, access);
+  if (!isAdministrator(access) && classroom.ownerId !== actorId) {
     throw new AuthorizationError('Only the classroom owner can manage members');
   }
   const user = await prisma.user.findFirst({
@@ -80,9 +82,9 @@ export async function addMember(scope, classroomId, actorId, roles, data) {
   });
 }
 
-export async function removeMember(scope, classroomId, actorId, roles, userId) {
-  const classroom = await requireClassroom(scope, classroomId, actorId, roles);
-  if (!isAdministrator(roles) && classroom.ownerId !== actorId) {
+export async function removeMember(scope, classroomId, actorId, access, userId) {
+  const classroom = await requireClassroom(scope, classroomId, actorId, access);
+  if (!isAdministrator(access) && classroom.ownerId !== actorId) {
     throw new AuthorizationError('Only the classroom owner can manage members');
   }
   if (classroom.ownerId === userId)
@@ -95,9 +97,9 @@ export async function removeMember(scope, classroomId, actorId, roles, userId) {
   return { removed: true };
 }
 
-export async function archive(scope, classroomId, actorId, roles) {
-  const classroom = await requireClassroom(scope, classroomId, actorId, roles);
-  if (!isAdministrator(roles) && classroom.ownerId !== actorId) {
+export async function archive(scope, classroomId, actorId, access) {
+  const classroom = await requireClassroom(scope, classroomId, actorId, access);
+  if (!isAdministrator(access) && classroom.ownerId !== actorId) {
     throw new AuthorizationError('Only the classroom owner can archive this classroom');
   }
   return prisma.digitalClassroom.update({
