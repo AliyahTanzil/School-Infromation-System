@@ -2,13 +2,15 @@ import { z } from 'zod';
 export const libraryCreateSchema = z.object({
   body: z.object({ name: z.string().trim().min(1).max(120) }).strict(),
 });
-export const libraryParamsSchema = z.object({ params: z.object({ libraryId: z.string().uuid() }) });
+export const libraryParamsSchema = z.object({
+  params: z.object({ libraryId: z.string().uuid() }).strict(),
+});
 export const bookQuerySchema = z.object({
-  params: z.object({ libraryId: z.string().uuid() }),
-  query: z.object({ q: z.string().trim().max(100).optional() }),
+  params: z.object({ libraryId: z.string().uuid() }).strict(),
+  query: z.object({ q: z.string().trim().max(100).optional() }).strict(),
 });
 export const bookCreateSchema = z.object({
-  params: z.object({ libraryId: z.string().uuid() }),
+  params: z.object({ libraryId: z.string().uuid() }).strict(),
   body: z
     .object({
       title: z.string().trim().min(1).max(200),
@@ -19,15 +21,15 @@ export const bookCreateSchema = z.object({
     .strict(),
 });
 export const copyCreateSchema = z.object({
-  params: z.object({ libraryId: z.string().uuid(), bookId: z.string().uuid() }),
+  params: z.object({ libraryId: z.string().uuid(), bookId: z.string().uuid() }).strict(),
   body: z.object({ barcode: z.string().trim().min(1).max(80) }).strict(),
 });
 export const loanCreateSchema = z.object({
-  params: z.object({ libraryId: z.string().uuid() }),
+  params: z.object({ libraryId: z.string().uuid() }).strict(),
   body: z
     .object({ copyId: z.string().uuid(), borrowerId: z.string().uuid(), dueAt: z.coerce.date() })
     .strict(),
 });
 export const loanParamsSchema = z.object({
-  params: z.object({ libraryId: z.string().uuid(), loanId: z.string().uuid() }),
+  params: z.object({ libraryId: z.string().uuid(), loanId: z.string().uuid() }).strict(),
 });

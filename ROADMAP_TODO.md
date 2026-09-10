@@ -449,3 +449,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 46: fail closed on missing library ownership and conditionally claim loan returns before releasing scoped copies. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 46: scoped conditional library returns and fail-closed ownership. Focused 10 passed; backend 482 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase46.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 47: constrain library creation fields, verify active library/book references transactionally, and reject undeclared query/identifier fields. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 47: library creation fields and transactional active reference checks. Focused 17 passed; backend 489 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase47.md. SEC-001 remains IN_PROGRESS. |

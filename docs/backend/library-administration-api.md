@@ -17,4 +17,14 @@ A stale duplicate return cannot release the copy after another request has retur
 
 ## Remaining audit scope
 
-Borrower identity semantics and eligibility, transactional library/book reference validation on creation, nested read ownership, creation field overrides, strict query validation and circulation audit records remain under SEC-001 review. This checkpoint does not mark the full library authorization audit complete.
+Borrower identity semantics and eligibility, nested read ownership and circulation audit records remain under SEC-001 review. This checkpoint does not mark the full library authorization audit complete.
+
+## Creation and borrowing reference checks
+
+Library creation copies only `name` and starts the library active. Book creation copies only `title`, `author`, `isbn` and `category`, verifies an active library owned by the authenticated tenant/school inside its insert transaction, and starts the book ACTIVE. Copy creation copies only `barcode`, verifies that active library plus the active book under the same tenant/school/library inside its insert transaction, and starts the copy AVAILABLE.
+
+Borrowing verifies an active scoped library in the transaction. Its conditional copy claim requires an AVAILABLE copy whose book is ACTIVE and belongs to the same tenant, school and library. The new loan copies only `copyId`, `borrowerId` and `dueAt` and starts BORROWED. Missing/inactive library or book references return 404; an unavailable or ineligible borrowing copy returns 409. Failed loan creation rolls back the copy claim. This does not yet validate borrower eligibility.
+
+Caller-provided ownership, identifiers, status and lifecycle timestamps cannot override these server-controlled creation fields. All declared path parameter objects reject unknown fields; book search accepts only optional `q` (trimmed, at most 100 characters). Existing strict mutation bodies remain in effect.
+
+Reference checks and inserts use the existing default transaction isolation. They do not lock libraries/books against concurrent administrative changes. Regression tests use persistence doubles; live race verification remains outstanding.
