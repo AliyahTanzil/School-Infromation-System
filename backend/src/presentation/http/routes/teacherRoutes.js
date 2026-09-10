@@ -12,12 +12,16 @@ import {
 } from '../../../application/validators/teacherValidators.js';
 
 const router = Router();
-const administerTeachers = authorize(
+const teacherAdministratorRoles = authorize(
   'PLATFORM_ADMIN',
   'SCHOOL_ADMIN',
   'APPLICATION_MANAGER',
   'OWNER'
 );
+export function administerTeachers(req, res, next) {
+  if (req.user?.platformRole === 'OWNER') return next();
+  return teacherAdministratorRoles(req, res, next);
+}
 router.use(authenticate);
 router.use(teacherContext);
 router.get('/me', authorize('TEACHER'), controller.me);
