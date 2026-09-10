@@ -6,6 +6,7 @@ const db = { $on() {} };
 globalThis.__prisma = db;
 const service = await import('../../src/application/services/libraryService.js');
 const ownership = { tenantId: 'tenant', schoolId: 'school' };
+const context = { ...ownership, actorId: 'actor' };
 const forged = {
   tenantId: 'foreign',
   schoolId: 'foreign',
@@ -17,7 +18,13 @@ const forged = {
   returnedAt: new Date(),
 };
 
-function fixture({ library = true, book = true, available = true, failLoan = false } = {}) {
+function fixture({
+  library = true,
+  book = true,
+  available = true,
+  failLoan = false,
+  failAudit = false,
+} = {}) {
   const committed = [];
   db.$transaction = async (work) => {
     const pending = [];
@@ -26,6 +33,33 @@ function fixture({ library = true, book = true, available = true, failLoan = fal
       return data;
     };
     const result = await work({
+      user: {
+        findFirst: async ({ where, select }) => {
+          assert.deepEqual(where, {
+            id: 'borrower',
+            tenantId: ownership.tenantId,
+            status: 'ACTIVE',
+            deletedAt: null,
+          });
+          assert.deepEqual(select, { id: true });
+          return { id: 'borrower' };
+        },
+      },
+      auditLog: {
+        create: async ({ data }) => {
+          if (failAudit) throw new Error('Audit insert failed');
+          assert.equal(data.actorId, 'actor');
+          assert.equal(data.tenantId, ownership.tenantId);
+          assert.equal(data.action, 'CREATE');
+          assert.equal(data.entityType, 'LibraryLoan');
+          assert.equal(data.entityId, 'loan');
+          assert.equal(data.metadata.schoolId, ownership.schoolId);
+          assert.equal(data.metadata.libraryId, 'library');
+          assert.equal(data.metadata.copyId, 'copy');
+          assert.equal(data.metadata.toStatus, 'BORROWED');
+          pending.push({ audit: data });
+        },
+      },
       library: {
         findFirst: async ({ where }) => {
           assert.deepEqual(where, { id: 'library', ...ownership, active: true });
@@ -62,7 +96,7 @@ function fixture({ library = true, book = true, available = true, failLoan = fal
       libraryLoan: {
         create: async (args) => {
           if (failLoan) throw new Error('Loan insert failed');
-          return create(args);
+          return { ...(await create(args)), id: 'loan' };
         },
       },
     });
@@ -112,7 +146,7 @@ test('missing, foreign or inactive libraries cannot receive books, copies or loa
   for (const operation of [
     () => service.addBook(ownership, 'library', {}),
     () => service.addCopy(ownership, 'library', 'book', {}),
-    () => service.borrow(ownership, 'library', {}),
+    () => service.borrow(context, 'library', {}),
   ]) {
     const writes = fixture({ library: false });
     await assert.rejects(operation, /Active library not found/);
@@ -129,13 +163,14 @@ test('copies cannot be added to missing, foreign, wrong-library or inactive book
 test('borrowing binds the claimed copy and loan to server ownership and initial state', async () => {
   const writes = fixture();
   const dueAt = new Date('2026-10-01');
-  await service.borrow(ownership, 'library', {
+  await service.borrow(context, 'library', {
     ...forged,
     copyId: 'copy',
     borrowerId: 'borrower',
     dueAt,
   });
-  assert.deepEqual(writes, [
+  assert.equal(writes.length, 3);
+  assert.deepEqual(writes.slice(0, 2), [
     { status: 'BORROWED' },
     {
       ...ownership,
@@ -149,11 +184,11 @@ test('borrowing binds the claimed copy and loan to server ownership and initial 
 });
 
 test('unavailable or ineligible copies and failed loan inserts leave no committed circulation writes', async () => {
-  for (const options of [{ available: false }, { failLoan: true }]) {
+  for (const options of [{ available: false }, { failLoan: true }, { failAudit: true }]) {
     const writes = fixture(options);
     await assert.rejects(
-      service.borrow(ownership, 'library', { copyId: 'copy' }),
-      /Copy is unavailable|Loan insert failed/
+      service.borrow(context, 'library', { copyId: 'copy', borrowerId: 'borrower' }),
+      /Copy is unavailable|Loan insert failed|Audit insert failed/
     );
     assert.deepEqual(writes, []);
   }

@@ -457,3 +457,19 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 48: enforce ownership throughout nested library reads and align overview counts with scoped catalog/circulation records. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 48: nested library read ownership and consistent overview counts. Focused 22 passed; backend 494 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase48.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 49: require authenticated actor identity and transactional audit evidence for library borrowing and returns. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 49: authenticated transactional circulation audits. Focused library suite: 24 passed. Full backend: 496 passed, one intentional live-database skip. Backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase49.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 50: verify library borrower user identity, tenant ownership and active non-deleted eligibility before circulation writes. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 50: transactional active tenant-user borrower eligibility. Focused library suite: 33 passed. Full backend: 512 passed, one intentional database skip. Backend TypeScript compilation/runtime copy, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase50.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 51: library/HR platform-owner access aligned with academic administration. Six behavioral regressions; affected 15-test suite passes after updating two stale contracts. TypeScript/runtime copy and lint pass; standard build blocked by Prisma engine DLL EPERM. See docs/security/security-administration-phase51.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 52: shared owner-aware authorization across seven administrator-only modules. Focused 29 passed; backend 528 passed/one intentional skip; compilation, runtime smoke, lint, formatting and diff checks pass. Standard build blocked by Prisma engine DLL EPERM. See docs/security/security-administration-phase52.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 53: owner access for examinations/results and authenticated mark-service access context. Focused 26 passed; backend 536 passed/one intentional skip; compilation, runtime smoke, lint, formatting and diff checks pass. Prior Prisma DLL build issue not retested. See docs/security/security-administration-phase53.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 54: attendance owner access across six controller/service paths, protected context precedence and explicit creation fields. Focused 20 passed; backend 548 passed/one intentional skip; compilation, runtime smoke, lint, formatting and diff checks pass. Prior Prisma DLL build issue not retested. See docs/security/security-administration-phase54.md. SEC-001 remains IN_PROGRESS. |

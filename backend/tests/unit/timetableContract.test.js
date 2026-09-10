@@ -12,7 +12,7 @@ test('timetable routes require authenticated school context on both active mount
   const routes = await read('../../src/presentation/http/routes/timetableRoutes.js');
   const app = await read('../../src/foundation/app.ts');
   assert.match(routes, /authenticate, teacherContext/);
-  assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN'\)/);
+  assert.match(routes, /authenticate, teacherContext, authorizeSchoolAdmin/);
   for (const [method, suffix, schema, handler] of [
     ['get', '', 'teacherAvailabilityListSchema', 'listTeacherAvailability'],
     ['post', '', 'teacherAvailabilitySchema', 'createTeacherAvailability'],

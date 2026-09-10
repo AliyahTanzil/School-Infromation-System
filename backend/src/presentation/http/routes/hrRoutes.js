@@ -13,7 +13,12 @@ import {
   payrollParamsSchema,
 } from '../../../application/validators/hrValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+const admin = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
+export function hrAdmin(req, res, next) {
+  if (req.user?.platformRole === 'OWNER') return next();
+  return admin(req, res, next);
+}
+router.use(authenticate, teacherContext, hrAdmin);
 router.get('/dashboard', controller.dashboard);
 router.get('/employees', validate(employeeQuerySchema), controller.employees);
 router.post('/employees', validate(employeeCreateSchema), controller.createEmployee);

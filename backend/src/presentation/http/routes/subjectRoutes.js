@@ -13,11 +13,12 @@ import {
 } from '../../../application/validators/subjectValidators.js';
 
 const router = Router();
-router.use(
-  authenticate,
-  teacherContext,
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER')
-);
+const admin = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER');
+export function subjectAdmin(req, res, next) {
+  if (req.user?.platformRole === 'OWNER') return next();
+  return admin(req, res, next);
+}
+router.use(authenticate, teacherContext, subjectAdmin);
 router.get('/', validate(subjectQuerySchema), controller.list);
 router.post('/', validate(subjectCreateSchema), controller.create);
 router.get('/:id', validate(subjectIdSchema), controller.get);

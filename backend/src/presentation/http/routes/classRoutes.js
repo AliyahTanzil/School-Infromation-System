@@ -13,11 +13,12 @@ import {
   classSubjectSchema,
 } from '../../../application/validators/classValidators.js';
 const router = Router();
-router.use(
-  authenticate,
-  teacherContext,
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER')
-);
+const admin = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER');
+export function classAdmin(req, res, next) {
+  if (req.user?.platformRole === 'OWNER') return next();
+  return admin(req, res, next);
+}
+router.use(authenticate, teacherContext, classAdmin);
 router.get('/options', controller.options);
 router.get('/', validate(classQuerySchema), controller.list);
 router.post('/', validate(classCreateSchema), controller.create);

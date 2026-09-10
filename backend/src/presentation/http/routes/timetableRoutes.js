@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/timetableController.js';
@@ -27,7 +27,7 @@ import {
   timetableRoomUpdateSchema,
 } from '../../../application/validators/timetableValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(authenticate, teacherContext, authorizeSchoolAdmin);
 router.get('/settings', controller.settings);
 router.get('/options', controller.options);
 router.get('/rooms', controller.listRooms);

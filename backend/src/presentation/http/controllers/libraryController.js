@@ -2,6 +2,7 @@ import * as service from '../../../application/services/libraryService.js';
 const scope = (req) => ({
   tenantId: req.schoolContext.tenantId,
   schoolId: req.schoolContext.schoolId,
+  actorId: req.user?.id,
 });
 export const createLibrary = async (req, res) =>
   res.status(201).json({ data: await service.createLibrary(scope(req), req.body) });

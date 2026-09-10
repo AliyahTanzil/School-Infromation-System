@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as c from '../controllers/boardingController.js';
@@ -13,7 +13,7 @@ import {
   allocationParamsSchema,
 } from '../../../application/validators/boardingValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(authenticate, teacherContext, authorizeSchoolAdmin);
 router.get('/overview', c.overview);
 router.get('/dormitories', c.dormitories);
 router.post('/dormitories', validate(dormitorySchema), c.createDormitory);

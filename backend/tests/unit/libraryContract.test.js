@@ -5,7 +5,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 test('library APIs enforce authenticated school scope and validation', async () => {
   const routes = await read('../../src/presentation/http/routes/libraryRoutes.js');
   const validators = await read('../../src/application/validators/libraryValidators.js');
-  assert.match(routes, /authenticate, teacherContext, authorize/);
+  assert.match(routes, /authenticate, teacherContext, libraryAdmin/);
   assert.match(routes, /validate\(loanCreateSchema\)/);
   assert.doesNotMatch(validators, /tenantId|schoolId/);
 });

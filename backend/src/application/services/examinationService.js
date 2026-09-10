@@ -149,12 +149,16 @@ export async function changeStatus(id, context, input, actorId) {
 export async function assertMarkAuthorization(
   context,
   actorId,
-  roles,
+  access,
   candidate,
   subjectCode,
   db = prisma
 ) {
-  if (roles?.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN'].includes(role))) return;
+  if (
+    access?.platformRole === 'OWNER' ||
+    access?.roles?.some((role) => ['PLATFORM_ADMIN', 'SCHOOL_ADMIN'].includes(role))
+  )
+    return;
 
   const teacher = await db.teacher.findFirst({
     where: {
@@ -188,7 +192,7 @@ export async function assertMarkAuthorization(
   }
 }
 
-export async function upsertMark(id, context, input, actorId, roles = []) {
+export async function upsertMark(id, context, input, actorId, access = {}) {
   const examination = await getExamination(id, context);
   assertMarkWritable(examination.status, null);
   if (!['IN_PROGRESS', 'MARKING', 'MODERATION'].includes(examination.status))
@@ -202,7 +206,7 @@ export async function upsertMark(id, context, input, actorId, roles = []) {
       (!item.classId || item.classId === candidate.classId)
   );
   if (!schedule) throw new ValidationError('Subject is not scheduled for the candidate class');
-  await assertMarkAuthorization(context, actorId, roles, candidate, input.subjectCode);
+  await assertMarkAuthorization(context, actorId, access, candidate, input.subjectCode);
   return prisma.examinationMark.upsert({
     where: {
       examinationId_candidateId_subjectCode: {

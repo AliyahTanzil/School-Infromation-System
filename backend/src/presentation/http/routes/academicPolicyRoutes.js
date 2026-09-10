@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/academicPolicyController.js';
@@ -11,7 +11,7 @@ import {
   academicPolicyStatusSchema,
 } from '../../../application/validators/academicPolicyValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(authenticate, teacherContext, authorizeSchoolAdmin);
 router.get('/', validate(academicPolicyQuerySchema), controller.list);
 router.post('/', validate(academicPolicyCreateSchema), controller.create);
 router.get('/:id', validate(academicPolicyIdSchema), controller.get);

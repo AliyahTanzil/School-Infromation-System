@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/attendanceController.js';
 import {
@@ -12,7 +12,7 @@ import {
   attendanceSessionStatusSchema,
 } from '../../../application/validators/attendanceValidators.js';
 const router = Router();
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'));
+router.use(authenticate, teacherContext, authorizeSchoolAdminOrTeacher);
 router.get('/options', controller.options);
 router.get('/', validate(attendanceQuerySchema), controller.list);
 router.post('/', validate(attendanceSessionCreateSchema), controller.create);

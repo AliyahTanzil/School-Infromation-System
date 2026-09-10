@@ -59,6 +59,8 @@ Backend 7 intentionally stops before domain-module authorization policies and bu
 
 ## Requirements
 
+Backend development startup and builds regenerate Prisma Client from `prisma/schema.prisma`. Database migrations are separate: inspect pending migrations before applying them with `npm run db:migrate:deploy`. On Windows, stop a running backend before client regeneration or a build to release the Prisma engine DLL. See [calendar loading troubleshooting](../docs/backend/academic-period-api.md#troubleshooting-unavailable-academic-years).
+
 - Node.js 20 (`.nvmrc`)
 - npm 11
 - Docker Desktop or Docker Engine with Compose

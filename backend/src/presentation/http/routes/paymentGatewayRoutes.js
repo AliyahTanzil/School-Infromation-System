@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import paymentGatewayService from '../../../application/services/paymentGatewayService.js';
@@ -21,7 +21,7 @@ export async function monimeWebhookHandler(req, res) {
   res.json({ data });
 }
 router.post('/webhook', monimeWebhookHandler);
-router.use(authenticate, teacherContext, authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'));
+router.use(authenticate, teacherContext, authorizeSchoolAdmin);
 router.get('/health', async (_req, res) =>
   res.json({ data: await paymentGatewayService.health() })
 );

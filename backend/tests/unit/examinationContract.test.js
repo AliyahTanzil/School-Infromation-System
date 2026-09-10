@@ -14,11 +14,8 @@ test('examination routes require authenticated school context and validation', a
 });
 test('teachers can read examinations and enter marks but cannot administer their lifecycle', async () => {
   const routes = await read('../../src/presentation/http/routes/examinationRoutes.js');
-  assert.match(
-    routes,
-    /const readOrMark = authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/
-  );
-  assert.match(routes, /const administer = authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN'\)/);
+  assert.match(routes, /const readOrMark = authorizeSchoolAdminOrTeacher/);
+  assert.match(routes, /const administer = authorizeSchoolAdmin/);
   assert.match(routes, /router\.post\('\/', administer, validate\(examinationCreateSchema\)/);
   assert.match(routes, /'\/:id\/candidates',[\s\S]*?administer,/);
   assert.match(routes, /'\/:id\/schedules',[\s\S]*?administer,/);
@@ -46,7 +43,7 @@ test('administrators may enter marks without a teacher assignment', async () => 
     assertMarkAuthorization(
       { tenantId: 'tenant', schoolId: 'school' },
       'admin',
-      ['SCHOOL_ADMIN'],
+      { roles: ['SCHOOL_ADMIN'] },
       { classId: 'class' },
       'MATH',
       {}
@@ -60,7 +57,14 @@ test('teachers need an active identity and matching class-subject assignment', a
     teacherTeachingAssignment: { findFirst: async () => ({ id: 'assignment' }) },
   };
   await assert.doesNotReject(
-    assertMarkAuthorization(context, 'user', ['TEACHER'], { classId: 'class' }, 'MATH', assigned)
+    assertMarkAuthorization(
+      context,
+      'user',
+      { roles: ['TEACHER'] },
+      { classId: 'class' },
+      'MATH',
+      assigned
+    )
   );
 
   const unassigned = {
@@ -68,7 +72,14 @@ test('teachers need an active identity and matching class-subject assignment', a
     teacherTeachingAssignment: { findFirst: async () => null },
   };
   await assert.rejects(
-    assertMarkAuthorization(context, 'user', ['TEACHER'], { classId: 'class' }, 'MATH', unassigned),
+    assertMarkAuthorization(
+      context,
+      'user',
+      { roles: ['TEACHER'] },
+      { classId: 'class' },
+      'MATH',
+      unassigned
+    ),
     (error) => error?.statusCode === 403
   );
 });

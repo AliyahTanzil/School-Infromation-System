@@ -16,11 +16,8 @@ test('results use authenticated school context on both server mounts', async () 
 });
 test('teachers can read results but only administrators can process or publish them', async () => {
   const routes = await read('../../src/presentation/http/routes/resultRoutes.js');
-  assert.match(
-    routes,
-    /const readResults = authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/
-  );
-  assert.match(routes, /const administerResults = authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN'\)/);
+  assert.match(routes, /const readResults = authorizeSchoolAdminOrTeacher/);
+  assert.match(routes, /const administerResults = authorizeSchoolAdmin/);
   assert.match(routes, /router\.get\('\/', readResults/);
   assert.match(routes, /router\.post\('\/process', administerResults/);
   assert.match(routes, /'\/:id\/status',[\s\S]*?administerResults,/);

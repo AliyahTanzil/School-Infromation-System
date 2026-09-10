@@ -7,7 +7,7 @@ const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 test('HR routes enforce authenticated school administration context and validation', async () => {
   const routes = await read('../../src/presentation/http/routes/hrRoutes.js');
   const validators = await read('../../src/application/validators/hrValidators.js');
-  assert.match(routes, /authenticate, teacherContext, authorize/);
+  assert.match(routes, /authenticate, teacherContext, hrAdmin/);
   assert.match(routes, /validate\(employeeCreateSchema\)/);
   assert.match(routes, /validate\(leaveDecisionSchema\)/);
   assert.match(routes, /validate\(payrollCreateSchema\)/);

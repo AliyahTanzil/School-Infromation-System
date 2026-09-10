@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/examinationController.js';
@@ -14,8 +15,8 @@ import {
   examinationStatusSchema,
 } from '../../../application/validators/examinationValidators.js';
 const router = Router();
-const readOrMark = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER');
-const administer = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
+const readOrMark = authorizeSchoolAdminOrTeacher;
+const administer = authorizeSchoolAdmin;
 
 router.use(authenticate, teacherContext);
 router.get('/', readOrMark, validate(examinationQuerySchema), controller.list);

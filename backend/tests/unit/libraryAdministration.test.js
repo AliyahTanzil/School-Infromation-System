@@ -6,6 +6,7 @@ const db = { $on() {} };
 globalThis.__prisma = db;
 const service = await import('../../src/application/services/libraryService.js');
 const ownership = { tenantId: 'tenant', schoolId: 'school' };
+const context = { ...ownership, actorId: 'actor' };
 
 function fixture({ missing = false, claimed = 1, released = 1, failure } = {}) {
   const committed = [];
@@ -14,6 +15,17 @@ function fixture({ missing = false, claimed = 1, released = 1, failure } = {}) {
   db.$transaction = async (work) => {
     const pending = [];
     const result = await work({
+      auditLog: {
+        create: async ({ data }) => {
+          attempted.push('audit');
+          if (failure === 'audit') throw error;
+          assert.equal(data.actorId, 'actor');
+          assert.equal(data.entityId, 'loan');
+          assert.equal(data.action, 'UPDATE');
+          assert.equal(data.metadata.toStatus, 'RETURNED');
+          pending.push({ audit: data });
+        },
+      },
       libraryLoan: {
         findFirst: async ({ where }) => {
           assert.deepEqual(where, {
@@ -93,16 +105,16 @@ test('every library operation refuses missing ownership before database access',
 
 test('return claims the scoped active loan before atomically releasing its borrowed copy', async () => {
   const { committed, attempted } = fixture();
-  const result = await service.returnLoan(ownership, 'library', 'loan');
-  assert.deepEqual(attempted, ['loan', 'copy']);
-  assert.equal(committed.length, 2);
+  const result = await service.returnLoan(context, 'library', 'loan');
+  assert.deepEqual(attempted, ['loan', 'copy', 'audit']);
+  assert.equal(committed.length, 3);
   assert.equal(result.status, 'RETURNED');
   assert.equal(result.returnedAt, committed[0].loan.returnedAt);
 });
 
 test('missing or inaccessible active loans do not trigger writes', async () => {
   const { attempted, committed } = fixture({ missing: true });
-  await assert.rejects(service.returnLoan(ownership, 'library', 'loan'), /Active loan not found/);
+  await assert.rejects(service.returnLoan(context, 'library', 'loan'), /Active loan not found/);
   assert.deepEqual(attempted, []);
   assert.deepEqual(committed, []);
 });
@@ -111,7 +123,7 @@ test('a stale duplicate return cannot release a copy borrowed again after the or
   // The initial read sees the old BORROWED snapshot, but another return has
   // committed and the copy has been borrowed again before the conditional write.
   const { attempted, committed } = fixture({ claimed: 0 });
-  await assert.rejects(service.returnLoan(ownership, 'library', 'loan'), /Loan changed/);
+  await assert.rejects(service.returnLoan(context, 'library', 'loan'), /Loan changed/);
   assert.deepEqual(attempted, ['loan']);
   assert.deepEqual(committed, []);
 });
@@ -119,19 +131,42 @@ test('a stale duplicate return cannot release a copy borrowed again after the or
 test('unavailable or foreign copies roll back the claimed return', async () => {
   const { committed } = fixture({ released: 0 });
   await assert.rejects(
-    service.returnLoan(ownership, 'library', 'loan'),
+    service.returnLoan(context, 'library', 'loan'),
     /outside the active library/
   );
   assert.deepEqual(committed, []);
 });
 
 test('loan, copy and commit errors leave neither transition committed', async () => {
-  for (const failure of ['loan', 'copy', 'commit']) {
+  for (const failure of ['loan', 'copy', 'audit', 'commit']) {
     const { committed, error } = fixture({ failure });
     await assert.rejects(
-      service.returnLoan(ownership, 'library', 'loan'),
+      service.returnLoan(context, 'library', 'loan'),
       (actual) => actual === error
     );
     assert.deepEqual(committed, []);
   }
+});
+
+test('circulation refuses missing actor before database access', async () => {
+  db.$transaction = fail;
+  await assert.rejects(service.borrow(ownership, 'library', {}), /actor identity is required/);
+  await assert.rejects(
+    service.returnLoan(ownership, 'library', 'loan'),
+    /actor identity is required/
+  );
+});
+test('controller uses authenticated actor despite caller overrides', async () => {
+  const controller = await import('../../src/presentation/http/controllers/libraryController.js');
+  const { committed } = fixture();
+  await controller.returnLoan(
+    {
+      schoolContext: { ...ownership, actorId: 'forged' },
+      user: { id: 'actor' },
+      params: { libraryId: 'library', loanId: 'loan' },
+      body: { actorId: 'forged' },
+    },
+    { json() {} }
+  );
+  assert.equal(committed[2].audit.actorId, 'actor');
 });

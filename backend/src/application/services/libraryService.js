@@ -101,8 +101,20 @@ export function listLoans(scope, libraryId) {
 }
 export async function borrow(scope, libraryId, data) {
   const ownership = owned(scope);
+  if (!scope.actorId) throw new AuthorizationError('Library actor identity is required');
   return prisma.$transaction(async (tx) => {
     await requireLibrary(tx, ownership, libraryId);
+    if (!data.borrowerId) throw new NotFoundError('Eligible borrower not found');
+    const borrower = await tx.user.findFirst({
+      where: {
+        id: data.borrowerId,
+        tenantId: ownership.tenantId,
+        status: 'ACTIVE',
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+    if (!borrower) throw new NotFoundError('Eligible borrower not found');
     const changed = await tx.libraryCopy.updateMany({
       where: {
         id: data.copyId,
@@ -114,20 +126,23 @@ export async function borrow(scope, libraryId, data) {
       data: { status: 'BORROWED' },
     });
     if (!changed.count) throw new ConflictError('Copy is unavailable');
-    return tx.libraryLoan.create({
+    const loan = await tx.libraryLoan.create({
       data: {
         ...ownership,
         libraryId,
         copyId: data.copyId,
-        borrowerId: data.borrowerId,
+        borrowerId: borrower.id,
         dueAt: data.dueAt,
         status: 'BORROWED',
       },
     });
+    await auditCirculation(tx, ownership, scope.actorId, loan, 'CREATE', null, 'BORROWED');
+    return loan;
   });
 }
 export async function returnLoan(scope, libraryId, loanId) {
   const ownership = owned(scope);
+  if (!scope.actorId) throw new AuthorizationError('Library actor identity is required');
   return prisma.$transaction(async (tx) => {
     const loan = await tx.libraryLoan.findFirst({
       where: { id: loanId, libraryId, ...ownership, status: 'BORROWED' },
@@ -145,6 +160,36 @@ export async function returnLoan(scope, libraryId, loanId) {
     });
     if (!released.count)
       throw new ConflictError('Loan copy is unavailable or outside the active library');
-    return { ...loan, status: 'RETURNED', returnedAt };
+    const returned = { ...loan, status: 'RETURNED', returnedAt };
+    await auditCirculation(
+      tx,
+      ownership,
+      scope.actorId,
+      returned,
+      'UPDATE',
+      'BORROWED',
+      'RETURNED'
+    );
+    return returned;
+  });
+}
+
+function auditCirculation(tx, ownership, actorId, loan, action, fromStatus, toStatus) {
+  return tx.auditLog.create({
+    data: {
+      tenantId: ownership.tenantId,
+      actorId,
+      action,
+      entityType: 'LibraryLoan',
+      entityId: loan.id,
+      metadata: {
+        schoolId: ownership.schoolId,
+        libraryId: loan.libraryId,
+        copyId: loan.copyId,
+        borrowerId: loan.borrowerId,
+        fromStatus,
+        toStatus,
+      },
+    },
   });
 }
