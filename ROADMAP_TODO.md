@@ -441,3 +441,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 44: reconcile persisted payroll drafts before finalization and record authenticated transactional audit evidence. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 44: reconciled payroll finalization and atomic actor audit. Backend 472 passed/one intentional skip; frontend 94 passed; lint and builds pass. See docs/security/security-administration-phase44.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 45: require authenticated payroll creation audit evidence in the same transaction as the run and items. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 45: atomic authenticated payroll creation audit. Focused 21 passed; backend 476 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase45.md. SEC-001 remains IN_PROGRESS. |

@@ -96,6 +96,7 @@ export async function approveLeave({ tenantId, schoolId, id, approvedById, statu
 
 export async function createPayrollRun(context, data) {
   const ownership = scope(context);
+  if (!context.actorId) throw new AuthorizationError('Payroll actor identity is required');
   return prisma.$transaction(async (tx) => {
     const employees = await tx.employee.findMany({
       where: { ...ownership, status: { in: ['ACTIVE', 'ON_LEAVE'] } },
@@ -126,13 +127,34 @@ export async function createPayrollRun(context, data) {
       return { ...ownership, employeeId: employee.id, grossMinor, netMinor: grossMinor };
     });
     const run = await tx.payrollRun.create({
-      data: { ...data, ...ownership, status: 'DRAFT', totalMinor },
+      data: {
+        periodStart: data.periodStart,
+        periodEnd: data.periodEnd,
+        ...ownership,
+        status: 'DRAFT',
+        totalMinor,
+      },
     });
     if (employees.length) {
       await tx.payrollItem.createMany({
         data: items.map((item) => ({ ...item, payrollRunId: run.id })),
       });
     }
+    await tx.auditLog.create({
+      data: {
+        tenantId: ownership.tenantId,
+        actorId: context.actorId,
+        action: 'CREATE',
+        entityType: 'PayrollRun',
+        entityId: run.id,
+        metadata: {
+          schoolId: ownership.schoolId,
+          toStatus: 'DRAFT',
+          totalMinor,
+          itemCount: items.length,
+        },
+      },
+    });
     return run;
   });
 }

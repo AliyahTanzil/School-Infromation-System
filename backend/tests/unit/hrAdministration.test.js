@@ -215,11 +215,15 @@ test('payroll creation keeps authenticated ownership and server-controlled total
           return { id };
         },
       },
+      auditLog: { create: async () => ({ id: 'audit' }) },
     });
-  await service.createPayrollRun(ownership, {
-    tenantId: 'foreign',
-    schoolId: 'foreign',
-    status: 'FINALIZED',
-    totalMinor: 999,
-  });
+  await service.createPayrollRun(
+    { ...ownership, actorId: 'actor' },
+    {
+      tenantId: 'foreign',
+      schoolId: 'foreign',
+      status: 'FINALIZED',
+      totalMinor: 999,
+    }
+  );
 });
