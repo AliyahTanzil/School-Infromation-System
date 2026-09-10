@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdmin from '../../../middleware/auth/authorizeSchoolAdmin.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
 import service from '../../../application/services/communicationService.js';
@@ -36,7 +36,7 @@ router.put('/notification-preferences', validate(preferenceSchema), async (req, 
 );
 router.get(
   '/notifications',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'),
+  authorizeSchoolAdmin,
   validate(notificationQuerySchema),
   async (req, res) =>
     res.json({
@@ -45,14 +45,12 @@ router.get(
 );
 router.post(
   '/notifications',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'),
+  authorizeSchoolAdmin,
   validate(notificationCreateSchema),
   async (req, res) =>
     res.status(201).json({ data: await service.createNotification(req.schoolContext, req.body) })
 );
-router.get(
-  '/notification-delivery-health',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN'),
-  async (req, res) => res.json({ data: await service.deliveryHealth(req.schoolContext) })
+router.get('/notification-delivery-health', authorizeSchoolAdmin, async (req, res) =>
+  res.json({ data: await service.deliveryHealth(req.schoolContext) })
 );
 export default router;

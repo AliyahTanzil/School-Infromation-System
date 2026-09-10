@@ -60,10 +60,7 @@ test('analytics uses resolved school context and protects export mutations', asy
   ]);
 
   assert.match(routes, /router\.use\(singleSchoolContext\)/);
-  assert.match(
-    routes,
-    /router\.post\('\/exports', authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN'\), exportReport\)/
-  );
+  assert.match(routes, /router\.post\('\/exports', authorizeSchoolAdmin, exportReport\)/);
   assert.match(controller, /const scope = \(req\) => req\.schoolContext/);
   assert.doesNotMatch(controller, /req\.user\?\.schoolId|req\.user\?\.tenantId/);
 });
