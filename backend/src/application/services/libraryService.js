@@ -1,7 +1,11 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import ConflictError from '../../shared/errors/ConflictError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
-const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
+import AuthorizationError from '../../shared/errors/AuthorizationError.js';
+const owned = ({ tenantId, schoolId } = {}) => {
+  if (!tenantId || !schoolId) throw new AuthorizationError('School context is required');
+  return { tenantId, schoolId };
+};
 export const createLibrary = (scope, data) =>
   prisma.library.create({ data: { ...owned(scope), ...data } });
 export async function overview(scope, libraryId) {
@@ -55,9 +59,10 @@ export const listLoans = (scope, libraryId) =>
     take: 100,
   });
 export async function borrow(scope, libraryId, data) {
+  const ownership = owned(scope);
   return prisma.$transaction(async (tx) => {
     const changed = await tx.libraryCopy.updateMany({
-      where: { id: data.copyId, libraryId, ...owned(scope), status: 'AVAILABLE' },
+      where: { id: data.copyId, libraryId, ...ownership, status: 'AVAILABLE' },
       data: { status: 'BORROWED' },
     });
     if (!changed.count) throw new ConflictError('Copy is unavailable');
@@ -65,15 +70,24 @@ export async function borrow(scope, libraryId, data) {
   });
 }
 export async function returnLoan(scope, libraryId, loanId) {
+  const ownership = owned(scope);
   return prisma.$transaction(async (tx) => {
     const loan = await tx.libraryLoan.findFirst({
-      where: { id: loanId, libraryId, ...owned(scope), status: 'BORROWED' },
+      where: { id: loanId, libraryId, ...ownership, status: 'BORROWED' },
     });
     if (!loan) throw new NotFoundError('Active loan not found');
-    await tx.libraryCopy.update({ where: { id: loan.copyId }, data: { status: 'AVAILABLE' } });
-    return tx.libraryLoan.update({
-      where: { id: loan.id },
-      data: { status: 'RETURNED', returnedAt: new Date() },
+    const returnedAt = new Date();
+    const claimed = await tx.libraryLoan.updateMany({
+      where: { id: loan.id, copyId: loan.copyId, libraryId, ...ownership, status: 'BORROWED' },
+      data: { status: 'RETURNED', returnedAt },
     });
+    if (!claimed.count) throw new ConflictError('Loan changed; reload before returning');
+    const released = await tx.libraryCopy.updateMany({
+      where: { id: loan.copyId, libraryId, ...ownership, status: 'BORROWED' },
+      data: { status: 'AVAILABLE' },
+    });
+    if (!released.count)
+      throw new ConflictError('Loan copy is unavailable or outside the active library');
+    return { ...loan, status: 'RETURNED', returnedAt };
   });
 }

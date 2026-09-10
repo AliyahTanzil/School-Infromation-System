@@ -445,3 +445,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 45: require authenticated payroll creation audit evidence in the same transaction as the run and items. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 45: atomic authenticated payroll creation audit. Focused 21 passed; backend 476 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase45.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 46: fail closed on missing library ownership and conditionally claim loan returns before releasing scoped copies. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 46: scoped conditional library returns and fail-closed ownership. Focused 10 passed; backend 482 passed/one intentional skip; backend build, targeted lint, formatting and diff checks pass. See docs/security/security-administration-phase46.md. SEC-001 remains IN_PROGRESS. |
