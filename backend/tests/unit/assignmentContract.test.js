@@ -27,7 +27,7 @@ test('assignment routes permit member reads but protect validated mutations', as
   const routes = await read('src/presentation/http/routes/assignmentRoutes.js');
   const app = await read('src/foundation/app.ts');
   assert.match(routes, /router\.get\('\/', validate\(assignmentQuerySchema\)/);
-  assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/);
+  assert.match(routes, /authorizeSchoolAdminOrTeacher/);
   assert.match(routes, /validate\(assignmentCreateSchema\)/);
   assert.match(routes, /validate\(assignmentStatusSchema\)/);
   assert.match(app, /app\.use\('\/api\/lms\/assignments', assignmentRouter\)/);

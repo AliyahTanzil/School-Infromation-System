@@ -126,17 +126,19 @@ test('administrators retain scoped draft access and users without classrooms rec
 
 test('direct assignment lists enforce availability even with an explicit draft or archived filter', async (t) => {
   const db = database(t);
-  const visible = await list(scope, 'room-1', 'user-1', ['STUDENT'], undefined, db);
+  const visible = await list(scope, 'room-1', 'user-1', { roles: ['STUDENT'] }, undefined, db);
   assert.deepEqual(
     visible.map((item) => item.id),
     ['published', 'closed', 'past']
   );
   for (const status of ['DRAFT', 'ARCHIVED']) {
-    assert.deepEqual(await list(scope, 'room-1', 'user-1', ['STUDENT'], status, db), []);
+    assert.deepEqual(await list(scope, 'room-1', 'user-1', { roles: ['STUDENT'] }, status, db), []);
   }
   const staff = database(t, [room('room-1', 'TEACHER')]);
   assert.deepEqual(
-    (await list(scope, 'room-1', 'user-1', ['TEACHER'], 'DRAFT', staff)).map((item) => item.id),
+    (await list(scope, 'room-1', 'user-1', { roles: ['TEACHER'] }, 'DRAFT', staff)).map(
+      (item) => item.id
+    ),
     ['draft']
   );
 });

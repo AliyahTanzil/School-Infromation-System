@@ -9,7 +9,10 @@ import {
 } from '../../domain/assignmentVisibility.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const admin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const admin = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 const transitions = {
   DRAFT: ['PUBLISHED', 'ARCHIVED'],
   PUBLISHED: ['CLOSED', 'ARCHIVED'],
@@ -21,7 +24,7 @@ async function requireClassroom(
   scope,
   classroomId,
   userId,
-  roles,
+  access,
   teacherOnly = false,
   db = prisma
 ) {
@@ -30,7 +33,7 @@ async function requireClassroom(
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Digital classroom not found');
-  if (admin(roles) || classroom.ownerId === userId) return classroom;
+  if (admin(access) || classroom.ownerId === userId) return classroom;
   const membership = classroom.memberships[0];
   if (!membership) throw new AuthorizationError('You are not a member of this classroom');
   if (teacherOnly && membership.role !== 'TEACHER') {
@@ -39,9 +42,9 @@ async function requireClassroom(
   return classroom;
 }
 
-export async function list(scope, classroomId, userId, roles, status, db = prisma) {
-  const classroom = await requireClassroom(scope, classroomId, userId, roles, false, db);
-  const canManage = managesClassroom(classroom, userId, roles);
+export async function list(scope, classroomId, userId, access, status, db = prisma) {
+  const classroom = await requireClassroom(scope, classroomId, userId, access, false, db);
+  const canManage = admin(access) || managesClassroom(classroom, userId, access?.roles);
   return db.assignment.findMany({
     where: {
       ...owned(scope),
@@ -54,8 +57,8 @@ export async function list(scope, classroomId, userId, roles, status, db = prism
   });
 }
 
-export async function create(scope, authorId, roles, data) {
-  await requireClassroom(scope, data.classroomId, authorId, roles, true);
+export async function create(scope, authorId, access, data) {
+  await requireClassroom(scope, data.classroomId, authorId, access, true);
   if (data.subjectId) {
     const subject = await prisma.subject.findFirst({
       where: { id: data.subjectId, ...owned(scope), deletedAt: null, status: 'ACTIVE' },
@@ -71,10 +74,10 @@ export async function create(scope, authorId, roles, data) {
   });
 }
 
-export async function updateStatus(scope, id, actorId, roles, status) {
+export async function updateStatus(scope, id, actorId, access, status) {
   const assignment = await prisma.assignment.findFirst({ where: { id, ...owned(scope) } });
   if (!assignment) throw new NotFoundError('Assignment not found');
-  await requireClassroom(scope, assignment.classroomId, actorId, roles, true);
+  await requireClassroom(scope, assignment.classroomId, actorId, access, true);
   if (!transitions[assignment.status]?.includes(status)) {
     throw new ValidationError(`Assignment cannot move from ${assignment.status} to ${status}`);
   }
