@@ -29,14 +29,18 @@ export default function AcademicCalendarDashboard() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
+    setLoadFailed(false);
     try {
       const response = await api.get('/academic-periods');
       setPeriods(response.data.data ?? []);
     } catch (requestError) {
+      setLoadFailed(true);
+      setPeriods([]);
       setError(getApiErrorMessage(requestError));
     } finally {
       setLoading(false);
@@ -57,6 +61,12 @@ export default function AcademicCalendarDashboard() {
 
   const submit = async (event) => {
     event.preventDefault();
+    if (
+      loading ||
+      loadFailed ||
+      (form.type === 'TERM' && !years.some((year) => year.id === form.parentId))
+    )
+      return;
     setSaving(true);
     setError('');
     try {
@@ -125,6 +135,17 @@ export default function AcademicCalendarDashboard() {
             {error}
           </p>
         )}
+        {loadFailed && (
+          <div className="mt-3 text-sm" role="status">
+            <p>
+              Academic years could not be loaded. Resolve the error above, then retry. The year list
+              is unavailable until loading succeeds.
+            </p>
+            <button type="button" className="mt-2 underline font-semibold" onClick={load}>
+              Retry loading calendar
+            </button>
+          </div>
+        )}
 
         {showForm && (
           <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-5">
@@ -162,22 +183,51 @@ export default function AcademicCalendarDashboard() {
                 />
               </label>
               {form.type === 'TERM' && (
-                <label className="grid gap-1 text-sm">
-                  <span>Academic year</span>
+                <div className="grid gap-1 text-sm">
+                  <label htmlFor="academic-year">Academic year</label>
                   <select
+                    id="academic-year"
                     required
+                    disabled={loading || loadFailed || years.length === 0}
+                    aria-describedby="academic-year-help"
                     className="rounded-lg border p-2"
                     value={form.parentId}
                     onChange={(event) => setForm({ ...form, parentId: event.target.value })}
                   >
-                    <option value="">Select year</option>
+                    <option value="">
+                      {loading
+                        ? 'Loading years…'
+                        : loadFailed
+                          ? 'Years unavailable'
+                          : years.length === 0
+                            ? 'No academic years yet'
+                            : 'Select year'}
+                    </option>
                     {years.map((year) => (
                       <option value={year.id} key={year.id}>
                         {year.name}
                       </option>
                     ))}
                   </select>
-                </label>
+                  <span id="academic-year-help">
+                    {loading
+                      ? 'Loading academic years.'
+                      : loadFailed
+                        ? 'Retry loading the calendar to select an academic year.'
+                        : years.length === 0
+                          ? 'Create an academic year before adding its terms.'
+                          : 'Select the academic year that contains this term.'}
+                  </span>
+                  {!loading && !loadFailed && years.length === 0 && (
+                    <button
+                      type="button"
+                      className="text-left underline font-semibold"
+                      onClick={() => setForm(emptyForm)}
+                    >
+                      Create an academic year first
+                    </button>
+                  )}
+                </div>
               )}
               <label className="grid gap-1 text-sm">
                 <span>Start date</span>
@@ -211,7 +261,12 @@ export default function AcademicCalendarDashboard() {
               )}
               <div className="md:col-span-2">
                 <button
-                  disabled={saving}
+                  disabled={
+                    saving ||
+                    loading ||
+                    loadFailed ||
+                    (form.type === 'TERM' && !years.some((year) => year.id === form.parentId))
+                  }
                   className="rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white"
                   type="submit"
                 >
@@ -222,31 +277,33 @@ export default function AcademicCalendarDashboard() {
           </section>
         )}
 
-        <section className="mt-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl bg-indigo-950 p-5 text-white">
-            <p className="text-sm text-indigo-200">Current period</p>
-            <p className="mt-2 text-xl font-semibold">{current?.name ?? 'None active'}</p>
-            <p className="mt-1 text-sm text-indigo-200">
-              {current
-                ? `Active until ${new Date(current.endsAt).toLocaleDateString()}`
-                : 'Activate a planned period'}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Next event</p>
-            <p className="mt-2 text-xl font-semibold">{next?.name ?? 'Nothing scheduled'}</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {next
-                ? `Starts ${new Date(next.startsAt).toLocaleDateString()}`
-                : 'Create a calendar item'}
-            </p>
-          </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-5">
-            <p className="text-sm text-slate-500">Calendar records</p>
-            <p className="mt-2 text-xl font-semibold">{periods.length}</p>
-            <p className="mt-1 text-sm text-slate-500">Years, terms, breaks, exams and events</p>
-          </div>
-        </section>
+        {!loading && !loadFailed && (
+          <section className="mt-8 grid gap-4 md:grid-cols-3">
+            <div className="rounded-2xl bg-indigo-950 p-5 text-white">
+              <p className="text-sm text-indigo-200">Current period</p>
+              <p className="mt-2 text-xl font-semibold">{current?.name ?? 'None active'}</p>
+              <p className="mt-1 text-sm text-indigo-200">
+                {current
+                  ? `Active until ${new Date(current.endsAt).toLocaleDateString()}`
+                  : 'Activate a planned period'}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="text-sm text-slate-500">Next event</p>
+              <p className="mt-2 text-xl font-semibold">{next?.name ?? 'Nothing scheduled'}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {next
+                  ? `Starts ${new Date(next.startsAt).toLocaleDateString()}`
+                  : 'Create a calendar item'}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="text-sm text-slate-500">Calendar records</p>
+              <p className="mt-2 text-xl font-semibold">{periods.length}</p>
+              <p className="mt-1 text-sm text-slate-500">Years, terms, breaks, exams and events</p>
+            </div>
+          </section>
+        )}
 
         <div className="mt-8 flex flex-wrap gap-2">
           {['ALL', ...types].map((type) => (
@@ -262,7 +319,7 @@ export default function AcademicCalendarDashboard() {
         </div>
         <section className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white">
           {loading && <p className="p-5 text-sm text-slate-500">Loading calendar…</p>}
-          {!loading && visible.length === 0 && (
+          {!loading && !loadFailed && visible.length === 0 && (
             <p className="p-5 text-sm text-slate-500">No calendar items found.</p>
           )}
           {visible.map((item) => (

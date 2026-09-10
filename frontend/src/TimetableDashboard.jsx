@@ -24,6 +24,8 @@ export default function TimetableDashboard() {
   const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState(null);
   const [readiness, setReadiness] = useState(null);
+  const [checkingReadiness, setCheckingReadiness] = useState(false);
+  const [readinessRefresh, setReadinessRefresh] = useState(0);
   const [rooms, setRooms] = useState([]);
   const [roomForm, setRoomForm] = useState({
     name: '',
@@ -59,12 +61,27 @@ export default function TimetableDashboard() {
     loadRooms().catch(() => setMessage('Unable to load timetable rooms.'));
   }, [loadRooms]);
   useEffect(() => {
-    if (!schoolId || !selected?.id) return setReadiness(null);
+    let active = true;
+    setReadiness(null);
+    setCheckingReadiness(false);
+    if (!schoolId || !selected?.id) return;
+    setCheckingReadiness(true);
     api
       .get(`/timetables/${selected.id}/readiness`, { headers: requestHeaders(schoolId) })
-      .then(({ data }) => setReadiness(data.data))
-      .catch(() => setReadiness(null));
-  }, [schoolId, selected?.id, selected?.version]);
+      .then(({ data }) => {
+        if (active) setReadiness(data.data);
+      })
+      .catch(() => {
+        if (active)
+          setMessage('Readiness could not be checked. Use Check readiness again to retry.');
+      })
+      .finally(() => {
+        if (active) setCheckingReadiness(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [schoolId, selected, rooms, readinessRefresh]);
   useEffect(() => {
     api
       .get('/timetables/options', { headers: requestHeaders(schoolId) })
@@ -439,7 +456,7 @@ export default function TimetableDashboard() {
                   {selected?.academicPeriod?.name || 'Academic period not selected'}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div id="timetable-workflow" className="flex gap-2">
                 {(selected?.status === 'DRAFT' || selected?.status === 'REVIEW') && (
                   <button
                     onClick={generateSlots}
@@ -482,7 +499,14 @@ export default function TimetableDashboard() {
                 )}
               </div>
             </div>
-            {selected && <TimetableReadinessPanel timetable={selected} report={readiness} />}
+            {selected && (
+              <TimetableReadinessPanel
+                timetable={selected}
+                report={readiness}
+                checking={checkingReadiness}
+                onCheck={() => setReadinessRefresh((value) => value + 1)}
+              />
+            )}
             <div className="mt-5 overflow-x-auto">
               <div id="operational-timetable-print">
                 <WeeklyTimetableGrid

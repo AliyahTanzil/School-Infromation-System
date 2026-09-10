@@ -96,6 +96,13 @@ export default function ClassDetailDashboard() {
     });
   };
 
+  const setupTasks = [
+    { title: 'Activate the class', done: klass?.status === 'ACTIVE', target: '#class-activation' },
+    { title: 'Enroll students', done: enrolledIds.size > 0, target: '#class-students' },
+    { title: 'Attach subjects', done: attachedSubjectIds.size > 0, target: '#class-subjects' },
+  ];
+  const nextTask = setupTasks.find((task) => !task.done);
+
   if (loading && !klass)
     return (
       <main className="page-shell">
@@ -127,6 +134,76 @@ export default function ClassDetailDashboard() {
         </p>
       )}
 
+      {klass && !error && !loading && (
+        <section className="data-panel mb-6" aria-labelledby="class-setup-title">
+          <h2 id="class-setup-title" className="text-xl font-semibold">
+            Set up this class
+          </h2>
+          <p className="mt-2 text-sm">
+            Activate the class, enroll its students, then attach the subjects they will study.
+          </p>
+          <ol className="my-4 grid gap-3 sm:grid-cols-3">
+            {setupTasks.map((task, index) => (
+              <li key={task.title} aria-current={nextTask === task ? 'step' : undefined}>
+                <strong>
+                  {index + 1}. {task.title}
+                </strong>
+                <span className="block text-sm">{task.done ? 'In place' : 'To do'}</span>
+              </li>
+            ))}
+          </ol>
+          <div role="status" aria-live="polite">
+            {klass.status !== 'ACTIVE' && klass.status !== 'PLANNED' ? (
+              <p>
+                This class is not active. Review its status in class management before enrolling
+                students.
+              </p>
+            ) : nextTask ? (
+              <p>
+                <a className="underline font-semibold" href={nextTask.target}>
+                  Next: {nextTask.title}
+                </a>
+              </p>
+            ) : (
+              <p>
+                Initial class setup is in place. Review the full student roster and subject list,
+                then prepare teaching assignments and the timetable.
+              </p>
+            )}
+          </div>
+          {klass.status === 'ACTIVE' && !students.length && !enrolledIds.size && (
+            <p className="mt-2 text-sm">
+              No active students are available.{' '}
+              <Link className="underline" to="/students">
+                Create or activate students
+              </Link>
+              , then return here to enroll them.
+            </p>
+          )}
+          {!subjects.length && !attachedSubjectIds.size && (
+            <p className="mt-2 text-sm">
+              No subjects are available. Create and attach the first subject in the Subjects section
+              below.
+            </p>
+          )}
+          <div className="mt-4 flex flex-wrap gap-3">
+            {!nextTask && (
+              <Link className="primary-button" to="/timetables">
+                Continue to timetable setup
+              </Link>
+            )}
+            {klass.status !== 'ACTIVE' && klass.status !== 'PLANNED' && (
+              <Link className="secondary-button" to="/classes">
+                Review class status
+              </Link>
+            )}
+            <Link className="secondary-button" to="/admin#setup-guide">
+              School setup guide
+            </Link>
+          </div>
+        </section>
+      )}
+
       <section className="stat-grid" style={{ marginBottom: '1.5rem' }}>
         <div className="stat-card">
           <div className="stat-card__label">Status</div>
@@ -145,7 +222,7 @@ export default function ClassDetailDashboard() {
       </section>
 
       {klass?.status === 'PLANNED' && (
-        <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+        <section id="class-activation" className="data-panel" style={{ marginBottom: '1.5rem' }}>
           <div className="section-heading">
             <div>
               <h2>Activate this class</h2>
@@ -158,7 +235,7 @@ export default function ClassDetailDashboard() {
         </section>
       )}
 
-      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+      <section id="class-students" className="data-panel" style={{ marginBottom: '1.5rem' }}>
         <div className="section-heading">
           <div>
             <h2>Students</h2>
@@ -208,7 +285,7 @@ export default function ClassDetailDashboard() {
         </div>
       </section>
 
-      <section className="data-panel">
+      <section id="class-subjects" className="data-panel">
         <div className="section-heading">
           <div>
             <h2>Subjects</h2>

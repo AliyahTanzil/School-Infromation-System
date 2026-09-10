@@ -433,3 +433,11 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 42: audit HR request validation, controller-derived ownership, and scoped employee, leave and payroll operations. |
 
 | 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 42 completed: HR ownership guards, authenticated controller identity, transactional employee/leave reference checks, strict request boundaries and server-controlled creation defaults. Twelve focused tests; full backend 459 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. API contract: docs/backend/hr-administration-api.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-09 | SEC-001 | Codex | IN_PROGRESS | Phase 43: validate payroll salary references, nonnegative integer minor units and database-compatible totals before financial writes. |
+
+| 2026-09-09 | SEC-001 | Codex | CHECKPOINT | Phase 43 completed: scoped salary references, integer salary validation and payroll aggregate bounds checked before financial writes. Sixteen focused tests; full backend 463 passed/one intentional skip; build, targeted lint, formatting and diff checks pass. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-10 | SEC-001 | Codex | IN_PROGRESS | Phase 44: reconcile persisted payroll drafts before finalization and record authenticated transactional audit evidence. |
+
+| 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 44: reconciled payroll finalization and atomic actor audit. Backend 472 passed/one intentional skip; frontend 94 passed; lint and builds pass. See docs/security/security-administration-phase44.md. SEC-001 remains IN_PROGRESS. |

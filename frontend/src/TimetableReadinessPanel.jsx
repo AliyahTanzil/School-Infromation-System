@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export default function TimetableReadinessPanel({ timetable, report }) {
+export default function TimetableReadinessPanel({ timetable, report, onCheck, checking = false }) {
   const lessons = (timetable.entries || []).filter(
     (entry) => !['BREAK', 'FREE'].includes(entry.kind)
   );
@@ -19,6 +19,56 @@ export default function TimetableReadinessPanel({ timetable, report }) {
     (conflict) => conflict.severity === 'HARD' && !conflict.resolvedAt
   );
   const serverIssues = report?.issues || [];
+  const nextAction = !lessons.length
+    ? {
+        label: 'Add teaching lessons',
+        target: '#timetable-lessons',
+        description: 'Prepare staffing and rooms, then add lessons in the editor below.',
+      }
+    : missing.length
+      ? {
+          label: 'Complete lesson assignments',
+          target: '#timetable-lessons',
+          description: 'Give every teaching lesson a class, teacher, and room.',
+        }
+      : hardConflicts.length
+        ? {
+            label: 'Resolve scheduling conflicts',
+            target: '#timetable-lessons',
+            description: 'Review conflicting lessons and adjust their times, teachers, or rooms.',
+          }
+        : !report
+          ? {
+              label: 'Check server readiness',
+              description: 'Run the server checks before moving to review or publication.',
+            }
+          : !report.ready
+            ? {
+                label: 'Resolve server readiness issues',
+                target: '#timetable-server-issues',
+                description:
+                  'Open the issue list below. Update staffing, availability, rooms, or lessons as indicated, then check readiness again.',
+              }
+            : timetable.status === 'DRAFT'
+              ? {
+                  label: 'Send the timetable to review',
+                  target: '#timetable-workflow',
+                  description:
+                    'Use Send to review so the schedule can be reviewed before publication.',
+                }
+              : timetable.status === 'REVIEW'
+                ? {
+                    label: 'Review and publish the timetable',
+                    target: '#timetable-workflow',
+                    description:
+                      'Review the weekly schedule, then use Publish when it is approved.',
+                  }
+                : {
+                    label: 'Review the released schedule',
+                    target: '#operational-timetable-print',
+                    description:
+                      'The timetable has been released. Review or print the schedule for daily use.',
+                  };
   const counts = [
     ['Lessons needing a class', lessons.filter((entry) => !entry.classId).length],
     ['Lessons needing a teacher', lessons.filter((entry) => !entry.teacherId).length],
@@ -38,6 +88,25 @@ export default function TimetableReadinessPanel({ timetable, report }) {
         Assignment checklist for {timetable.name}. The server validates availability, capacity,
         workload and scheduling conflicts against saved school data.
       </p>
+      <div
+        className="mt-4 rounded-lg border border-indigo-200 bg-white p-4"
+        aria-label="Next timetable task"
+      >
+        <p className="font-semibold">Next: {nextAction.label}</p>
+        <p className="mt-1 text-sm text-slate-600">{nextAction.description}</p>
+        <div className="mt-3 flex flex-wrap gap-3">
+          {nextAction.target && (
+            <a className="secondary-button" href={nextAction.target}>
+              Go to next task
+            </a>
+          )}
+          {onCheck && (
+            <button className="secondary-button" disabled={checking} onClick={onCheck}>
+              {checking ? 'Checking readiness…' : 'Check readiness again'}
+            </button>
+          )}
+        </div>
+      </div>
       {report && (
         <p
           role="status"
@@ -109,7 +178,7 @@ export default function TimetableReadinessPanel({ timetable, report }) {
         </details>
       )}
       {!!serverIssues.length && (
-        <details className="mt-4">
+        <details id="timetable-server-issues" open className="mt-4">
           <summary className="cursor-pointer font-semibold">
             {serverIssues.length} server-verified readiness issue(s)
           </summary>

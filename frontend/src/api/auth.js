@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { notifySetupChanges } from '../setupProgressEvents.js';
 
 const configuredApiUrl = import.meta.env.VITE_API_URL?.trim();
 const isLocalApiUrl = configuredApiUrl && /localhost|127\.0\.0\.1/.test(configuredApiUrl);
@@ -21,28 +22,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-    if (
-      !accessToken ||
-      error.response?.status !== 401 ||
-      originalRequest?._authRetry ||
-      originalRequest?.url?.includes('/auth/')
-    ) {
-      return Promise.reject(error);
-    }
-    originalRequest._authRetry = true;
-    try {
-      await refresh();
-      return api(originalRequest);
-    } catch {
-      setAccessToken(null);
-      return Promise.reject(error);
-    }
+api.interceptors.response.use(notifySetupChanges, async (error) => {
+  const originalRequest = error.config;
+  if (
+    !accessToken ||
+    error.response?.status !== 401 ||
+    originalRequest?._authRetry ||
+    originalRequest?.url?.includes('/auth/')
+  ) {
+    return Promise.reject(error);
   }
-);
+  originalRequest._authRetry = true;
+  try {
+    await refresh();
+    return api(originalRequest);
+  } catch {
+    setAccessToken(null);
+    return Promise.reject(error);
+  }
+});
 
 export async function login(credentials) {
   const { data } = await api.post('/auth/login', credentials);

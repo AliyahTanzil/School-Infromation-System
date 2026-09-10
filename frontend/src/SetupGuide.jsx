@@ -3,11 +3,33 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import api from './api/auth.js';
 import { setupSteps, followOnSteps, hasSetupRecord } from './setupSteps.js';
+import { subscribeSetupChanges } from './setupProgressEvents.js';
 
-function SetupChecklist() {
+function renderPrerequisites(step, statuses) {
+  const prerequisites = setupSteps.filter(
+    (candidate) => step.requires?.includes(candidate.id) && statuses?.[candidate.id] !== 'done'
+  );
+  if (!prerequisites.length) return null;
+  return (
+    <p className="mt-2 text-sm">
+      <strong>Prepare first: </strong>
+      {prerequisites.map((prerequisite, index) => (
+        <span key={prerequisite.id}>
+          {index > 0 && ' · '}
+          <Link className="underline" to={prerequisite.path}>
+            {prerequisite.title}
+          </Link>
+        </span>
+      ))}
+    </p>
+  );
+}
+
+function useSetupProgress() {
   const [statuses, setStatuses] = useState({});
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(true);
+  useEffect(() => subscribeSetupChanges(() => setRefresh((value) => value + 1)), []);
   useEffect(() => {
     let active = true;
     setLoading(true);
@@ -73,6 +95,11 @@ function SetupChecklist() {
 
   const completed = setupSteps.filter((step) => statuses[step.id] === 'done').length;
   const next = setupSteps.find((step) => statuses[step.id] !== 'done');
+  return { statuses, loading, completed, next, refresh: () => setRefresh((value) => value + 1) };
+}
+
+function SetupChecklist() {
+  const { statuses, loading, completed, next, refresh } = useSetupProgress();
   return (
     <section
       id="setup-guide"
@@ -86,13 +113,12 @@ function SetupChecklist() {
           <h2 id="setup-guide-title" className="text-xl font-semibold">
             Set up your school, step by step
           </h2>
-          <p>Follow this order. Return here after saving to see your next task.</p>
+          <p>
+            Start with your school, then work through the numbered tasks. Progress is checked from
+            saved records.
+          </p>
         </div>
-        <button
-          className="secondary-button"
-          disabled={loading}
-          onClick={() => setRefresh((value) => value + 1)}
-        >
+        <button className="secondary-button" disabled={loading} onClick={refresh}>
           Refresh progress
         </button>
       </div>
@@ -110,12 +136,13 @@ function SetupChecklist() {
         )}
       </div>
       {!loading && next && (
-        <p className="mb-4">
+        <div className="mb-4 rounded-xl border border-teal-500 p-4">
           <strong>{statuses[next.id] === 'unknown' ? 'Check next: ' : 'Start here: '}</strong>
           <Link className="underline" to={next.path}>
             {next.title}
           </Link>
-        </p>
+          <p className="mt-2 text-sm">{next.description}</p>
+        </div>
       )}
       {!loading && !next && (
         <p className="mb-4 font-semibold">
@@ -131,33 +158,35 @@ function SetupChecklist() {
       )}
       <ol className="grid gap-3 md:grid-cols-2">
         {setupSteps.map((step, index) => (
-          <li
-            key={step.id}
-            className="rounded-xl border border-slate-300 p-4"
-            aria-current={!loading && next?.id === step.id ? 'step' : undefined}
-          >
-            <div className="flex flex-wrap justify-between gap-2">
-              <h3 className="font-semibold">
-                {index + 1}. {step.title}
-              </h3>
-              <span className="text-sm">
-                {loading
-                  ? 'Checking…'
-                  : statuses[step.id] === 'done'
-                    ? 'Record saved'
-                    : statuses[step.id] === 'unknown'
-                      ? 'Unable to check'
-                      : !statuses[step.id]
-                        ? statuses.school === 'unknown'
-                          ? 'Check school first'
-                          : 'Create school first'
-                        : 'To do'}
-              </span>
-            </div>
-            <p className="my-2 text-sm">{step.description}</p>
-            <Link className="underline text-sm font-semibold" to={step.path}>
-              Open {step.title.toLowerCase()}
+          <li key={step.id} aria-current={!loading && next?.id === step.id ? 'step' : undefined}>
+            <Link
+              className="block rounded-xl border border-slate-300 p-4 transition-colors hover:border-teal-400 hover:bg-teal-400/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-400"
+              style={{ color: 'inherit', textDecoration: 'none' }}
+              to={step.path}
+              aria-label={`Open ${step.title.toLowerCase()}`}
+            >
+              <div className="flex flex-wrap justify-between gap-2">
+                <h3 className="font-semibold">
+                  {index + 1}. {step.title}
+                </h3>
+                <span className="text-sm">
+                  {loading
+                    ? 'Checking…'
+                    : statuses[step.id] === 'done'
+                      ? 'Record saved'
+                      : statuses[step.id] === 'unknown'
+                        ? 'Unable to check'
+                        : !statuses[step.id]
+                          ? statuses.school === 'unknown'
+                            ? 'Check school first'
+                            : 'Create school first'
+                          : 'To do'}
+                </span>
+              </div>
+              <p className="my-2 text-sm">{step.description}</p>
+              <span className="underline text-sm font-semibold">Open task →</span>
             </Link>
+            {!loading && statuses[step.id] !== 'done' && renderPrerequisites(step, statuses)}
           </li>
         ))}
       </ol>
@@ -171,11 +200,16 @@ function SetupChecklist() {
         </summary>
         <ul className="grid gap-3 mt-3 md:grid-cols-2">
           {followOnSteps.map((step) => (
-            <li key={step.title} className="rounded-xl border border-slate-300 p-4">
-              <Link className="underline font-semibold" to={step.path}>
-                {step.title}
+            <li key={step.title}>
+              <Link
+                className="block h-full rounded-xl border border-slate-300 p-4 transition-colors hover:border-teal-400 hover:bg-teal-400/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-400"
+                style={{ color: 'inherit', textDecoration: 'none' }}
+                to={step.path}
+                aria-label={step.title}
+              >
+                <span className="underline font-semibold">{step.title}</span>
+                <p className="mt-2 text-sm">{step.description}</p>
               </Link>
-              <p className="mt-2 text-sm">{step.description}</p>
             </li>
           ))}
         </ul>
@@ -199,20 +233,54 @@ export default function SetupGuide() {
     return <SetupChecklist key={`${user.id}:${user.tenantId}:${pathname}`} />;
   const steps = [...setupSteps, ...followOnSteps].filter((step) => step.path === pathname);
   if (!steps.length) return null;
+  return <ContextualSetupGuide key={`${user.id}:${user.tenantId}:${pathname}`} />;
+}
+
+function ContextualSetupGuide() {
+  const { pathname } = useLocation();
+  const steps = [...setupSteps, ...followOnSteps].filter((step) => step.path === pathname);
+  const { statuses, loading, next, refresh } = useSetupProgress();
   return (
     <aside className="page-shell" aria-label="Setup guidance" style={{ marginBlock: '1rem' }}>
       <Link className="underline font-semibold" to="/admin#setup-guide">
         School setup guide
       </Link>
       {steps.map((step) => (
-        <p className="mt-2 text-sm" key={step.title}>
-          <strong>{step.title}: </strong>
-          {step.description}
-        </p>
+        <div className="mt-3 text-sm" key={step.title}>
+          <p>
+            <strong>
+              {step.id ? `Step ${setupSteps.indexOf(step) + 1} of ${setupSteps.length}: ` : ''}
+              {step.title}
+            </strong>
+          </p>
+          <p className="mt-1">{step.description}</p>
+          {!loading && renderPrerequisites(step, statuses)}
+        </div>
       ))}
-      <p className="mt-2 text-sm">
-        After saving, return to the guide to check progress and continue.
+      <p className="mt-3 text-sm" role="status" aria-live="polite">
+        {loading
+          ? 'Checking your setup progress…'
+          : next
+            ? statuses[next.id] === 'unknown'
+              ? 'Progress could not be fully checked. Retry before continuing.'
+              : next.path === pathname
+                ? `Your next task is on this page: ${next.title}. Save it below to update your progress.`
+                : `Recommended next task: ${next.title}.`
+            : 'Your foundation records are in place. Continue with assignments and daily operations in the setup guide.'}
       </p>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {!loading && next && next.path !== pathname && (
+          <Link className="primary-button" to={next.path}>
+            {statuses[next.id] === 'unknown' ? 'Review' : 'Continue setup'}: {next.title}
+          </Link>
+        )}
+        <button className="secondary-button" disabled={loading} onClick={refresh}>
+          Refresh progress
+        </button>
+        <Link className="secondary-button" to="/admin#setup-guide">
+          View full setup guide
+        </Link>
+      </div>
     </aside>
   );
 }

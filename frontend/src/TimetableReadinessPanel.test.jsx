@@ -1,5 +1,5 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, expect, it, vi } from 'vitest';
 import TimetableReadinessPanel from './TimetableReadinessPanel.jsx';
 afterEach(cleanup);
 const slot = { id: 'slot', weekday: 1, startTime: '08:00' };
@@ -94,4 +94,65 @@ it('renders server-verified blockers when a readiness report is supplied', () =>
   expect(
     screen.getByText('SSS 3A: Mathematics has no active teacher assignment')
   ).toBeInTheDocument();
+});
+
+const assignedTable = {
+  ...table,
+  status: 'DRAFT',
+  entries: [{ ...table.entries[0], teacherId: 'teacher', roomId: 'room' }],
+};
+
+it('guides complete lessons through server checks, review, and publication', () => {
+  const view = render(<TimetableReadinessPanel timetable={assignedTable} />);
+  expect(screen.getByText('Next: Check server readiness')).toBeInTheDocument();
+  view.rerender(
+    <TimetableReadinessPanel timetable={assignedTable} report={{ ready: true, issues: [] }} />
+  );
+  expect(screen.getByText('Next: Send the timetable to review')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Go to next task' })).toHaveAttribute(
+    'href',
+    '#timetable-workflow'
+  );
+  view.rerender(
+    <TimetableReadinessPanel
+      timetable={{ ...assignedTable, status: 'REVIEW' }}
+      report={{ ready: true, issues: [] }}
+    />
+  );
+  expect(screen.getByText('Next: Review and publish the timetable')).toBeInTheDocument();
+});
+
+it('prioritizes missing lessons and conflicts over a passing report', () => {
+  const view = render(
+    <TimetableReadinessPanel
+      timetable={{ ...assignedTable, entries: [] }}
+      report={{ ready: true }}
+    />
+  );
+  expect(screen.getByText('Next: Add teaching lessons')).toBeInTheDocument();
+  view.rerender(
+    <TimetableReadinessPanel
+      timetable={{ ...assignedTable, conflicts: [{ severity: 'HARD' }] }}
+      report={{ ready: true }}
+    />
+  );
+  expect(screen.getByText('Next: Resolve scheduling conflicts')).toBeInTheDocument();
+});
+
+it('opens server blockers and offers a readiness retry that is disabled during checking', () => {
+  const onCheck = vi.fn();
+  const report = {
+    ready: false,
+    issues: [{ code: 'TEACHER_UNAVAILABLE', message: 'Teacher is unavailable.' }],
+  };
+  const view = render(
+    <TimetableReadinessPanel timetable={assignedTable} report={report} onCheck={onCheck} />
+  );
+  expect(screen.getByText('Next: Resolve server readiness issues')).toBeInTheDocument();
+  expect(screen.getByText('Teacher is unavailable.').closest('details')).toHaveAttribute('open');
+  fireEvent.click(screen.getByRole('button', { name: 'Check readiness again' }));
+  expect(onCheck).toHaveBeenCalledTimes(1);
+  view.rerender(<TimetableReadinessPanel timetable={assignedTable} checking onCheck={onCheck} />);
+  expect(screen.getByRole('button', { name: 'Checking readiness…' })).toBeDisabled();
+  expect(screen.queryByText('Next: Send the timetable to review')).not.toBeInTheDocument();
 });

@@ -1,8 +1,9 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import SetupGuide from './SetupGuide.jsx';
 import api from './api/auth.js';
+import { notifySetupChanges } from './setupProgressEvents.js';
 
 const identity = vi.hoisted(() => ({ user: { id: 'admin', accountType: 'TENANT_ADMIN' } }));
 afterEach(cleanup);
@@ -29,7 +30,7 @@ it('starts with the school and does not request dependent resources until it exi
   ).toBeInTheDocument();
   expect(api.get).toHaveBeenCalledTimes(1);
   expect(api.get).toHaveBeenCalledWith('/schools', expect.anything());
-  expect(screen.getByRole('link', { name: 'Create your school' })).toHaveAttribute(
+  expect(screen.getByText('Start here:').parentElement.querySelector('a')).toHaveAttribute(
     'href',
     '/school-setup'
   );
@@ -90,14 +91,16 @@ it('updates progress from saved records on refresh', async () => {
   expect(screen.getByText(/Your foundation records are in place/)).toBeInTheDocument();
 });
 
-it('shows contextual prerequisites without fetching the checklist on a module page', () => {
+it('checks saved prerequisites on a module page', async () => {
   show('/academic-calendar');
   expect(screen.getByRole('complementary')).toHaveTextContent('Select the parent year');
   expect(screen.getByRole('link', { name: 'School setup guide' })).toHaveAttribute(
     'href',
     '/admin#setup-guide'
   );
-  expect(api.get).not.toHaveBeenCalled();
+  expect(
+    await screen.findByRole('link', { name: 'Continue setup: Create your school' })
+  ).toHaveAttribute('href', '/school-setup');
 });
 
 it('does not show administrative setup or fetch records for students', () => {
@@ -105,4 +108,85 @@ it('does not show administrative setup or fetch records for students', () => {
   const { container } = show();
   expect(container).toBeEmptyDOMElement();
   expect(api.get).not.toHaveBeenCalled();
+});
+
+it('shows numbered tasks and continues past saved calendar steps to classes', async () => {
+  api.get.mockImplementation(async (path) => ({
+    data: {
+      data:
+        path === '/schools'
+          ? { items: [{ id: 'school' }] }
+          : path === '/academic-periods'
+            ? [{ type: 'YEAR' }, { type: 'TERM' }]
+            : { items: [] },
+    },
+  }));
+  show('/academic-calendar');
+  expect(screen.getByText('Step 2 of 7: Create an academic year')).toBeInTheDocument();
+  expect(screen.getByText('Step 3 of 7: Create terms')).toBeInTheDocument();
+  expect(
+    await screen.findByRole('link', { name: 'Continue setup: Create classes' })
+  ).toHaveAttribute('href', '/classes');
+});
+
+it('links missing prerequisites and removes them once saved records are detected', async () => {
+  show();
+  await screen.findByText('0 of 7 foundation steps have saved records.');
+  const subjectRow = screen.getByText('6. Create subjects').closest('li');
+  expect(within(subjectRow).getByRole('link', { name: 'Create classes' })).toHaveAttribute(
+    'href',
+    '/classes'
+  );
+  api.get.mockImplementation(async (path) => ({
+    data: { data: { items: ['/schools', '/classes'].includes(path) ? [{ id: 'saved' }] : [] } },
+  }));
+  fireEvent.click(screen.getByRole('button', { name: 'Refresh progress' }));
+  await screen.findByText('2 of 7 foundation steps have saved records.');
+  expect(within(subjectRow).queryByText('Prepare first:')).not.toBeInTheDocument();
+});
+
+it('leads from the last foundation task back to progress and further setup', async () => {
+  show('/students');
+  expect(screen.getByRole('link', { name: 'View full setup guide' })).toHaveAttribute(
+    'href',
+    '/admin#setup-guide'
+  );
+  expect(screen.queryByText(/After saving:/)).not.toBeInTheDocument();
+  await screen.findByText('Recommended next task: Create your school.');
+});
+
+it('shows preparation links for daily operations', async () => {
+  show('/attendance');
+  expect(await screen.findByRole('link', { name: 'Create classes' })).toHaveAttribute(
+    'href',
+    '/classes'
+  );
+  expect(screen.getByRole('link', { name: 'Add students' })).toHaveAttribute('href', '/students');
+});
+
+it('rechecks after saving on the current page and recommends the next missing task', async () => {
+  show('/school-setup');
+  await screen.findByText(/Your next task is on this page: Create your school/);
+  api.get.mockImplementation(async (path) => ({
+    data: { data: { items: path === '/schools' ? [{ id: 'school' }] : [] } },
+  }));
+  act(() => notifySetupChanges({ config: { method: 'post', url: '/schools' } }));
+  expect(
+    await screen.findByRole('link', { name: 'Continue setup: Create an academic year' })
+  ).toHaveAttribute('href', '/academic-calendar');
+  expect(screen.queryByText('Prepare first:')).not.toBeInTheDocument();
+});
+
+it('keeps the user on the calendar when a year exists but terms are missing', async () => {
+  api.get.mockImplementation(async (path) => ({
+    data: {
+      data:
+        path === '/academic-periods'
+          ? [{ type: 'YEAR' }]
+          : { items: [{ id: 'saved', accountType: 'TEACHER' }] },
+    },
+  }));
+  show('/academic-calendar');
+  await screen.findByText(/Your next task is on this page: Create terms/);
+  expect(screen.queryByRole('link', { name: /Continue setup:/ })).not.toBeInTheDocument();
 });

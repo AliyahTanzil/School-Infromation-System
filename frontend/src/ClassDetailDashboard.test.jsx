@@ -53,6 +53,97 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('Class detail dashboard', () => {
+  function showClass() {
+    return render(
+      <MemoryRouter initialEntries={['/classes/class-1']}>
+        <Routes>
+          <Route path="/classes/:classId" element={<ClassDetailDashboard />} />
+        </Routes>
+      </MemoryRouter>
+    );
+  }
+
+  it('guides a planned class through activation, enrollment, subjects, and timetables', async () => {
+    const user = userEvent.setup();
+    let record = { ...klass, status: 'PLANNED' };
+    const originalGet = api.get.getMockImplementation();
+    api.get.mockImplementation((url, options) =>
+      url === '/classes/class-1'
+        ? Promise.resolve({ data: { data: record } })
+        : originalGet(url, options)
+    );
+    api.patch.mockImplementation(async () => {
+      record = { ...record, status: 'ACTIVE' };
+      return { data: {} };
+    });
+    api.post.mockImplementation(async (url) => {
+      record = url.endsWith('/enrollments')
+        ? {
+            ...record,
+            enrollments: [
+              {
+                studentId: 'student-1',
+                student: { id: 'student-1', profile: { firstName: 'Ada' } },
+              },
+            ],
+          }
+        : {
+            ...record,
+            subjects: [{ subjectId: 'subject-1', subject: { id: 'subject-1', name: 'Math' } }],
+          };
+      return { data: {} };
+    });
+    showClass();
+    expect(await screen.findByRole('link', { name: 'Next: Activate the class' })).toHaveAttribute(
+      'href',
+      '#class-activation'
+    );
+    expect(screen.getByRole('button', { name: 'Add student' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Activate class' }));
+    expect(await screen.findByRole('link', { name: 'Next: Enroll students' })).toHaveAttribute(
+      'href',
+      '#class-students'
+    );
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Student' }), 'student-1');
+    await user.click(screen.getByRole('button', { name: 'Add student' }));
+    expect(await screen.findByRole('link', { name: 'Next: Attach subjects' })).toHaveAttribute(
+      'href',
+      '#class-subjects'
+    );
+    await user.selectOptions(
+      screen.getByRole('combobox', { name: 'Existing subject' }),
+      'subject-1'
+    );
+    await user.click(screen.getByRole('button', { name: 'Attach subject' }));
+    expect(
+      await screen.findByRole('link', { name: 'Continue to timetable setup' })
+    ).toHaveAttribute('href', '/timetables');
+    expect(screen.getByText(/Review the full student roster/)).toBeInTheDocument();
+  });
+
+  it('offers student creation when no active students are available', async () => {
+    const originalGet = api.get.getMockImplementation();
+    api.get.mockImplementation((url, options) =>
+      url === '/students'
+        ? Promise.resolve({ data: { data: { items: [] } } })
+        : originalGet(url, options)
+    );
+    showClass();
+    expect(
+      await screen.findByRole('link', { name: 'Create or activate students' })
+    ).toHaveAttribute('href', '/students');
+  });
+
+  it('does not claim setup progress when records cannot be loaded', async () => {
+    api.get.mockRejectedValue(new Error('Unavailable'));
+    showClass();
+    await screen.findByRole('alert');
+    expect(screen.queryByRole('heading', { name: 'Set up this class' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Continue to timetable setup' })
+    ).not.toBeInTheDocument();
+  });
+
   it('enrolls a school student and attaches a school subject', async () => {
     const user = userEvent.setup();
     render(

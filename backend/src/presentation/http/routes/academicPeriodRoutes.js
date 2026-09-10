@@ -13,7 +13,11 @@ import {
 
 const router = Router();
 const admin = authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN');
-router.use(authenticate, singleSchoolContext, admin);
+export function academicPeriodAdmin(req, res, next) {
+  if (req.user?.platformRole === 'OWNER') return next();
+  return admin(req, res, next);
+}
+router.use(authenticate, singleSchoolContext, academicPeriodAdmin);
 router.get('/', validate(academicPeriodQuerySchema), controller.list);
 router.post('/', validate(academicPeriodCreateSchema), controller.create);
 router.post('/events', validate(academicEventCreateSchema), controller.createEvent);

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 
 const headers = (schoolId) => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
-  'content-type': 'application/json',
   'x-school-id': schoolId,
 });
 const initialForm = {
@@ -23,20 +23,83 @@ const initialForm = {
 };
 
 export default function AcademicPolicyDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const [schoolId, setSchoolId] = useState('');
+  const [schools, setSchools] = useState([]);
+  const [schoolsLoading, setSchoolsLoading] = useState(true);
+  const [schoolsError, setSchoolsError] = useState('');
+  const [schoolRefresh, setSchoolRefresh] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
   const [policies, setPolicies] = useState([]);
   const [form, setForm] = useState(initialForm);
   const [message, setMessage] = useState('');
-  const load = useCallback(async () => {
-    if (!schoolId) return;
-    const response = await fetch('/api/academic-policies', { headers: headers(schoolId) });
-    const payload = await response.json();
-    if (!response.ok) throw new Error(payload?.error?.message ?? 'Unable to load policies');
-    setPolicies(payload.data ?? []);
-    sessionStorage.setItem('schoolId', schoolId);
-  }, [schoolId]);
   useEffect(() => {
-    load().catch((error) => setMessage(error.message));
+    let active = true;
+    setSchoolsLoading(true);
+    setSchoolsError('');
+    async function loadSchools() {
+      try {
+        const items = [];
+        let page = 1;
+        let total;
+        do {
+          const { data } = await api.get('/schools', { params: { page, pageSize: 100 } });
+          items.push(...data.data.items);
+          total = data.data.total ?? items.length;
+          if (!data.data.items.length) break;
+          page += 1;
+        } while (items.length < total);
+        if (!active) return;
+        setSchools(items);
+        const saved = sessionStorage.getItem('schoolId');
+        setSchoolId(
+          items.some((school) => school.id === saved)
+            ? saved
+            : items.length === 1
+              ? items[0].id
+              : ''
+        );
+      } catch (reason) {
+        if (active) setSchoolsError(getApiErrorMessage(reason, 'Unable to load schools'));
+      } finally {
+        if (active) setSchoolsLoading(false);
+      }
+    }
+    loadSchools();
+    return () => {
+      active = false;
+    };
+  }, [schoolRefresh]);
+  const load = useCallback(
+    async (signal) => {
+      if (!schoolId) return;
+      setLoading(true);
+      setError('');
+      try {
+        const { data } = await api.get('/academic-policies', {
+          headers: headers(schoolId),
+          signal,
+        });
+        if (signal?.aborted) return;
+        setPolicies(data.data ?? []);
+        sessionStorage.setItem('schoolId', schoolId);
+      } catch (reason) {
+        if (!signal?.aborted) setError(getApiErrorMessage(reason, 'Unable to load policies'));
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [schoolId]
+  );
+  useEffect(() => {
+    const controller = new AbortController();
+    setPolicies([]);
+    setMessage('');
+    setError('');
+    setLoading(false);
+    load(controller.signal);
+    return () => controller.abort();
   }, [load]);
   const updateBand = (index, field, value) =>
     setForm({
@@ -55,28 +118,41 @@ export default function AcademicPolicyDashboard() {
 
   const create = async (event) => {
     event.preventDefault();
+    if (!schoolId || saving) return;
     setMessage('');
-    const response = await fetch('/api/academic-policies', {
-      method: 'POST',
-      headers: headers(schoolId),
-      body: JSON.stringify(form),
-    });
-    const payload = await response.json();
-    if (!response.ok) return setMessage(payload?.error?.message ?? 'Unable to create policy');
-    setMessage('Draft grading policy created. Review it before activation.');
-    await load();
+    setError('');
+    setSaving(true);
+    try {
+      await api.post('/academic-policies', form, { headers: headers(schoolId) });
+      setMessage('Draft grading policy created. Review it before activation.');
+      await load();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Unable to create policy'));
+    } finally {
+      setSaving(false);
+    }
   };
   const activate = async (id) => {
-    const response = await fetch(`/api/academic-policies/${id}/status`, {
-      method: 'PATCH',
-      headers: headers(schoolId),
-      body: JSON.stringify({ status: 'ACTIVE', reason: 'Approved by school administration' }),
-    });
-    const payload = await response.json();
-    if (!response.ok) return setMessage(payload?.error?.message ?? 'Unable to activate policy');
-    setMessage('Policy activated.');
-    await load();
+    if (!schoolId || saving) return;
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      await api.patch(
+        `/academic-policies/${id}/status`,
+        { status: 'ACTIVE', reason: 'Approved by school administration' },
+        { headers: headers(schoolId) }
+      );
+      setMessage('Policy activated.');
+      await load();
+    } catch (reason) {
+      setError(getApiErrorMessage(reason, 'Unable to activate policy'));
+    } finally {
+      setSaving(false);
+    }
   };
+  const activePolicy = policies.some((policy) => policy.status === 'ACTIVE');
+  const draftPolicy = policies.some((policy) => policy.status === 'DRAFT');
 
   return (
     <main className="page-shell">
@@ -92,16 +168,86 @@ export default function AcademicPolicyDashboard() {
       </section>
       <section className="panel">
         <label>
-          School ID
-          <input
+          School
+          <select
             value={schoolId}
             onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="School UUID"
-          />
+            disabled={schoolsLoading || saving}
+          >
+            <option value="">{schoolsLoading ? 'Loading schools…' : 'Select your school'}</option>
+            {schools.map((school) => (
+              <option key={school.id} value={school.id}>
+                {school.name}
+              </option>
+            ))}
+          </select>
         </label>
+        {schoolsError && (
+          <p role="alert">
+            {schoolsError}{' '}
+            <button
+              className="secondary-button"
+              onClick={() => setSchoolRefresh((value) => value + 1)}
+            >
+              Retry schools
+            </button>
+          </p>
+        )}
+        {!schoolsLoading && !schoolsError && !schools.length && (
+          <p>
+            Create your school before configuring grading.{' '}
+            <Link className="underline" to="/school-setup">
+              Create your school
+            </Link>
+          </p>
+        )}
         {message && <p role="status">{message}</p>}
+        {error && (
+          <p role="alert">
+            {error}{' '}
+            <button
+              className="secondary-button"
+              disabled={loading || saving}
+              onClick={() => load()}
+            >
+              Reload policies
+            </button>
+          </p>
+        )}
       </section>
-      <section className="panel">
+      {schoolId && !error && !loading && (
+        <section className="panel" aria-label="Grading setup guidance">
+          <h2>Set up grading, step by step</h2>
+          <ol className="my-3 list-decimal pl-5">
+            <li>Create a draft with pass marks, grade bands, and assessment weights.</li>
+            <li>Review the saved policy and its effective dates, then activate it.</li>
+            <li>Continue to examinations and prepare assessment records.</li>
+          </ol>
+          {activePolicy ? (
+            <p>
+              An active policy is saved. Check that its effective dates cover the examination
+              period.{' '}
+              <Link className="underline font-semibold" to="/examinations">
+                Continue to examinations
+              </Link>
+            </p>
+          ) : draftPolicy ? (
+            <p>
+              <a className="underline font-semibold" href="#policy-register">
+                Next: Review and activate a draft
+              </a>
+              . Check that grade bands cover 0–100 and assessment weights total 100%.
+            </p>
+          ) : (
+            <p>
+              <a className="underline font-semibold" href="#policy-draft">
+                Next: Create your grading policy
+              </a>
+            </p>
+          )}
+        </section>
+      )}
+      <section id="policy-draft" className="panel">
         <h2>Create policy draft</h2>
         <form onSubmit={create} className="space-y-3">
           <input
@@ -201,37 +347,46 @@ export default function AcademicPolicyDashboard() {
             Grade bands must cover 0–100 without gaps; assessment weights must total 100% before
             activation.
           </p>
-          <button className="primary-button" disabled={!schoolId}>
+          <button className="primary-button" disabled={!schoolId || loading || saving || !!error}>
             Create draft
           </button>
         </form>
       </section>
-      <section className="panel">
+      <section id="policy-register" className="panel">
         <h2>Policy register</h2>
-        {policies.length === 0 && <p>No grading policies found.</p>}
-        {policies.map((policy) => (
-          <article className="student-row" key={policy.id}>
-            <span>
-              <strong>{policy.name}</strong>
-              <small>
-                {policy.code} · pass mark {policy.passMark}% · effective{' '}
-                {String(policy.effectiveFrom).slice(0, 10)}
-              </small>
-              <small>
-                {policy.bands.length} bands ·{' '}
-                {policy.weights.map((item) => `${item.name} ${item.weight}%`).join(', ')}
-              </small>
-            </span>
-            <span>
-              <span className="status-pill">{policy.status}</span>
-              {policy.status === 'DRAFT' && (
-                <button className="primary-button" onClick={() => activate(policy.id)}>
-                  Activate
-                </button>
-              )}
-            </span>
-          </article>
-        ))}
+        {loading && <p role="status">Loading grading policies…</p>}
+        {!loading && !error && schoolId && policies.length === 0 && (
+          <p>No grading policies found.</p>
+        )}
+        {!loading &&
+          !error &&
+          policies.map((policy) => (
+            <article className="student-row" key={policy.id}>
+              <span>
+                <strong>{policy.name}</strong>
+                <small>
+                  {policy.code} · pass mark {policy.passMark}% · effective{' '}
+                  {String(policy.effectiveFrom).slice(0, 10)}
+                </small>
+                <small>
+                  {policy.bands.length} bands ·{' '}
+                  {policy.weights.map((item) => `${item.name} ${item.weight}%`).join(', ')}
+                </small>
+              </span>
+              <span>
+                <span className="status-pill">{policy.status}</span>
+                {policy.status === 'DRAFT' && (
+                  <button
+                    className="primary-button"
+                    disabled={saving}
+                    onClick={() => activate(policy.id)}
+                  >
+                    Activate
+                  </button>
+                )}
+              </span>
+            </article>
+          ))}
       </section>
     </main>
   );

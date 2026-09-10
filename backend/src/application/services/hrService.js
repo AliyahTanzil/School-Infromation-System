@@ -105,25 +105,32 @@ export async function createPayrollRun(context, data) {
       where: { ...ownership, id: { in: positionIds } },
     });
     const salaries = new Map(positions.map((item) => [item.id, item.salaryMinor]));
-    const totalMinor = employees.reduce(
-      (sum, item) => sum + (salaries.get(item.positionId) ?? 0),
-      0
-    );
+    // PayrollRun and PayrollItem monetary columns are signed PostgreSQL Int values.
+    const maxMinor = 2147483647;
+    let totalMinor = 0;
+    const items = employees.map((employee) => {
+      if (!employee.positionId || !salaries.has(employee.positionId))
+        throw new ValidationError(
+          'Every payroll employee must have a position in the active school'
+        );
+      const grossMinor = salaries.get(employee.positionId);
+      if (!Number.isInteger(grossMinor) || grossMinor < 0 || grossMinor > maxMinor)
+        throw new ValidationError(
+          'Payroll salaries must be whole minor units between 0 and 2147483647'
+        );
+      if (grossMinor > maxMinor - totalMinor)
+        throw new ValidationError(
+          'Payroll total exceeds the supported limit of 2147483647 minor units'
+        );
+      totalMinor += grossMinor;
+      return { ...ownership, employeeId: employee.id, grossMinor, netMinor: grossMinor };
+    });
     const run = await tx.payrollRun.create({
       data: { ...data, ...ownership, status: 'DRAFT', totalMinor },
     });
     if (employees.length) {
       await tx.payrollItem.createMany({
-        data: employees.map((employee) => {
-          const grossMinor = salaries.get(employee.positionId) ?? 0;
-          return {
-            ...ownership,
-            payrollRunId: run.id,
-            employeeId: employee.id,
-            grossMinor,
-            netMinor: grossMinor,
-          };
-        }),
+        data: items.map((item) => ({ ...item, payrollRunId: run.id })),
       });
     }
     return run;
@@ -132,10 +139,68 @@ export async function createPayrollRun(context, data) {
 
 export async function finalizePayrollRun(context, id) {
   const ownership = scope(context);
-  const result = await prisma.payrollRun.updateMany({
-    where: { id, ...ownership, status: 'DRAFT' },
-    data: { status: 'FINALIZED', processedAt: new Date() },
-  });
-  if (!result.count) throw new ConflictError('Payroll run was not found or is already finalized');
-  return prisma.payrollRun.findFirst({ where: { id, ...ownership } });
+  if (!context.actorId) throw new AuthorizationError('Payroll actor identity is required');
+  try {
+    return await prisma.$transaction(
+      async (tx) => {
+        const run = await tx.payrollRun.findFirst({ where: { id, ...ownership, status: 'DRAFT' } });
+        if (!run) throw new ConflictError('Payroll run was not found or is already finalized');
+        const items = await tx.payrollItem.findMany({ where: { payrollRunId: id, ...ownership } });
+        const validAmount = (value) => Number.isInteger(value) && value >= 0 && value <= 2147483647;
+        let totalMinor = 0;
+        const employeeIds = new Set();
+        for (const item of items) {
+          if (
+            !validAmount(item.grossMinor) ||
+            !validAmount(item.deductionsMinor) ||
+            !validAmount(item.netMinor) ||
+            item.grossMinor - item.deductionsMinor !== item.netMinor ||
+            item.status !== 'PENDING' ||
+            employeeIds.has(item.employeeId)
+          )
+            throw new ValidationError('Payroll draft contains invalid or duplicate items');
+          employeeIds.add(item.employeeId);
+          totalMinor += item.netMinor;
+          if (!validAmount(totalMinor))
+            throw new ValidationError('Payroll draft total exceeds the supported limit');
+        }
+        if (!validAmount(run.totalMinor) || run.totalMinor !== totalMinor)
+          throw new ValidationError('Payroll draft total does not match its items');
+        const employeeCount = await tx.employee.count({
+          where: { ...ownership, id: { in: [...employeeIds] } },
+        });
+        if (employeeCount !== employeeIds.size)
+          throw new ValidationError('Payroll draft contains an employee outside the active school');
+        const processedAt = new Date();
+        const result = await tx.payrollRun.updateMany({
+          where: { id, ...ownership, status: 'DRAFT', totalMinor: run.totalMinor },
+          data: { status: 'FINALIZED', processedAt },
+        });
+        if (!result.count)
+          throw new ConflictError('Payroll draft changed; reload before finalizing');
+        await tx.auditLog.create({
+          data: {
+            tenantId: ownership.tenantId,
+            actorId: context.actorId,
+            action: 'UPDATE',
+            entityType: 'PayrollRun',
+            entityId: id,
+            metadata: {
+              schoolId: ownership.schoolId,
+              fromStatus: 'DRAFT',
+              toStatus: 'FINALIZED',
+              totalMinor,
+              itemCount: items.length,
+            },
+          },
+        });
+        return { ...run, status: 'FINALIZED', processedAt };
+      },
+      { isolationLevel: 'Serializable' }
+    );
+  } catch (error) {
+    if (error.code === 'P2034')
+      throw new ConflictError('Payroll draft changed; reload before finalizing');
+    throw error;
+  }
 }

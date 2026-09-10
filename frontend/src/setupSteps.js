@@ -1,6 +1,7 @@
 export const setupSteps = [
   {
     id: 'school',
+    requires: [],
     title: 'Create your school',
     path: '/school-setup',
     source: '/schools',
@@ -9,6 +10,7 @@ export const setupSteps = [
   },
   {
     id: 'year',
+    requires: ['school'],
     title: 'Create an academic year',
     path: '/academic-calendar',
     source: '/academic-periods',
@@ -17,6 +19,7 @@ export const setupSteps = [
   },
   {
     id: 'term',
+    requires: ['school', 'year'],
     title: 'Create terms',
     path: '/academic-calendar',
     source: '/academic-periods',
@@ -26,6 +29,7 @@ export const setupSteps = [
   },
   {
     id: 'classes',
+    requires: ['school', 'year'],
     title: 'Create classes',
     path: '/classes',
     source: '/classes',
@@ -34,6 +38,7 @@ export const setupSteps = [
   },
   {
     id: 'teachers',
+    requires: ['school'],
     title: 'Create teacher accounts',
     path: '/users',
     source: '/users',
@@ -43,6 +48,7 @@ export const setupSteps = [
   },
   {
     id: 'subjects',
+    requires: ['school', 'classes'],
     title: 'Create subjects',
     path: '/subjects',
     source: '/subjects',
@@ -50,6 +56,7 @@ export const setupSteps = [
   },
   {
     id: 'students',
+    requires: ['school', 'classes'],
     title: 'Add students',
     path: '/students',
     source: '/students',
@@ -62,43 +69,52 @@ export const followOnSteps = [
   {
     path: '/school-setup',
     title: 'Branches',
+    requires: ['school'],
     description: 'Add branches if your school operates across multiple locations.',
   },
   {
     path: '/classes',
     title: 'Enrollment and assignments',
-    description: 'Open each class to enroll students and check subject and teacher assignments.',
+    requires: ['classes', 'teachers', 'subjects', 'students'],
+    description:
+      'Open each class and follow its setup checklist: activate the class, enroll students, and attach subjects. Continue to timetables for teaching assignments.',
   },
   {
     path: '/timetables',
     title: 'Timetables',
+    requires: ['year', 'term', 'classes', 'teachers', 'subjects'],
     description:
       'Set up rooms, teaching assignments, and teacher availability; resolve readiness issues before publishing.',
   },
   {
     path: '/academic-policies',
     title: 'Grading policies',
+    requires: ['school'],
     description:
       'Set grade bands, pass marks, and assessment weights before examinations and results.',
   },
   {
     path: '/finance',
     title: 'School fees',
+    requires: ['year', 'term', 'classes', 'students'],
     description: 'Set up fees before issuing student invoices or recording payments.',
   },
   {
     path: '/attendance',
     title: 'Daily attendance',
+    requires: ['classes', 'students'],
     description: 'Once students are enrolled in classes, open registers and mark attendance.',
   },
   {
     path: '/examinations',
     title: 'Examinations and results',
+    requires: ['year', 'term', 'classes', 'subjects', 'students'],
     description: 'Prepare exam sessions after classes, subjects, and grading policies are ready.',
   },
   {
     path: '/communication',
     title: 'Family communication',
+    requires: ['students'],
     description:
       'Create parent accounts and link guardians to students before using family communication.',
   },
