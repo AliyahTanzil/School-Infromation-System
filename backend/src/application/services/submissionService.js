@@ -4,11 +4,13 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const isAdministrator = (roles = []) =>
-  roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
-const isStaff = (roles = []) => isAdministrator(roles) || roles.includes('TEACHER');
+const isAdministrator = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
+const isStaff = (access = {}) => isAdministrator(access) || access.roles?.includes('TEACHER');
 
-async function requireAssignment(scope, assignmentId, userId, roles, options = {}, db = prisma) {
+async function requireAssignment(scope, assignmentId, userId, access, options = {}, db = prisma) {
   const assignment = await db.assignment.findFirst({
     where: { id: assignmentId, ...owned(scope), status: { not: 'ARCHIVED' } },
     include: {
@@ -18,12 +20,12 @@ async function requireAssignment(scope, assignmentId, userId, roles, options = {
   if (!assignment) throw new NotFoundError('Assignment not found');
   const membership = assignment.classroom.memberships[0];
   const ownsClassroom = assignment.classroom.ownerId === userId;
-  if (!isAdministrator(roles) && !ownsClassroom && !membership) {
+  if (!isAdministrator(access) && !ownsClassroom && !membership) {
     throw new AuthorizationError('You are not a member of this classroom');
   }
   if (
     options.staffOnly &&
-    !isAdministrator(roles) &&
+    !isAdministrator(access) &&
     !ownsClassroom &&
     membership?.role !== 'TEACHER'
   ) {
@@ -35,18 +37,18 @@ async function requireAssignment(scope, assignmentId, userId, roles, options = {
   return assignment;
 }
 
-export async function list(scope, userId, roles = [], assignmentId) {
-  if (isStaff(roles)) {
+export async function list(scope, userId, access = {}, assignmentId) {
+  if (isStaff(access)) {
     if (!assignmentId)
       throw new ValidationError('assignmentId is required for staff submission lists');
-    await requireAssignment(scope, assignmentId, userId, roles, { staffOnly: true });
+    await requireAssignment(scope, assignmentId, userId, access, { staffOnly: true });
   } else if (assignmentId) {
-    await requireAssignment(scope, assignmentId, userId, roles);
+    await requireAssignment(scope, assignmentId, userId, access);
   }
   return prisma.studentSubmission.findMany({
     where: {
       ...owned(scope),
-      ...(isStaff(roles) ? {} : { studentId: userId }),
+      ...(isStaff(access) ? {} : { studentId: userId }),
       ...(assignmentId ? { assignmentId } : {}),
     },
     include: {
@@ -60,8 +62,8 @@ export async function list(scope, userId, roles = [], assignmentId) {
   });
 }
 
-export async function saveVersion(scope, userId, roles, data) {
-  const assignment = await requireAssignment(scope, data.assignmentId, userId, roles, {
+export async function saveVersion(scope, userId, access, data) {
+  const assignment = await requireAssignment(scope, data.assignmentId, userId, access, {
     studentOnly: true,
   });
   if (assignment.status !== 'PUBLISHED') {
@@ -138,13 +140,13 @@ export async function saveVersion(scope, userId, roles, data) {
   );
 }
 
-export async function updateStatus(scope, id, userId, roles, status) {
+export async function updateStatus(scope, id, userId, access, status) {
   const submission = await prisma.studentSubmission.findFirst({
     where: { id, ...owned(scope), studentId: userId },
     include: { assignment: true },
   });
   if (!submission) throw new NotFoundError('Submission not found');
-  await requireAssignment(scope, submission.assignmentId, userId, roles, { studentOnly: true });
+  await requireAssignment(scope, submission.assignmentId, userId, access, { studentOnly: true });
   if (submission.status !== 'SUBMITTED' || status !== 'DRAFT') {
     throw new ValidationError(`Submission cannot move from ${submission.status} to ${status}`);
   }

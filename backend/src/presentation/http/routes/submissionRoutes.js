@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/submissionController.js';
 import {
@@ -11,11 +11,11 @@ import {
 } from '../../../application/validators/submissionValidators.js';
 
 const router = Router();
-router.use(
-  authenticate,
-  teacherContext,
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT')
-);
+const authorizeSubmissionUser = (req, res, next) => {
+  if (req.user?.roles?.includes('STUDENT')) return next();
+  return authorizeSchoolAdminOrTeacher(req, res, next);
+};
+router.use(authenticate, teacherContext, authorizeSubmissionUser);
 router.get('/', validate(submissionListSchema), controller.list);
 router.post('/', validate(submissionSaveSchema), controller.save);
 router.patch('/:id/status', validate(submissionStatusSchema), controller.updateStatus);
