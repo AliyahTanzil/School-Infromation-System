@@ -2,7 +2,7 @@ import { Router } from 'express';
 import multer from 'multer';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import {
   materialArchiveSchema,
@@ -22,7 +22,7 @@ router.use(authenticate, teacherContext);
 router.get('/', validate(materialListSchema), listMaterials);
 router.post(
   '/',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   upload.single('file'),
   validate(materialUploadSchema),
   uploadMaterial
@@ -30,7 +30,7 @@ router.post(
 router.get('/:id/download', validate(materialArchiveSchema), downloadMaterial);
 router.patch(
   '/:id/archive',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(materialArchiveSchema),
   archiveMaterial
 );

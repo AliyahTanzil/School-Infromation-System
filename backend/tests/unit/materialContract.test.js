@@ -14,7 +14,7 @@ test('material routes authenticate, resolve school context and validate requests
   const routes = await read('src/presentation/http/routes/materialRoutes.js');
   assert.match(routes, /router\.use\(authenticate, teacherContext\)/);
   assert.match(routes, /validate\(materialListSchema\)/);
-  assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/);
+  assert.match(routes, /authorizeSchoolAdminOrTeacher/);
 });
 
 test('material access is constrained by active classroom membership', async () => {

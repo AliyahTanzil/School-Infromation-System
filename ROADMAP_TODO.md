@@ -481,3 +481,5 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 57: digital classroom owner access across routes and service membership checks. Nineteen focused tests, compilation, runtime smoke, lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase57.md. SEC-001 remains IN_PROGRESS. |
 
 | 2026-09-10 | SEC-001 | Codex | CHECKPOINT | Phase 58: assignment owner access with protected learner visibility and classroom teacher membership. Nineteen focused tests, compilation, runtime smoke, lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase58.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 59: material owner access and classroom authorization before blob upload. Twelve focused tests, compilation, runtime smoke, lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase59.md. SEC-001 remains IN_PROGRESS. |
