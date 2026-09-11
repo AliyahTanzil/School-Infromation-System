@@ -9,7 +9,7 @@ export async function list(req, res, next) {
         req.schoolContext,
         query.classroomId,
         req.user.id,
-        req.user.roles ?? [],
+        { roles: req.user.roles ?? [], platformRole: req.user.platformRole },
         query.start,
         query.end
       ),

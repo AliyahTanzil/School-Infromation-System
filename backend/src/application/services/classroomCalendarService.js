@@ -3,22 +3,25 @@ import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const admin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const admin = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 const withinRange = (value, start, end) => value && value >= start && value <= end;
 
-async function requireClassroom(scope, classroomId, userId, roles) {
+async function requireClassroom(scope, classroomId, userId, access) {
   const classroom = await prisma.digitalClassroom.findFirst({
     where: { id: classroomId, ...owned(scope), status: 'ACTIVE' },
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Digital classroom not found');
-  if (admin(roles) || classroom.ownerId === userId || classroom.memberships.length)
+  if (admin(access) || classroom.ownerId === userId || classroom.memberships.length)
     return classroom;
   throw new AuthorizationError('You are not a member of this classroom');
 }
 
-export async function list(scope, classroomId, userId, roles, start, end) {
-  const classroom = await requireClassroom(scope, classroomId, userId, roles);
+export async function list(scope, classroomId, userId, access, start, end) {
+  const classroom = await requireClassroom(scope, classroomId, userId, access);
   const [assignments, timetable] = await Promise.all([
     prisma.assignment.findMany({
       where: {
