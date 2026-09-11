@@ -1,5 +1,6 @@
 import * as service from '../../../application/services/classroomStreamService.js';
 
+const access = (req) => ({ roles: req.user.roles ?? [], platformRole: req.user.platformRole });
 const context = (req) => ({
   tenantId: req.schoolContext.tenantId,
   schoolId: req.schoolContext.schoolId,
@@ -13,7 +14,7 @@ export async function list(req, res, next) {
         context(req),
         req.params.classroomId,
         req.user.id,
-        req.user.roles ?? []
+        access(req)
       ),
     });
   } catch (error) {
@@ -28,7 +29,7 @@ export async function announce(req, res, next) {
         context(req),
         req.params.classroomId,
         req.user.id,
-        req.user.roles ?? [],
+        access(req),
         req.body
       ),
     });
@@ -44,7 +45,7 @@ export async function post(req, res, next) {
         context(req),
         req.params.classroomId,
         req.user.id,
-        req.user.roles ?? [],
+        access(req),
         req.body
       ),
     });
@@ -60,7 +61,7 @@ export async function comment(req, res, next) {
         context(req),
         req.params.postId,
         req.user.id,
-        req.user.roles ?? [],
+        access(req),
         req.body.body
       ),
     });

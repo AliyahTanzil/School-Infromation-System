@@ -497,3 +497,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 63: classroom calendar owner access with scoped membership and published-event visibility preserved. |
 
 | 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 63: classroom calendar owner access with scoped membership and event visibility preserved. Nine focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase63.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 64: classroom stream owner access and protected creation identity. |
+
+| 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 64: classroom stream owner access and explicit creation fields preserve school/classroom/author identity. Twelve focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase64.md. SEC-001 remains IN_PROGRESS. |
