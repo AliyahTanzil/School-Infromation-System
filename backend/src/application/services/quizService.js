@@ -5,20 +5,30 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const admin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const admin = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 const transitions = {
   DRAFT: ['PUBLISHED', 'ARCHIVED'],
   PUBLISHED: ['CLOSED'],
   CLOSED: ['ARCHIVED'],
 };
 
-async function requireClassroom(scope, classroomId, userId, roles, staffOnly = false, db = prisma) {
+async function requireClassroom(
+  scope,
+  classroomId,
+  userId,
+  access,
+  staffOnly = false,
+  db = prisma
+) {
   const classroom = await db.digitalClassroom.findFirst({
     where: { id: classroomId, ...owned(scope), status: 'ACTIVE' },
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Digital classroom not found');
-  if (admin(roles) || classroom.ownerId === userId) return { classroom, membership: null };
+  if (admin(access) || classroom.ownerId === userId) return { classroom, membership: null };
   const membership = classroom.memberships[0];
   if (!membership) throw new AuthorizationError('You are not a member of this classroom');
   if (staffOnly && membership.role !== 'TEACHER') {
@@ -27,16 +37,23 @@ async function requireClassroom(scope, classroomId, userId, roles, staffOnly = f
   return { classroom, membership };
 }
 
-async function requireQuiz(scope, id, userId, roles, staffOnly = false, db = prisma) {
+async function requireQuiz(scope, id, userId, access, staffOnly = false, db = prisma) {
   const quiz = await db.quiz.findFirst({ where: { id, ...owned(scope) } });
   if (!quiz) throw new NotFoundError('Quiz not found');
-  const access = await requireClassroom(scope, quiz.classroomId, userId, roles, staffOnly, db);
-  return { quiz, ...access };
+  const classroomAccess = await requireClassroom(
+    scope,
+    quiz.classroomId,
+    userId,
+    access,
+    staffOnly,
+    db
+  );
+  return { quiz, ...classroomAccess };
 }
 
-export async function list(scope, classroomId, userId, roles) {
-  const { classroom, membership } = await requireClassroom(scope, classroomId, userId, roles);
-  const staff = admin(roles) || classroom.ownerId === userId || membership?.role === 'TEACHER';
+export async function list(scope, classroomId, userId, access) {
+  const { classroom, membership } = await requireClassroom(scope, classroomId, userId, access);
+  const staff = admin(access) || classroom.ownerId === userId || membership?.role === 'TEACHER';
   return prisma.quiz.findMany({
     where: {
       ...owned(scope),
@@ -49,9 +66,9 @@ export async function list(scope, classroomId, userId, roles) {
   });
 }
 
-export async function details(scope, id, userId, roles) {
-  const { quiz, classroom, membership } = await requireQuiz(scope, id, userId, roles);
-  const staff = admin(roles) || classroom.ownerId === userId || membership?.role === 'TEACHER';
+export async function details(scope, id, userId, access) {
+  const { quiz, classroom, membership } = await requireQuiz(scope, id, userId, access);
+  const staff = admin(access) || classroom.ownerId === userId || membership?.role === 'TEACHER';
   if (!staff && quiz.status !== 'PUBLISHED') throw new NotFoundError('Quiz not found');
   return prisma.quiz.findUnique({
     where: { id },
@@ -75,8 +92,8 @@ export async function details(scope, id, userId, roles) {
   });
 }
 
-export async function create(scope, authorId, roles, data) {
-  await requireClassroom(scope, data.classroomId, authorId, roles, true);
+export async function create(scope, authorId, access, data) {
+  await requireClassroom(scope, data.classroomId, authorId, access, true);
   if (data.assignmentId) {
     const assignment = await prisma.assignment.findFirst({
       where: { id: data.assignmentId, ...owned(scope), classroomId: data.classroomId },
@@ -96,8 +113,8 @@ export async function create(scope, authorId, roles, data) {
   return prisma.quiz.create({ data: { ...owned(scope), ...data, authorId } });
 }
 
-export async function addQuestion(scope, id, actorId, roles, data) {
-  const { quiz } = await requireQuiz(scope, id, actorId, roles, true);
+export async function addQuestion(scope, id, actorId, access, data) {
+  const { quiz } = await requireQuiz(scope, id, actorId, access, true);
   if (quiz.status !== 'DRAFT') throw new ValidationError('Published quiz questions are immutable');
   if (data.type !== 'SHORT_ANSWER' && data.options.length < 2) {
     throw new ValidationError('Choice questions require at least two options');
@@ -109,8 +126,8 @@ export async function addQuestion(scope, id, actorId, roles, data) {
   return prisma.quizQuestion.create({ data: { quizId: id, ...data, position } });
 }
 
-export async function changeStatus(scope, id, actorId, roles, status) {
-  const { quiz } = await requireQuiz(scope, id, actorId, roles, true);
+export async function changeStatus(scope, id, actorId, access, status) {
+  const { quiz } = await requireQuiz(scope, id, actorId, access, true);
   if (!transitions[quiz.status]?.includes(status)) {
     throw new ValidationError(`Quiz cannot move from ${quiz.status} to ${status}`);
   }
@@ -128,8 +145,8 @@ export async function changeStatus(scope, id, actorId, roles, status) {
   });
 }
 
-export async function startAttempt(scope, id, studentId, roles) {
-  const { quiz, membership } = await requireQuiz(scope, id, studentId, roles);
+export async function startAttempt(scope, id, studentId, access) {
+  const { quiz, membership } = await requireQuiz(scope, id, studentId, access);
   if (membership?.role !== 'STUDENT')
     throw new AuthorizationError('An active student membership is required');
   if (quiz.status !== 'PUBLISHED') throw new ValidationError('Quiz is not accepting attempts');

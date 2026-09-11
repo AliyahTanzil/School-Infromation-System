@@ -4,13 +4,13 @@ const scope = (req) => ({
   tenantId: req.schoolContext.tenantId,
   schoolId: req.schoolContext.schoolId,
 });
-const roles = (req) => req.user.roles ?? [];
+const access = (req) => ({ roles: req.user.roles ?? [], platformRole: req.user.platformRole });
 
 export async function list(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.list(scope(req), req.query.classroomId, req.user.id, roles(req)),
+      data: await service.list(scope(req), req.query.classroomId, req.user.id, access(req)),
     });
   } catch (error) {
     next(error);
@@ -20,7 +20,7 @@ export async function details(req, res, next) {
   try {
     res.json({
       success: true,
-      data: await service.details(scope(req), req.params.id, req.user.id, roles(req)),
+      data: await service.details(scope(req), req.params.id, req.user.id, access(req)),
     });
   } catch (error) {
     next(error);
@@ -28,30 +28,26 @@ export async function details(req, res, next) {
 }
 export async function create(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.create(scope(req), req.user.id, roles(req), req.body),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.create(scope(req), req.user.id, access(req), req.body),
+    });
   } catch (error) {
     next(error);
   }
 }
 export async function addQuestion(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.addQuestion(
-          scope(req),
-          req.params.id,
-          req.user.id,
-          roles(req),
-          req.body
-        ),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.addQuestion(
+        scope(req),
+        req.params.id,
+        req.user.id,
+        access(req),
+        req.body
+      ),
+    });
   } catch (error) {
     next(error);
   }
@@ -64,7 +60,7 @@ export async function changeStatus(req, res, next) {
         scope(req),
         req.params.id,
         req.user.id,
-        roles(req),
+        access(req),
         req.body.status
       ),
     });
@@ -74,12 +70,10 @@ export async function changeStatus(req, res, next) {
 }
 export async function startAttempt(req, res, next) {
   try {
-    res
-      .status(201)
-      .json({
-        success: true,
-        data: await service.startAttempt(scope(req), req.params.id, req.user.id, roles(req)),
-      });
+    res.status(201).json({
+      success: true,
+      data: await service.startAttempt(scope(req), req.params.id, req.user.id, access(req)),
+    });
   } catch (error) {
     next(error);
   }

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/quizController.js';
 import {
@@ -15,28 +15,23 @@ import {
 } from '../../../application/validators/quizValidators.js';
 
 const router = Router();
-router.use(
-  authenticate,
-  teacherContext,
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT')
-);
+const authorizeQuizUser = (req, res, next) => {
+  if (req.user?.roles?.includes('STUDENT')) return next();
+  return authorizeSchoolAdminOrTeacher(req, res, next);
+};
+router.use(authenticate, teacherContext, authorizeQuizUser);
 router.get('/', validate(quizListSchema), controller.list);
-router.post(
-  '/',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
-  validate(quizCreateSchema),
-  controller.create
-);
+router.post('/', authorizeSchoolAdminOrTeacher, validate(quizCreateSchema), controller.create);
 router.get('/:id', validate(quizIdSchema), controller.details);
 router.post(
   '/:id/questions',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(quizQuestionSchema),
   controller.addQuestion
 );
 router.patch(
   '/:id/status',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(quizStatusSchema),
   controller.changeStatus
 );
