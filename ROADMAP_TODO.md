@@ -509,3 +509,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 66: global search owner access and explicit school scope across categories. |
 
 | 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 66: global search recognizes persisted platform ownership and explicitly scopes every category to tenant/school while retaining learner assignment visibility. Thirteen focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase66.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 67: bound classroom calendar date expansion and enforce event time-window boundaries. |
+
+| 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 67: calendar ranges are valid, ordered and limited to 366 days at HTTP/service boundaries; lesson timestamps stay within the requested interval. Fourteen focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase67.md. SEC-001 remains IN_PROGRESS. |

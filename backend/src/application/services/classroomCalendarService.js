@@ -1,6 +1,8 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
+import ValidationError from '../../shared/errors/ValidationError.js';
+import { validCalendarRange, CALENDAR_RANGE_ERROR } from '../../domain/classroomCalendarRange.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
 const admin = (access = {}) =>
@@ -21,6 +23,7 @@ async function requireClassroom(scope, classroomId, userId, access) {
 }
 
 export async function list(scope, classroomId, userId, access, start, end) {
+  if (!validCalendarRange(start, end)) throw new ValidationError(CALENDAR_RANGE_ERROR);
   const classroom = await requireClassroom(scope, classroomId, userId, access);
   const [assignments, timetable] = await Promise.all([
     prisma.assignment.findMany({
@@ -75,12 +78,15 @@ export async function list(scope, classroomId, userId, access, start, end) {
   for (const entry of entries) {
     const slot = slotById.get(entry.timeSlotId);
     if (!slot || slot.isBreak) continue;
-    for (let date = new Date(start); date <= end; date.setUTCDate(date.getUTCDate() + 1)) {
+    const firstDay = new Date(start);
+    firstDay.setUTCHours(0, 0, 0, 0);
+    for (let date = firstDay; date <= end; date.setUTCDate(date.getUTCDate() + 1)) {
       const isoWeekday = date.getUTCDay() || 7;
       if (isoWeekday !== slot.weekday) continue;
       const startsAt = new Date(date);
       const [hours, minutes] = slot.startTime.split(':').map(Number);
       startsAt.setUTCHours(hours, minutes, 0, 0);
+      if (!withinRange(startsAt, start, end)) continue;
       lessonEvents.push({
         id: `lesson-${entry.id}-${startsAt.toISOString().slice(0, 10)}`,
         type: 'LESSON',
