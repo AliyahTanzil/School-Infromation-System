@@ -4,12 +4,12 @@ function scope(req) {
   return req.schoolContext;
 }
 
-function userRoles(req) {
-  return req.user?.roles ?? [];
+function access(req) {
+  return { roles: req.user?.roles ?? [], platformRole: req.user?.platformRole };
 }
 
 export async function search(req, res) {
   const query = req.query.q || req.query.query || req.query.search || '';
-  const data = await globalSearch(scope(req), req.user.id, userRoles(req), String(query));
+  const data = await globalSearch(scope(req), req.user.id, access(req), String(query));
   return res.json({ success: true, data });
 }

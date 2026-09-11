@@ -5,16 +5,19 @@ import {
   managesClassroom,
 } from '../../domain/assignmentVisibility.js';
 
-const owned = ({ tenantId, schoolId }) => ({ tenantId, ...(schoolId ? { schoolId } : {}) });
+const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
 
-const isAdministrator = (roles = []) =>
-  roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const isAdministrator = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 
 /**
  * Perform a permission-aware search across classrooms, assignments, materials, announcements/stream posts, and subjects.
  */
-export async function globalSearch(scope, userId, userRoles = [], queryStr = '', db = prisma) {
-  if (!scope?.tenantId || !userId) throw new ValidationError('Authenticated tenant scope required');
+export async function globalSearch(scope, userId, access = {}, queryStr = '', db = prisma) {
+  if (!scope?.tenantId || !scope?.schoolId || !userId)
+    throw new ValidationError('Authenticated tenant and school scope required');
   const query = (queryStr || '').trim();
   if (!query) {
     return {
@@ -28,7 +31,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
     };
   }
 
-  const isAdmin = isAdministrator(userRoles);
+  const isAdmin = isAdministrator(access);
 
   // 1. Get accessible classroom IDs for this user in this tenant/school scope
   const accessibleClassrooms = await db.digitalClassroom
@@ -57,7 +60,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
 
   const classroomIds = accessibleClassrooms.map((c) => c.id);
   const managedClassroomIds = accessibleClassrooms
-    .filter((classroom) => managesClassroom(classroom, userId, userRoles))
+    .filter((classroom) => isAdmin || managesClassroom(classroom, userId, access.roles ?? []))
     .map((classroom) => classroom.id);
 
   // 2. Perform searches concurrently across categories
@@ -67,6 +70,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
       db.digitalClassroom
         .findMany({
           where: {
+            ...owned(scope),
             id: { in: classroomIds },
             OR: [
               { name: { contains: query, mode: 'insensitive' } },
@@ -129,6 +133,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
         ? db.digitalMaterial
             .findMany({
               where: {
+                ...owned(scope),
                 classroomId: { in: classroomIds },
                 status: 'ACTIVE',
                 OR: [
@@ -156,6 +161,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
         ? db.classroomAnnouncement
             .findMany({
               where: {
+                ...owned(scope),
                 classroomId: { in: classroomIds },
                 status: 'PUBLISHED',
                 OR: [
@@ -181,6 +187,7 @@ export async function globalSearch(scope, userId, userRoles = [], queryStr = '',
         ? db.classroomStreamPost
             .findMany({
               where: {
+                ...owned(scope),
                 classroomId: { in: classroomIds },
                 status: 'PUBLISHED',
                 body: { contains: query, mode: 'insensitive' },

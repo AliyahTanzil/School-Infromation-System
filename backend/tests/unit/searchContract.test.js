@@ -3,7 +3,12 @@ import test from 'node:test';
 import { globalSearch } from '../../src/application/services/searchService.js';
 
 test('globalSearch returns structured empty result when query is empty', async () => {
-  const result = await globalSearch({ tenantId: 'test-tenant-123' }, 'user-1', [], '');
+  const result = await globalSearch(
+    { tenantId: 'test-tenant-123', schoolId: 'school-1' },
+    'user-1',
+    {},
+    ''
+  );
   assert.equal(result.query, '');
   assert.equal(result.totalResults, 0);
   assert.equal(Array.isArray(result.classrooms), true);
@@ -15,9 +20,9 @@ test('globalSearch returns structured empty result when query is empty', async (
 
 test('globalSearch executes structured query across categories', async () => {
   const result = await globalSearch(
-    { tenantId: 'test-tenant-123' },
+    { tenantId: 'test-tenant-123', schoolId: 'school-1' },
     'user-1',
-    ['SCHOOL_ADMIN'],
+    { roles: ['SCHOOL_ADMIN'] },
     'math',
     {
       digitalClassroom: { findMany: async () => [] },

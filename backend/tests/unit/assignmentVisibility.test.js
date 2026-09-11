@@ -69,7 +69,7 @@ function database(t, classrooms = [room('room-1')], rows = assignments) {
 
 test('student search excludes draft, archived, future and out-of-scope assignments', async (t) => {
   const db = database(t);
-  const result = await globalSearch(scope, 'user-1', ['STUDENT'], 'math', db);
+  const result = await globalSearch(scope, 'user-1', { roles: ['STUDENT'] }, 'math', db);
   assert.deepEqual(
     result.assignments.map((item) => item.id),
     ['published', 'closed', 'past']
@@ -87,7 +87,7 @@ test('draft access follows classroom ownership and active teaching membership', 
     const result = await globalSearch(
       scope,
       'user-1',
-      ['TEACHER'],
+      { roles: ['TEACHER'] },
       'math',
       database(t, [classroom])
     );
@@ -99,7 +99,7 @@ test('draft access follows classroom ownership and active teaching membership', 
       )
     );
   }
-  const result = await globalSearch(scope, 'user-1', ['TEACHER'], 'math', database(t));
+  const result = await globalSearch(scope, 'user-1', { roles: ['TEACHER'] }, 'math', database(t));
   assert.deepEqual(
     result.assignments.map((item) => item.id),
     ['published', 'closed', 'past']
@@ -109,19 +109,25 @@ test('draft access follows classroom ownership and active teaching membership', 
 test('teaching one classroom does not expose drafts in another accessible classroom', async (t) => {
   const rows = [...assignments, work('second-draft', 'DRAFT', { classroomId: 'room-2' })];
   const db = database(t, [room('room-1', 'TEACHER'), room('room-2')], rows);
-  const result = await globalSearch(scope, 'user-1', ['TEACHER'], 'math', db);
+  const result = await globalSearch(scope, 'user-1', { roles: ['TEACHER'] }, 'math', db);
   assert.ok(result.assignments.some((item) => item.id === 'draft'));
   assert.ok(!result.assignments.some((item) => item.id === 'second-draft'));
 });
 
 test('administrators retain scoped draft access and users without classrooms receive no assignments', async (t) => {
-  const admin = await globalSearch(scope, 'user-1', ['SCHOOL_ADMIN'], 'math', database(t));
+  const admin = await globalSearch(
+    scope,
+    'user-1',
+    { roles: ['SCHOOL_ADMIN'] },
+    'math',
+    database(t)
+  );
   assert.ok(admin.assignments.some((item) => item.id === 'draft'));
   const db = database(t, []);
-  const result = await globalSearch(scope, 'user-1', ['STUDENT'], 'math', db);
+  const result = await globalSearch(scope, 'user-1', { roles: ['STUDENT'] }, 'math', db);
   assert.deepEqual(result.assignments, []);
   assert.equal(db.assignment.findMany.mock.callCount(), 0);
-  await assert.rejects(globalSearch({}, 'user-1', [], 'math', db), /scope required/);
+  await assert.rejects(globalSearch({}, 'user-1', {}, 'math', db), /scope required/);
 });
 
 test('direct assignment lists enforce availability even with an explicit draft or archived filter', async (t) => {
