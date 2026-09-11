@@ -9,7 +9,8 @@ function access(req) {
 }
 
 export async function search(req, res) {
-  const query = req.query.q || req.query.query || req.query.search || '';
-  const data = await globalSearch(scope(req), req.user.id, access(req), String(query));
+  const input = req.validatedQuery ?? req.query;
+  const query = input.q || input.query || input.search || '';
+  const data = await globalSearch(scope(req), req.user.id, access(req), query);
   return res.json({ success: true, data });
 }

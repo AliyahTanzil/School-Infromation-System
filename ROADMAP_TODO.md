@@ -513,3 +513,7 @@ User-directed UI checkpoint, 2026-09-08: repaired shared light/dark theme bounda
 | 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 67: bound classroom calendar date expansion and enforce event time-window boundaries. |
 
 | 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 67: calendar ranges are valid, ordered and limited to 366 days at HTTP/service boundaries; lesson timestamps stay within the requested interval. Fourteen focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase67.md. SEC-001 remains IN_PROGRESS. |
+
+| 2026-09-11 | SEC-001 | Codex | IN_PROGRESS | Phase 68: validate and bound global search input before persistence access. |
+
+| 2026-09-11 | SEC-001 | Codex | CHECKPOINT | Phase 68: global search validates supported aliases, rejects malformed/unknown query input and enforces a 200-character limit at HTTP/service boundaries. Seventeen focused tests, compilation, runtime smoke, targeted lint, formatting and diff checks pass. Full suite and Prisma regeneration not rerun. See docs/security/security-administration-phase68.md. SEC-001 remains IN_PROGRESS. |

@@ -1,5 +1,6 @@
 import prisma from '../../infrastructure/orm/prismaClient.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import { MAX_SEARCH_QUERY_LENGTH } from '../../domain/searchQuery.js';
 import {
   learnerAssignmentVisibility,
   managesClassroom,
@@ -18,7 +19,11 @@ const isAdministrator = (access = {}) =>
 export async function globalSearch(scope, userId, access = {}, queryStr = '', db = prisma) {
   if (!scope?.tenantId || !scope?.schoolId || !userId)
     throw new ValidationError('Authenticated tenant and school scope required');
-  const query = (queryStr || '').trim();
+  if (typeof queryStr !== 'string' || queryStr.length > MAX_SEARCH_QUERY_LENGTH)
+    throw new ValidationError(
+      `Search must be a string of at most ${MAX_SEARCH_QUERY_LENGTH} characters`
+    );
+  const query = queryStr.trim();
   if (!query) {
     return {
       query: '',
