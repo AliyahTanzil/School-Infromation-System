@@ -4,17 +4,27 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
 const owned = (scope) => ({ tenantId: scope.tenantId, schoolId: scope.schoolId });
-const isAdmin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
-const isStaff = (roles = []) => isAdmin(roles) || roles.includes('TEACHER');
+const isAdmin = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
+const isStaff = (access = {}) => isAdmin(access) || access.roles?.includes('TEACHER');
 
-async function requireClassroom(scope, classroomId, userId, roles, staffOnly = false, db = prisma) {
+async function requireClassroom(
+  scope,
+  classroomId,
+  userId,
+  access,
+  staffOnly = false,
+  db = prisma
+) {
   const classroom = await db.digitalClassroom.findFirst({
     where: { id: classroomId, ...owned(scope), status: { not: 'ARCHIVED' } },
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Classroom not found');
   const membership = classroom.memberships[0];
-  const manages = isAdmin(roles) || classroom.ownerId === userId || membership?.role === 'TEACHER';
+  const manages = isAdmin(access) || classroom.ownerId === userId || membership?.role === 'TEACHER';
   if (staffOnly && !manages)
     throw new AuthorizationError('Only classroom teachers can manage grades');
   if (!staffOnly && !manages && !membership)
@@ -26,7 +36,7 @@ async function requireSubmission(
   scope,
   submissionId,
   userId,
-  roles,
+  access,
   staffOnly = false,
   db = prisma
 ) {
@@ -35,8 +45,8 @@ async function requireSubmission(
     include: { assignment: true },
   });
   if (!submission) throw new NotFoundError('Submission not found');
-  await requireClassroom(scope, submission.assignment.classroomId, userId, roles, staffOnly, db);
-  if (!staffOnly && !isStaff(roles) && submission.studentId !== userId)
+  await requireClassroom(scope, submission.assignment.classroomId, userId, access, staffOnly, db);
+  if (!staffOnly && !isStaff(access) && submission.studentId !== userId)
     throw new AuthorizationError('You cannot view this grade');
   return submission;
 }
@@ -49,21 +59,21 @@ const gradeInclude = {
   },
 };
 
-export async function listRubrics(scope, classroomId, userId, roles) {
-  await requireClassroom(scope, classroomId, userId, roles);
+export async function listRubrics(scope, classroomId, userId, access) {
+  await requireClassroom(scope, classroomId, userId, access);
   return prisma.rubric.findMany({
     where: {
       ...owned(scope),
       classroomId,
-      ...(isStaff(roles) ? {} : { status: 'PUBLISHED' }),
+      ...(isStaff(access) ? {} : { status: 'PUBLISHED' }),
     },
     include: { criteria: { orderBy: { position: 'asc' } } },
     orderBy: { updatedAt: 'desc' },
   });
 }
 
-export async function createRubric(scope, userId, roles, data) {
-  await requireClassroom(scope, data.classroomId, userId, roles, true);
+export async function createRubric(scope, userId, access, data) {
+  await requireClassroom(scope, data.classroomId, userId, access, true);
   return prisma.rubric.create({
     data: {
       ...owned(scope),
@@ -79,20 +89,20 @@ export async function createRubric(scope, userId, roles, data) {
   });
 }
 
-export async function changeRubricStatus(scope, id, userId, roles, status) {
+export async function changeRubricStatus(scope, id, userId, access, status) {
   const rubric = await prisma.rubric.findFirst({ where: { id, ...owned(scope) } });
   if (!rubric) throw new NotFoundError('Rubric not found');
-  await requireClassroom(scope, rubric.classroomId, userId, roles, true);
+  await requireClassroom(scope, rubric.classroomId, userId, access, true);
   if (rubric.status === 'ARCHIVED') throw new ValidationError('Archived rubrics cannot be changed');
   return prisma.rubric.update({ where: { id }, data: { status } });
 }
 
-export async function assignRubric(scope, assignmentId, userId, roles, rubricId) {
+export async function assignRubric(scope, assignmentId, userId, access, rubricId) {
   const assignment = await prisma.assignment.findFirst({
     where: { id: assignmentId, ...owned(scope) },
   });
   if (!assignment) throw new NotFoundError('Assignment not found');
-  await requireClassroom(scope, assignment.classroomId, userId, roles, true);
+  await requireClassroom(scope, assignment.classroomId, userId, access, true);
   if (rubricId) {
     const rubric = await prisma.rubric.findFirst({
       where: {
@@ -107,18 +117,18 @@ export async function assignRubric(scope, assignmentId, userId, roles, rubricId)
   return prisma.assignment.update({ where: { id: assignmentId }, data: { rubricId } });
 }
 
-export async function listGrades(scope, assignmentId, userId, roles) {
+export async function listGrades(scope, assignmentId, userId, access) {
   const assignment = await prisma.assignment.findFirst({
     where: { id: assignmentId, ...owned(scope) },
   });
   if (!assignment) throw new NotFoundError('Assignment not found');
-  await requireClassroom(scope, assignment.classroomId, userId, roles, isStaff(roles));
+  await requireClassroom(scope, assignment.classroomId, userId, access, isStaff(access));
   return prisma.studentSubmission.findMany({
     where: {
       ...owned(scope),
       assignmentId,
-      ...(isStaff(roles) ? {} : { studentId: userId }),
-      ...(isStaff(roles) ? {} : { grade: { is: { status: 'RELEASED' } } }),
+      ...(isStaff(access) ? {} : { studentId: userId }),
+      ...(isStaff(access) ? {} : { grade: { is: { status: 'RELEASED' } } }),
     },
     include: {
       student: { select: { id: true, firstName: true, lastName: true, email: true } },
@@ -130,8 +140,8 @@ export async function listGrades(scope, assignmentId, userId, roles) {
   });
 }
 
-export async function saveGrade(scope, submissionId, userId, roles, data) {
-  const submission = await requireSubmission(scope, submissionId, userId, roles, true);
+export async function saveGrade(scope, submissionId, userId, access, data) {
+  const submission = await requireSubmission(scope, submissionId, userId, access, true);
   if (data.score > data.maxScore) throw new ValidationError('Score cannot exceed maximum score');
   const assignment = await prisma.assignment.findUnique({
     where: { id: submission.assignmentId },
@@ -177,13 +187,13 @@ export async function saveGrade(scope, submissionId, userId, roles, data) {
   });
 }
 
-export async function releaseGrade(scope, id, userId, roles) {
+export async function releaseGrade(scope, id, userId, access) {
   const grade = await prisma.submissionGrade.findFirst({
     where: { id, ...owned(scope) },
     include: { submission: { include: { assignment: true } } },
   });
   if (!grade) throw new NotFoundError('Grade not found');
-  await requireClassroom(scope, grade.submission.assignment.classroomId, userId, roles, true);
+  await requireClassroom(scope, grade.submission.assignment.classroomId, userId, access, true);
   return prisma.submissionGrade.update({
     where: { id },
     data: { status: 'RELEASED', releasedAt: new Date() },
@@ -191,7 +201,7 @@ export async function releaseGrade(scope, id, userId, roles) {
   });
 }
 
-export async function addFeedback(scope, id, userId, roles, body) {
+export async function addFeedback(scope, id, userId, access, body) {
   const grade = await prisma.submissionGrade.findFirst({
     where: { id, ...owned(scope) },
     include: { submission: { include: { assignment: true } } },
@@ -201,10 +211,10 @@ export async function addFeedback(scope, id, userId, roles, body) {
     scope,
     grade.submission.assignment.classroomId,
     userId,
-    roles,
-    isStaff(roles)
+    access,
+    isStaff(access)
   );
-  if (!isStaff(roles) && (grade.status !== 'RELEASED' || grade.submission.studentId !== userId))
+  if (!isStaff(access) && (grade.status !== 'RELEASED' || grade.submission.studentId !== userId))
     throw new AuthorizationError('Feedback is not available');
   return prisma.gradeFeedback.create({ data: { gradeId: id, authorId: userId, body } });
 }

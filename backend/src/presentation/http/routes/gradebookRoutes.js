@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/gradebookController.js';
 import {
@@ -16,40 +16,40 @@ import {
 } from '../../../application/validators/gradebookValidators.js';
 
 const router = Router();
-router.use(
-  authenticate,
-  teacherContext,
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER', 'STUDENT')
-);
+const authorizeGradebookUser = (req, res, next) => {
+  if (req.user?.roles?.includes('STUDENT')) return next();
+  return authorizeSchoolAdminOrTeacher(req, res, next);
+};
+router.use(authenticate, teacherContext, authorizeGradebookUser);
 router.get('/rubrics', validate(rubricListSchema), controller.listRubrics);
 router.post(
   '/rubrics',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(rubricCreateSchema),
   controller.createRubric
 );
 router.patch(
   '/rubrics/:id/status',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(rubricStatusSchema),
   controller.changeRubricStatus
 );
 router.patch(
   '/assignments/:assignmentId/rubric',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(rubricAssignmentSchema),
   controller.assignRubric
 );
 router.get('/grades', validate(gradeListSchema), controller.listGrades);
 router.put(
   '/submissions/:submissionId/grade',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(gradeSaveSchema),
   controller.saveGrade
 );
 router.post(
   '/grades/:id/release',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(gradeIdSchema),
   controller.releaseGrade
 );

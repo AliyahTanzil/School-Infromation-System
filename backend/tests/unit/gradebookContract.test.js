@@ -7,7 +7,7 @@ const source = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'ut
 test('gradebook routes authenticate, resolve school scope and protect teacher mutations', async () => {
   const routes = await source('src/presentation/http/routes/gradebookRoutes.js');
   assert.match(routes, /router\.use\([\s\S]*authenticate,[\s\S]*teacherContext/);
-  assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/);
+  assert.match(routes, /authorizeSchoolAdminOrTeacher/);
   assert.match(routes, /put\([\s\S]*'\/submissions\/:submissionId\/grade'/);
   assert.match(routes, /post\([\s\S]*'\/grades\/:id\/release'/);
   assert.match(routes, /'\/assignments\/:assignmentId\/rubric'/);
