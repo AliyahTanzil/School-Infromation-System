@@ -29,7 +29,7 @@ test('live session routes permit member reads and protect teacher/admin mutation
   const app = await read('src/foundation/app.ts');
   assert.match(routes, /router\.get\('\/', validate\(liveSessionQuerySchema\)/);
   assert.match(routes, /router\.get\('\/recordings'/);
-  assert.match(routes, /authorize\('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'\)/);
+  assert.match(routes, /authorizeSchoolAdminOrTeacher/);
   assert.match(routes, /validate\(liveSessionCreateSchema\)/);
   assert.match(routes, /validate\(liveSessionStatusSchema\)/);
   assert.match(app, /app\.use\('\/api\/lms\/live-sessions', classroomLiveSessionRouter\)/);

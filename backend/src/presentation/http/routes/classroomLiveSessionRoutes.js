@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorizeSchoolAdminOrTeacher from '../../../middleware/auth/authorizeSchoolAdminOrTeacher.js';
 import validate from '../../../middleware/validation/validate.js';
 import * as controller from '../controllers/classroomLiveSessionController.js';
 import {
@@ -19,13 +19,13 @@ router.get('/', validate(liveSessionQuerySchema), controller.list);
 router.get('/:id', validate(liveSessionParamsSchema), controller.get);
 router.post(
   '/',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(liveSessionCreateSchema),
   controller.create
 );
 router.patch(
   '/:id/status',
-  authorize('PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'TEACHER'),
+  authorizeSchoolAdminOrTeacher,
   validate(liveSessionStatusSchema),
   controller.updateStatus
 );

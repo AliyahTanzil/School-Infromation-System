@@ -6,7 +6,10 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
-const admin = (roles = []) => roles.includes('PLATFORM_ADMIN') || roles.includes('SCHOOL_ADMIN');
+const admin = (access = {}) =>
+  access.platformRole === 'OWNER' ||
+  access.roles?.includes('PLATFORM_ADMIN') ||
+  access.roles?.includes('SCHOOL_ADMIN');
 const transitions = {
   SCHEDULED: ['LIVE', 'CANCELLED'],
   LIVE: ['ENDED', 'CANCELLED'],
@@ -14,13 +17,13 @@ const transitions = {
   CANCELLED: [],
 };
 
-async function requireClassroom(scope, classroomId, userId, roles, teacherOnly = false) {
+async function requireClassroom(scope, classroomId, userId, access, teacherOnly = false) {
   const classroom = await prisma.digitalClassroom.findFirst({
     where: { id: classroomId, ...owned(scope), status: 'ACTIVE' },
     include: { memberships: { where: { userId, status: 'ACTIVE' } } },
   });
   if (!classroom) throw new NotFoundError('Digital classroom not found');
-  if (admin(roles) || classroom.ownerId === userId) return classroom;
+  if (admin(access) || classroom.ownerId === userId) return classroom;
   const membership = classroom.memberships[0];
   if (!membership) throw new AuthorizationError('You are not a member of this classroom');
   if (teacherOnly && membership.role !== 'TEACHER') {
@@ -29,8 +32,8 @@ async function requireClassroom(scope, classroomId, userId, roles, teacherOnly =
   return classroom;
 }
 
-export async function list(scope, classroomId, userId, roles, status) {
-  await requireClassroom(scope, classroomId, userId, roles);
+export async function list(scope, classroomId, userId, access, status) {
+  await requireClassroom(scope, classroomId, userId, access);
   return prisma.classroomLiveSession.findMany({
     where: {
       ...owned(scope),
@@ -46,8 +49,8 @@ export async function list(scope, classroomId, userId, roles, status) {
   });
 }
 
-export async function listRecordings(scope, userId, roles) {
-  const classrooms = admin(roles)
+export async function listRecordings(scope, userId, access) {
+  const classrooms = admin(access)
     ? await prisma.digitalClassroom.findMany({
         where: { ...owned(scope), status: 'ACTIVE' },
         select: { id: true },
@@ -79,8 +82,8 @@ export async function listRecordings(scope, userId, roles) {
   });
 }
 
-export async function create(scope, hostId, roles, data) {
-  await requireClassroom(scope, data.classroomId, hostId, roles, true);
+export async function create(scope, hostId, access, data) {
+  await requireClassroom(scope, data.classroomId, hostId, access, true);
   const code = data.roomCode || `virtual-${crypto.randomBytes(4).toString('hex')}`;
   const meetingUrl = data.meetingUrl || `https://meet.sais.local/room/${code}`;
 
@@ -121,7 +124,7 @@ export async function create(scope, hostId, roles, data) {
   return session;
 }
 
-export async function get(scope, id, userId, roles) {
+export async function get(scope, id, userId, access) {
   const session = await prisma.classroomLiveSession.findFirst({
     where: { id, ...owned(scope) },
     include: {
@@ -130,16 +133,16 @@ export async function get(scope, id, userId, roles) {
     },
   });
   if (!session) throw new NotFoundError('Live session not found');
-  await requireClassroom(scope, session.classroomId, userId, roles);
+  await requireClassroom(scope, session.classroomId, userId, access);
   return session;
 }
 
-export async function updateStatus(scope, id, actorId, roles, status, data = {}) {
+export async function updateStatus(scope, id, actorId, access, status, data = {}) {
   const session = await prisma.classroomLiveSession.findFirst({
     where: { id, ...owned(scope) },
   });
   if (!session) throw new NotFoundError('Live session not found');
-  await requireClassroom(scope, session.classroomId, actorId, roles, true);
+  await requireClassroom(scope, session.classroomId, actorId, access, true);
 
   if (!transitions[session.status]?.includes(status)) {
     throw new ValidationError(`Live session cannot move from ${session.status} to ${status}`);
