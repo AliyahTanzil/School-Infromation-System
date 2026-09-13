@@ -21,19 +21,64 @@ export const toPositiveInt = (value, fallback, name) => {
 const toBool = (value, fallback) =>
   value === undefined ? fallback : String(value).toLowerCase() === 'true';
 
+/**
+ * Known development/example placeholder values that must never reach production.
+ * Any secret that matches one of these patterns (or is shorter than 32 chars)
+ * causes a hard startup failure when NODE_ENV=production.
+ */
+const KNOWN_WEAK_SECRET_PATTERNS = [
+  /^change.?me/i,
+  /^your.?secret/i,
+  /^secret/i,
+  /^password/i,
+  /^example/i,
+  /^placeholder/i,
+  /^replace.?me/i,
+  /do.?not.?use.?in.?production/i,
+  /local.?only/i,
+  /dev(elopment)?/i,
+  /test/i,
+  /^sais-local/i,
+];
+
+function isWeakSecret(value) {
+  if (!value || String(value).trim().length < 32) return true;
+  const str = String(value).trim();
+  return KNOWN_WEAK_SECRET_PATTERNS.some((pattern) => pattern.test(str));
+}
+
 const assertRequiredProductionEnvironment = () => {
   if (process.env.NODE_ENV !== 'production') return;
 
+  const accessSecret = process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET;
+  const refreshSecret = process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET;
+
   const missing = [
     ['DATABASE_URL', process.env.DATABASE_URL],
-    ['JWT_ACCESS_SECRET', process.env.JWT_ACCESS_SECRET ?? process.env.JWT_SECRET],
-    ['JWT_REFRESH_SECRET', process.env.JWT_REFRESH_SECRET ?? process.env.JWT_SECRET],
+    ['JWT_ACCESS_SECRET', accessSecret],
+    ['JWT_REFRESH_SECRET', refreshSecret],
   ]
     .filter(([, value]) => !value || !String(value).trim())
     .map(([name]) => name);
 
   if (missing.length > 0) {
     throw new Error(`Missing required production environment variables: ${missing.join(', ')}`);
+  }
+
+  // Reject known weak/placeholder secrets in production to prevent accidental
+  // deployment with development credentials.
+  const weak = [
+    ['JWT_ACCESS_SECRET', accessSecret],
+    ['JWT_REFRESH_SECRET', refreshSecret],
+  ]
+    .filter(([, value]) => isWeakSecret(value))
+    .map(([name]) => name);
+
+  if (weak.length > 0) {
+    throw new Error(
+      `Production JWT secrets are too weak or use placeholder values: ${weak.join(', ')}. ` +
+        'Provide independent, random secrets of at least 32 characters each.'
+    );
   }
 };
 

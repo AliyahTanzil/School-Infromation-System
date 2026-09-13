@@ -12,8 +12,10 @@ const api = axios.create({
 
 let accessToken = null;
 let refreshRequest = null;
+let authRevision = 0;
 
 export const setAccessToken = (token) => {
+  authRevision += 1;
   accessToken = token || null;
 };
 
@@ -33,11 +35,12 @@ api.interceptors.response.use(notifySetupChanges, async (error) => {
     return Promise.reject(error);
   }
   originalRequest._authRetry = true;
+  const revision = authRevision;
   try {
     await refresh();
     return api(originalRequest);
   } catch {
-    setAccessToken(null);
+    if (revision === authRevision) setAccessToken(null);
     return Promise.reject(error);
   }
 });
@@ -54,9 +57,11 @@ export async function register(values) {
 }
 export function refresh() {
   if (!refreshRequest) {
+    const revision = authRevision;
     refreshRequest = api
       .post('/auth/refresh')
       .then(({ data }) => {
+        if (revision !== authRevision) throw new Error('Authentication session changed');
         setAccessToken(data.data.accessToken);
         return data.data;
       })
@@ -67,8 +72,13 @@ export function refresh() {
   return refreshRequest;
 }
 export async function logout() {
-  await api.post('/auth/logout');
-  setAccessToken(null);
+  // Invalidate pending refresh responses before requesting server revocation.
+  authRevision += 1;
+  try {
+    await api.post('/auth/logout');
+  } finally {
+    setAccessToken(null);
+  }
 }
 export async function me() {
   const { data } = await api.get('/auth/me');

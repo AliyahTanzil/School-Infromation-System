@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -14,7 +14,7 @@ beforeEach(() => {
   sessionStorage.clear();
   exams = [];
   api.get.mockImplementation(async (path) => ({
-    data: { data: path === '/schools' ? { items: [school], total: 1 } : exams },
+    data: { data: path === '/school-setup' ? { school } : exams },
   }));
   api.post.mockImplementation(async () => {
     exams = [
@@ -37,11 +37,12 @@ const show = () =>
     </MemoryRouter>
   );
 
-it('selects the saved school by name and updates next steps after draft creation', async () => {
+it('uses the configured school and updates next steps after draft creation', async () => {
   const user = userEvent.setup();
   show();
   await screen.findByRole('link', { name: 'Next: Create your first examination draft' });
-  expect(screen.getByRole('combobox', { name: 'School' })).toHaveValue('school-1');
+  expect(screen.getByText('School: Central School')).toBeInTheDocument();
+  expect(screen.queryByRole('combobox', { name: 'School' })).not.toBeInTheDocument();
   await user.type(screen.getByRole('textbox', { name: 'Examination name' }), 'First term');
   await user.type(screen.getByRole('textbox', { name: 'Examination code' }), 'TERM1');
   await user.click(screen.getByRole('button', { name: 'Create draft' }));
@@ -59,7 +60,7 @@ it('selects the saved school by name and updates next steps after draft creation
 it('does not confuse a failed examination check with an empty register', async () => {
   const user = userEvent.setup();
   api.get.mockImplementation(async (path) => {
-    if (path === '/schools') return { data: { data: { items: [school], total: 1 } } };
+    if (path === '/school-setup') return { data: { data: { school } } };
     throw new Error('Unavailable');
   });
   show();
@@ -72,7 +73,7 @@ it('does not confuse a failed examination check with an empty register', async (
 });
 
 it('directs a school with no records to school creation', async () => {
-  api.get.mockResolvedValue({ data: { data: { items: [], total: 0 } } });
+  api.get.mockResolvedValue({ data: { data: { school: null } } });
   show();
   expect(await screen.findByRole('link', { name: 'Create your school' })).toHaveAttribute(
     'href',
@@ -82,27 +83,28 @@ it('directs a school with no records to school creation', async () => {
   expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled();
 });
 
-it('clears exam records and unsaved draft fields when switching schools', async () => {
-  const user = userEvent.setup();
-  sessionStorage.setItem('schoolId', 'school-1');
-  api.get.mockImplementation(async (path, config) => ({
-    data: {
-      data:
-        path === '/schools'
-          ? { items: [school, { id: 'school-2', name: 'West School' }], total: 2 }
-          : config.headers['x-school-id'] === 'school-1'
-            ? [{ id: 'old', name: 'Old exam', status: 'LOCKED' }]
-            : [],
-    },
-  }));
+it('ignores a stale remembered school and uses authenticated school context', async () => {
+  sessionStorage.setItem('schoolId', 'unavailable-school');
   show();
-  await screen.findByText('Old exam');
-  await user.type(screen.getByRole('textbox', { name: 'Examination name' }), 'Unsaved exam');
-  await user.selectOptions(screen.getByRole('combobox', { name: 'School' }), 'school-2');
-  await screen.findByText('No examinations configured');
-  expect(screen.queryByText('Old exam')).not.toBeInTheDocument();
-  expect(screen.getByRole('textbox', { name: 'Examination name' })).toHaveValue('');
-  await waitFor(() => expect(sessionStorage.getItem('schoolId')).toBe('school-2'));
+  await screen.findByText('School: Central School');
+  expect(screen.queryByRole('combobox', { name: 'School' })).not.toBeInTheDocument();
+  expect(api.get).toHaveBeenCalledWith(
+    '/examinations',
+    expect.objectContaining({
+      headers: { 'x-school-id': 'school-1' },
+    })
+  );
+});
+
+it('shows school lookup failure and retries without suggesting school creation', async () => {
+  const user = userEvent.setup();
+  api.get.mockRejectedValueOnce(new Error('School lookup failed'));
+  show();
+  await screen.findByRole('alert');
+  expect(screen.queryByRole('link', { name: 'Create your school' })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Create draft' })).toBeDisabled();
+  await user.click(screen.getByRole('button', { name: 'Retry school details' }));
+  await screen.findByText('School: Central School');
 });
 
 it('offers results only for locked examinations', async () => {

@@ -8,6 +8,7 @@ import trustedDeviceRepository from '../../infrastructure/repositories/trustedDe
 import userRepository from '../../infrastructure/repositories/userRepository.js';
 import AuthenticationError from '../../shared/errors/AuthenticationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
+import { isValidOpaqueTokenInput } from '../../shared/utils/tokenUtils.js';
 
 /**
  * SessionService
@@ -21,6 +22,12 @@ import NotFoundError from '../../shared/errors/NotFoundError.js';
 
 function refreshExpiry() {
   return new Date(Date.now() + config.auth.refreshTokenTtlDays * 24 * 60 * 60 * 1000);
+}
+
+function requireIdentity(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new AuthenticationError('Authenticated session identity is required');
+  }
 }
 
 /**
@@ -88,6 +95,9 @@ export async function issueSession({ user, context, deviceName, onIssued }) {
  */
 export async function rotate({ refreshToken, context = {} }) {
   if (!refreshToken) throw new AuthenticationError('Refresh token is required');
+  if (!isValidOpaqueTokenInput(refreshToken)) {
+    throw new AuthenticationError('Invalid refresh token');
+  }
   const tokenHash = tokenService.hashRefreshToken(refreshToken);
   const result = await prisma.$transaction(async (tx) => {
     const stored = await refreshTokenRepository.findByHash(tokenHash, tx);
@@ -182,6 +192,8 @@ export async function rotate({ refreshToken, context = {} }) {
  * Revoke a single session (logout current device).
  */
 export async function revoke({ sessionId, userId, reason, context }) {
+  requireIdentity(userId);
+  requireIdentity(sessionId);
   return prisma.$transaction(async (tx) => {
     const session = await sessionRepository.findActiveById(sessionId, tx);
     if (!session || session.userId !== userId) {
@@ -206,6 +218,7 @@ export async function revoke({ sessionId, userId, reason, context }) {
  * Revoke every session for a user (logout everywhere).
  */
 export async function revokeAll({ userId, reason, context }) {
+  requireIdentity(userId);
   return prisma.$transaction(async (tx) => {
     await refreshTokenRepository.revokeAllForUser(userId, reason ?? 'logout_all', tx);
     await sessionRepository.revokeAllForUser(userId, reason ?? 'logout_all', tx);
@@ -225,6 +238,7 @@ export async function revokeAll({ userId, reason, context }) {
  * List active sessions for the account, flagging the caller's current one.
  */
 export async function list({ userId, currentSessionId }) {
+  requireIdentity(userId);
   const sessions = await sessionRepository.listActiveByUser(userId);
   return sessions.map((s) => ({
     id: s.id,

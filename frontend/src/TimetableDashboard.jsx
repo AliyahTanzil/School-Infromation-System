@@ -7,6 +7,9 @@ import WeeklyTimetableGrid from './WeeklyTimetableGrid.jsx';
 import TimetableReadinessPanel from './TimetableReadinessPanel.jsx';
 import TimetableEntryEditor from './TimetableEntryEditor.jsx';
 import TimetableStaffingPanel from './TimetableStaffingPanel.jsx';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const statusTone = {
   DRAFT: 'bg-slate-100 text-slate-700',
@@ -19,7 +22,12 @@ const requestHeaders = (schoolId) => ({
 });
 
 export default function TimetableDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [timetables, setTimetables] = useState([]);
   const [options, setOptions] = useState(null);
   const [selected, setSelected] = useState(null);
@@ -83,11 +91,11 @@ export default function TimetableDashboard() {
     };
   }, [schoolId, selected, rooms, readinessRefresh]);
   useEffect(() => {
+    if (!schoolId) return;
     api
       .get('/timetables/options', { headers: requestHeaders(schoolId) })
       .then(({ data }) => {
         setOptions(data.data);
-        if (data.data.school?.id) setSchoolId(data.data.school.id);
       })
       .catch(() =>
         setMessage('School records are unavailable. The planning preview below is not saved.')
@@ -112,7 +120,7 @@ export default function TimetableDashboard() {
       setMessage('Draft timetable created.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to create timetable.');
+      setMessage(getApiErrorMessage(error, 'Unable to create timetable.'));
     }
   };
   const transition = async (status) => {
@@ -126,7 +134,7 @@ export default function TimetableDashboard() {
       setMessage(`Timetable moved to ${status.toLowerCase()}.`);
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Status change failed.');
+      setMessage(getApiErrorMessage(error, 'Status change failed.'));
     }
   };
   const generateSlots = async () => {
@@ -140,7 +148,7 @@ export default function TimetableDashboard() {
       setMessage('Slots generated from school settings.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to generate timetable slots.');
+      setMessage(getApiErrorMessage(error, 'Unable to generate timetable slots.'));
     }
   };
   const generateSchedule = async () => {
@@ -184,7 +192,7 @@ export default function TimetableDashboard() {
       setMessage('Timetable room created.');
       await loadRooms();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to create timetable room.');
+      setMessage(getApiErrorMessage(error, 'Unable to create timetable room.'));
     }
   };
   const toggleRoom = async (room) => {
@@ -197,9 +205,19 @@ export default function TimetableDashboard() {
       setMessage(`${room.name} ${room.isActive ? 'deactivated' : 'activated'}.`);
       await loadRooms();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to update timetable room.');
+      setMessage(getApiErrorMessage(error, 'Unable to update timetable room.'));
     }
   };
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 sm:px-8">
       <div className="mx-auto max-w-7xl">

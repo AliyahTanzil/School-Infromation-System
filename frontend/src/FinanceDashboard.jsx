@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
 import { formatLe } from './utils/currency.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const formatMoney = (minor = 0) => formatLe(minor);
 const formatMajorMoney = (major = 0) => formatLe(major, { minor: false });
@@ -14,7 +17,12 @@ const statusClass = {
 };
 
 export default function FinanceDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('ALL');
   const [summary, setSummary] = useState(null);
@@ -107,9 +115,19 @@ export default function FinanceDashboard() {
       setShowCreate(false);
       setMessage('Invoice created successfully.');
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to create invoice.');
+      setMessage(getApiErrorMessage(error, 'Unable to create invoice.'));
     }
   };
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
 
   return (
     <main className="finance-page">
@@ -127,19 +145,6 @@ export default function FinanceDashboard() {
             Back to administration
           </Link>
         </header>
-        <section className="finance-panel">
-          <label>
-            School ID
-            <input
-              value={schoolId}
-              onChange={(event) => {
-                setSchoolId(event.target.value);
-                sessionStorage.setItem('schoolId', event.target.value);
-              }}
-              placeholder="School UUID"
-            />
-          </label>
-        </section>
         <section className="finance-metrics" aria-label="Finance summary">
           {metrics.map(([label, value, note]) => (
             <article className="finance-metric" key={label}>

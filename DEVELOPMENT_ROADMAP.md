@@ -1,12 +1,18 @@
 # SAIS Development Roadmap
 
-Updated: 2026-08-30
+Updated: 2026-09-13
 
 ## Product goal
 
 Deliver a secure, reliable, single-school information system in which administrators, teachers, students, and parents can complete their daily academic and operational work on web and mobile clients.
 
 ## Current baseline
+
+Latest authentication-client checkpoint (2026-09-13): logout clears in-memory credentials even when its HTTP request fails, and refresh ordering protects logout and newer sessions. Frontend verification: 102 tests pass with two workers, lint and production build pass. The initial default-concurrency run hit two app-loading timing failures. Local app/database startup works; the configured four development-role logins returned 401, and no browser is connected. Live authenticated journeys remain outstanding.
+
+Latest frontend checkpoint (2026-09-13): recovered the unfinished single-school dashboard migration. Operational workspaces now resolve the configured school and show loading, retryable error, or setup-required states. Obsolete school-ID editors and setters and malformed Boarding JSX are removed. The full frontend suite passes (96 tests), with two additional Boarding recovery/missing-school regressions passing separately; frontend lint and production build pass. Browser journeys remain outstanding.
+
+Latest authentication checkpoint (2026-09-12): current-user lookup and password changes reject missing or malformed authenticated identities before persistence access. Together with the pending recovery-token, session-revocation, password-change input and HTTP error-safety changes, the full backend suite passes with 689 tests passed, zero failures and one intentional live-database skip. Fourteen focused identity/password-change tests, targeted lint/formatting, Prisma generation, backend compilation/runtime copying and compiled health/protected-route smoke checks pass. Live browser authentication and database concurrency verification remain outstanding; SEC-001 remains IN_PROGRESS.
 
 - The application is a Node.js monorepo with an Express/Prisma backend, React/Vite frontend, and Expo mobile client.
 - Core persistence and APIs exist for users, students, parents, teachers, academic periods, subjects, classes, enrollment, attendance, examinations, results, timetables, finance, payments, notifications, HR, library, assets, transport, boarding, and the first six LMS slices.
@@ -33,7 +39,7 @@ Target: immediate
 - [x] Provision and verify the configured application-owner login with `npm run db:seed:owner -w backend`.
 - [x] Run the current-schema bootstrap and verify school-admin, teacher, student, and parent development accounts.
 - [ ] Verify login, refresh-token rotation, logout, and password recovery in the browser.
-- [ ] Document local setup, database reset, migration, and recovery commands in one current runbook.
+- [x] Document local setup, database reset, migration, and recovery commands in one current runbook (see [docs/RUNBOOK.md](docs/RUNBOOK.md)).
 
 Current note: owner provisioning and the transactional role-account bootstrap are isolated, idempotent commands. The older aggregate seed files remain unsupported and must not be used as the single-school bootstrap contract.
 
@@ -43,12 +49,12 @@ Exit criteria: a clean checkout can be configured and started, all four roles ca
 
 Target: first stable development milestone
 
-- [ ] Redirect unauthenticated users away from protected routes instead of rendering partial workspaces.
-- [ ] Verify role and permission checks for every mounted API and frontend route.
-- [ ] Remove stale multi-tenant assumptions and enforce the single-school context consistently.
+- [x] Redirect unauthenticated users away from protected routes instead of rendering partial workspaces (verified: every non-public route is wrapped in the `Protected` guard in `frontend/src/App.jsx`, which redirects to `/login`).
+- [x] Verify role and permission checks for every mounted API and frontend route (see [docs/security/route-authorization-matrix.md](docs/security/route-authorization-matrix.md); mechanized by `backend/tests/unit/routeAuthorizationCoverage.test.js`). Endpoint-level permission detail continues under SEC-001.
+- [ ] Remove stale multi-tenant assumptions and enforce the single-school context consistently. Partial: removed the client-controllable `requireSchoolContext` middleware (`middleware/auth/schoolContext.js`) and the orphaned `studentRoutes`, `tenantAdminRoutes`, `tenantLifecycleRoutes`, and `platformAdminRoutes` modules. Remaining: frontend `x-school-id` headers, manual school-ID fields, and the `useSchoolSelection` picker.
 - [ ] Complete invitation, account activation/deactivation, password reset, session revocation, and profile management.
 - [ ] Add consistent loading, empty, offline, forbidden, and service-unavailable states.
-- [ ] Replace raw backend messages such as `Database client error` with actionable, non-sensitive user messages.
+- [x] Replace raw backend messages such as `Database client error` with actionable, non-sensitive user messages (see `backend/src/shared/errors/normalizeError.js`).
 - [ ] Add end-to-end tests for administrator, teacher, student, and parent authentication journeys.
 
 Exit criteria: protected pages cannot be accessed anonymously, each role lands on the correct workspace, and authorization regression tests cover all sensitive routes.
@@ -68,7 +74,7 @@ Target: minimum usable product
 - [ ] Student: timetable, attendance, classwork, submissions, results, announcements, and account profile.
 - [ ] Parent: linked learners, attendance, results, fees, announcements, and teacher feedback.
 - [ ] Remove manual `School UUID`, `Student UUID`, `Class UUID`, and similar fields from normal workflows; replace them with scoped selectors or session-derived values.
-- [ ] Complete import/export for student, staff, enrollment, attendance, and result data with validation and error reports.
+- [ ] Complete import/export for student, staff, enrollment, attendance, and result data with validation and error reports. Partial: protected CSV/TSV/JSON/XLSX **import** with per-row validation and error reports now covers students, teachers, and subjects (see [docs/backend/data-import-api.md](docs/backend/data-import-api.md)); export and the remaining entities are outstanding.
 - [ ] Add browser end-to-end coverage for one complete academic cycle from setup through published results.
 
 Exit criteria: a school can configure a term, enroll learners, teach classes, record attendance and marks, publish results, and expose them to students and parents without direct database intervention.
@@ -141,6 +147,94 @@ Target: production candidate
 
 Exit criteria: release evidence demonstrates secure configuration, recoverable data, acceptable performance, observable failures, and approved user acceptance tests.
 
+## Missing capabilities register
+
+Compiled 2026-09-11 from a documentation and code review of the repository. Each item below is
+absent or incomplete; the evidence column names the supporting document or source file. Items that
+duplicate an existing phase item are cross-referenced instead of restated.
+
+### Security and compliance
+
+- [ ] Multi-factor authentication (MFA). Only placeholder references exist
+      (`frontend/src/SecurityAdminDashboard.jsx`, `backend/src/application/services/securityAdminService.js`);
+      `docs/security/security-administration-phase1.md` records MFA evidence as still required.
+- [ ] CSRF protection tokens. Only a `SameSite` cookie posture is in place;
+      `docs/security/backend-twelve-authentication.md` flags the CSRF model as explicitly unreviewed.
+- [ ] Distributed rate-limit store for multi-instance deployments —
+      `docs/security/backend-eighteen-nineteen.md:47` records it as "Not yet enabled".
+- [ ] Secret rotation policy and tooling; current docs cover secret presence and validation only.
+- [ ] Encryption at rest / field-level encryption; only bcrypt and SHA-256 hashing exist.
+- [ ] Resolve open dependency advisories (`xlsx`, `nodemailer`) —
+      `docs/deployment/backend-sixteen-audit.md:5-7`, `docs/remediation/backend-twenty-five-remediation.md:8`.
+- [ ] Penetration test, threat model, threat detection, and log retention.
+- [ ] Data retention windows, GDPR/DSAR export, and account erasure.
+- [ ] Complete the 20 unchecked items in `docs/security/security-checklist.md`.
+- [ ] Finish SEC-001: remaining mounted-router authorization waves and the final acceptance audit.
+
+### Operations and reliability
+
+- [ ] Application error tracking (for example Sentry) — none is configured.
+- [ ] External/uptime alerting, status monitoring, and a durable metrics backend —
+      `docs/operations/backend-seventeen-observability.md:8,14-16`.
+- [ ] Backups/disaster recovery: define and test RPO, RTO, retention, region, failover, and restore
+      ownership — `docs/deployment/backend-twenty-two-architecture.md:29`,
+      `docs/data/backend-twenty-three-recovery-checklist.md`.
+- [ ] Load/stress testing and capacity planning (PERF-001).
+- [ ] On-call rotation, paging, and escalation runbook.
+- [ ] Staging/production release gate with environment validation and post-deployment smoke tests (REL-001).
+- [ ] Execute backup restore, point-in-time recovery, and migration rollback drills (OPS-001).
+
+### Testing
+
+- [ ] Browser end-to-end tests for administrator, teacher, student, and parent journeys (no
+      Playwright/Cypress is present) — required by Phases 1 and 2.
+- [ ] Mobile test runner and the planned unit/integration/navigation/e2e tiers —
+      `mobile/tests/README.md:3-8`.
+
+### Backend and architecture
+
+- [ ] Converge the dual composition root (`foundation/app.ts` versus `app.js`) —
+      `docs/database/prisma-route-reconciliation.md:72`.
+- [ ] Replace controlled `501 FEATURE_NOT_IMPLEMENTED` surfaces: billing (SaaS-001),
+      school-administrator assignment (RBAC-002), and `/security-admin` routes.
+- [ ] Resolve the Prisma Windows engine DLL `EPERM` build blocker (Phase 51+ checkpoints).
+- [ ] Complete and certify CRUD coverage, including DELETE across route families —
+      `docs/audit/crud-coverage-2026-09-07.md:69`.
+- [ ] Live-database concurrency verification for payment, payroll, and library flows.
+
+### Frontend
+
+- [ ] Remove raw UUID inputs from normal workflows in favor of scoped selectors (Phase 2).
+- [x] Replace raw backend messages with actionable, non-sensitive user messages (Phase 1).
+- [ ] Complete import/export for student, staff, enrollment, attendance, and result data (Phase 2).
+
+### Mobile
+
+- [ ] Mobile bootstrap and permission-filtered module manifest (MOB-001) —
+      `mobile/docs/missing-api-register.md:7-12`.
+- [ ] Notification device lifecycle (MOB-002).
+- [ ] Offline sync cursors, conflict handling, and idempotency (MOB-003).
+- [ ] Classroom module connected to LMS APIs (MOB-004).
+- [ ] App-store release pipeline documentation (EAS configuration exists; no release doc).
+- [ ] Deep-linking configuration documentation.
+- [ ] Camera/QR attendance capture — no dependency or documentation.
+- [ ] Reconcile docs with code: push registration and offline attendance sync are implemented but
+      still documented as gaps.
+
+### Blocked domains
+
+These roadmap tasks remain `BLOCKED` pending upstream dependencies (see `ROADMAP_TODO.md:83-99`):
+AI-001, AI-002, PRD-001, INT-001, BIO-001, IOT-001, SaaS-001, ADM-001, AUD-001, PERF-001, OPS-001,
+REL-001.
+
+### Documentation reconciliation
+
+- [ ] CI exists at `.github/workflows/ci.yml`, but operations docs describe no CI platform; the
+      workflow also omits frontend lint and mobile typecheck listed under Release checks.
+- [ ] Update `README.md` from the legacy Docker/multi-tenant description to the single-school target.
+- [ ] Reconcile date-layered documents that contradict one another (older "missing" inventories
+      versus later "DONE" checkpoints).
+
 ## Suggested milestone order
 
 | Milestone | Outcome                                             | Depends on              |
@@ -173,6 +267,18 @@ npx tsc --noEmit
 Database-dependent releases must additionally validate migrations against a disposable database and run browser-based smoke tests for every supported role.
 
 ## Roadmap maintenance
+
+Session-route checkpoint (2026-09-11): device revocation now mounts its existing UUID validator after authentication and rejects undeclared parameter fields. Tests cover malformed IDs before service access and protected user/target/reason values. Focused route/revocation suites: 13 passed; full backend: 684 passed, one intentional database skip. Compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/security/backend-twelve-authentication.md`; SEC-001 remains IN_PROGRESS.
+
+Session-identity checkpoint (2026-09-11): session listing and revocation reject absent, blank and non-string identities before persistence, preventing omitted Prisma ownership filters. Focused session suites: 27 passed; full backend: 681 passed, one intentional database skip. Compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/security/backend-twelve-authentication.md`; SEC-001 remains IN_PROGRESS.
+
+Recovery-token checkpoint (2026-09-11): reset and verification token replacement now atomically invalidates prior links and creates the new hash; persistence failures preserve existing links and prevent uncommitted-token delivery. Focused issuance/reset suites: 18 passed; full backend: 680 passed, one intentional database skip. Compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/security/backend-twelve-authentication.md`; SEC-001 remains IN_PROGRESS. Live concurrent issuance and email delivery reliability remain outstanding.
+
+Password-reset checkpoint (2026-09-11): credential replacement now requires a non-deleted target user at write time; a missing/deleted account returns the generic invalid-link error and rolls back token consumption. Focused password suites: 19 passed; full backend: 672 passed, one intentional database skip. Backend compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/security/backend-twelve-authentication.md`; SEC-001 remains IN_PROGRESS and live concurrency verification is outstanding.
+
+Request-body checkpoint (2026-09-11): recognized malformed JSON, size-limit and unsupported-encoding failures now return safe 400/413/415 contracts instead of 500 errors. Submitted content and parser metadata are omitted. Error suites: 23 passed; full backend: 670 passed, one intentional database skip. Backend compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/backend/error-contract.md`; SEC-001 remains IN_PROGRESS.
+
+Error-boundary checkpoint (2026-09-11): the active TypeScript HTTP handler now normalizes untrusted errors regardless of attached status/code fields and safely handles null/undefined failures. Genuine application error contracts remain supported. Error suites: 17 passed; full backend: 664 passed, one intentional database skip. Backend compilation/runtime copy, runtime smoke, targeted lint and formatting pass. See `docs/backend/error-contract.md`; SEC-001 remains IN_PROGRESS.
 
 - Use `ROADMAP_TODO.md` for atomic engineering task status and work logs.
 - Use `PROJECT_PROGRESS.md` for measured completion evidence.

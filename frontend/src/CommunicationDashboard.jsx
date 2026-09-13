@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function CommunicationDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [notifications, setNotifications] = useState([]);
   const [health, setHealth] = useState(null);
   const [message, setMessage] = useState('');
@@ -19,7 +27,7 @@ export default function CommunicationDashboard() {
       setNotifications(events.data.data ?? []);
       setHealth(delivery.data.data ?? null);
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load notifications.');
+      setMessage(getApiErrorMessage(error, 'Unable to load notifications.'));
     }
   }, [headers, schoolId]);
   useEffect(() => {
@@ -47,7 +55,7 @@ export default function CommunicationDashboard() {
       setForm({ ...form, title: '', body: '', recipients: '' });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to create notification.');
+      setMessage(getApiErrorMessage(error, 'Unable to create notification.'));
     }
   };
   const toggleChannel = (channel) =>
@@ -57,6 +65,16 @@ export default function CommunicationDashboard() {
         ? current.channels.filter((item) => item !== channel)
         : [...current.channels, channel],
     }));
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-slate-100">
       <div className="mx-auto max-w-6xl">
@@ -79,20 +97,6 @@ export default function CommunicationDashboard() {
             {message}
           </p>
         )}
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
-          <label>
-            School ID
-            <input
-              className="ml-3 rounded-lg bg-slate-800 p-2"
-              value={schoolId}
-              onChange={(event) => {
-                setSchoolId(event.target.value);
-                sessionStorage.setItem('schoolId', event.target.value);
-              }}
-              placeholder="School UUID"
-            />
-          </label>
-        </section>
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-semibold">Create notification</h2>
           <form className="mt-4 grid gap-3" onSubmit={create}>

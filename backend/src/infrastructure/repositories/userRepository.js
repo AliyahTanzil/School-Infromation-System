@@ -57,7 +57,7 @@ export function update(id, data, tx) {
 }
 
 export function setPasswordHash(id, passwordHash, tx) {
-  return db(tx).user.update({ where: { id }, data: { passwordHash } });
+  return db(tx).user.updateMany({ where: { id, deletedAt: null }, data: { passwordHash } });
 }
 
 export function replacePasswordHash(id, expectedHash, passwordHash, tx) {

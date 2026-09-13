@@ -62,6 +62,10 @@ function fixture({ membership, missing = false, submission = true, status = 'PUB
       writes.push(args);
       return args.data;
     },
+    updateMany: async (args) => {
+      writes.push(args);
+      return { count: 1 };
+    },
   };
   db.submissionVersion = {
     create: async ({ data }) => {
@@ -194,7 +198,14 @@ test('student version writes and retractions preserve authenticated identity and
   });
   await invoke('updateStatus', student);
   assert.deepEqual(writes[2], {
-    where: { id: 'submission' },
+    where: {
+      id: 'submission',
+      ...scope,
+      studentId: 'actor',
+      assignmentId: 'assignment',
+      status: 'SUBMITTED',
+      assignment: { is: { ...scope, status: 'PUBLISHED' } },
+    },
     data: { status: 'DRAFT', submittedAt: null },
   });
   fixture({ membership: 'STUDENT', status: 'CLOSED' });

@@ -40,23 +40,13 @@ export const notFound: RequestHandler = (request, response) => {
 
 export const errorHandler: ErrorRequestHandler = (error, _request, response, next) => {
   void next;
-  const legacyError = error as {
-    statusCode?: number;
-    code?: string;
-    message?: string;
-    details?: unknown;
-  };
   const normalizedLegacy = normalizeError(error) as {
     statusCode: number;
     code: string;
     message: string;
     details?: unknown;
   };
-  const normalizedError = isAppError(error)
-    ? error
-    : legacyError.statusCode && legacyError.code
-      ? legacyError
-      : normalizedLegacy;
+  const normalizedError = isAppError(error) ? error : normalizedLegacy;
   logger.error('request failed', {
     requestId: response.locals.requestId,
     code: normalizedError?.code ?? 'INTERNAL_ERROR',

@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 export default function LibraryDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
-  const [libraryId, setLibraryId] = useState(() => sessionStorage.getItem('libraryId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
+  const [libraryId, setLibraryId] = useState('');
   const [overview, setOverview] = useState(null);
   const [books, setBooks] = useState([]);
   const [loans, setLoans] = useState([]);
@@ -23,7 +31,7 @@ export default function LibraryDashboard() {
       setBooks(b.data.data ?? []);
       setLoans(l.data.data ?? []);
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load library.');
+      setMessage(getApiErrorMessage(error, 'Unable to load library.'));
     }
   }, [schoolId, libraryId]);
   useEffect(() => void load(), [load]);
@@ -31,10 +39,9 @@ export default function LibraryDashboard() {
     try {
       const { data } = await api.post('/libraries', { name: 'School Library' }, { headers });
       setLibraryId(data.data.id);
-      sessionStorage.setItem('libraryId', data.data.id);
       setMessage('Library created.');
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to create library.');
+      setMessage(getApiErrorMessage(error, 'Unable to create library.'));
     }
   };
   const submit = async (event, path, body, reset) => {
@@ -44,7 +51,7 @@ export default function LibraryDashboard() {
       reset();
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to save record.');
+      setMessage(getApiErrorMessage(error, 'Unable to save record.'));
     }
   };
   const addCopy = async (bookId) => {
@@ -54,9 +61,19 @@ export default function LibraryDashboard() {
       await api.post(`/libraries/${libraryId}/books/${bookId}/copies`, { barcode }, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to add copy.');
+      setMessage(getApiErrorMessage(error, 'Unable to add copy.'));
     }
   };
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
       <div className="mx-auto max-w-6xl">
@@ -78,21 +95,9 @@ export default function LibraryDashboard() {
         <section className="mt-6 flex flex-wrap gap-3 rounded-2xl border border-slate-800 bg-slate-900 p-4">
           <input
             className="rounded bg-slate-800 p-2"
-            placeholder="School UUID"
-            value={schoolId}
-            onChange={(e) => {
-              setSchoolId(e.target.value.trim());
-              sessionStorage.setItem('schoolId', e.target.value.trim());
-            }}
-          />
-          <input
-            className="rounded bg-slate-800 p-2"
             placeholder="Library UUID"
             value={libraryId}
-            onChange={(e) => {
-              setLibraryId(e.target.value.trim());
-              sessionStorage.setItem('libraryId', e.target.value.trim());
-            }}
+            onChange={(e) => setLibraryId(e.target.value.trim())}
           />
           <button
             disabled={!schoolId}

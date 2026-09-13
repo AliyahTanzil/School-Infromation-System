@@ -1,49 +1,65 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-const headers = (schoolId) => ({
-  Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}`,
-  'content-type': 'application/json',
-  'x-school-id': schoolId,
-});
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import {
+  WorkspaceLoading,
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceOffline,
+} from './components/WorkspaceStates.jsx';
+
 export default function ResultsDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const { schoolId } = useSchoolContext();
   const [examinationId, setExaminationId] = useState('');
   const [schemeId, setSchemeId] = useState('');
   const [results, setResults] = useState([]);
   const [stats, setStats] = useState(null);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
   const load = useCallback(async () => {
-    if (!schoolId) return;
-    const suffix = examinationId ? `?examinationId=${encodeURIComponent(examinationId)}` : '';
+    setLoading(true);
+    setError(null);
     try {
-      const [listResponse, statsResponse] = await Promise.all([
-        fetch(`/api/results${suffix}`, { headers: headers(schoolId) }),
-        fetch(`/api/results/statistics${suffix}`, { headers: headers(schoolId) }),
+      const params = examinationId ? { examinationId } : {};
+      const [listRes, statsRes] = await Promise.allSettled([
+        api.get('/results', { params }),
+        api.get('/results/statistics', { params }),
       ]);
-      const [list, summary] = await Promise.all([listResponse.json(), statsResponse.json()]);
-      if (!listResponse.ok) throw new Error(list?.error?.message ?? 'Unable to load results');
-      setResults(list.data ?? []);
-      setStats(summary.data);
-      sessionStorage.setItem('schoolId', schoolId);
-    } catch (reason) {
-      setError(reason.message);
+      if (listRes.status === 'fulfilled') {
+        setResults(listRes.value.data.data ?? []);
+      } else {
+        setError(listRes.reason);
+      }
+      if (statsRes.status === 'fulfilled') {
+        setStats(statsRes.value.data.data);
+      }
+    } finally {
+      setLoading(false);
     }
-  }, [schoolId, examinationId]);
+  }, [examinationId]);
+
   useEffect(() => {
     load();
   }, [load]);
+
   const process = async (event) => {
     event.preventDefault();
-    setError('');
-    const response = await fetch('/api/results/process', {
-      method: 'POST',
-      headers: headers(schoolId),
-      body: JSON.stringify({ examinationId, schemeId }),
-    });
-    const payload = await response.json();
-    if (!response.ok) return setError(payload?.error?.message ?? 'Unable to process results');
-    await load();
+    setProcessing(true);
+    setError(null);
+    try {
+      await api.post('/results/process', { examinationId, schemeId });
+      await load();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setProcessing(false);
+    }
   };
+
   const summary = [
     ['Results', stats?.count ?? 0],
     ['Pass count', stats?.passCount ?? 0],
@@ -75,27 +91,18 @@ export default function ResultsDashboard() {
         ))}
       </section>
 
-      <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
-        <div className="section-heading">
-          <div>
-            <h2>School context</h2>
-            <p>Confirm the active school before processing results or reading report summaries.</p>
-          </div>
-        </div>
-        <div className="form-field" style={{ maxWidth: '26rem' }}>
-          <label className="form-field__label">School ID</label>
-          <input
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="School UUID"
-          />
-        </div>
-        {error && (
-          <p className="inline-alert" role="alert">
-            {error}
-          </p>
-        )}
-      </section>
+      {error && (
+        <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
+          {error.response ? (
+            <WorkspaceError
+              message={getApiErrorMessage(error, 'Unable to load results')}
+              onRetry={load}
+            />
+          ) : (
+            <WorkspaceOffline onRetry={load} />
+          )}
+        </section>
+      )}
 
       <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
         <div className="section-heading">
@@ -129,8 +136,8 @@ export default function ResultsDashboard() {
           </label>
 
           <div style={{ gridColumn: '1 / -1' }}>
-            <button className="primary-button" disabled={!schoolId} type="submit">
-              Process or recalculate
+            <button className="primary-button" disabled={processing || !schoolId} type="submit">
+              {processing ? 'Processing…' : 'Process or recalculate'}
             </button>
           </div>
         </form>
@@ -145,8 +152,13 @@ export default function ResultsDashboard() {
           <span className="status-chip">{results.length} records</span>
         </div>
 
-        {results.length === 0 ? (
-          <p className="empty-state">No processed results found.</p>
+        {loading ? (
+          <WorkspaceLoading message="Loading results…" />
+        ) : results.length === 0 ? (
+          <WorkspaceEmpty
+            title="No processed results found"
+            message="Enter an examination ID above and process or load results."
+          />
         ) : (
           <div className="result-list">
             {results.map((item) => (

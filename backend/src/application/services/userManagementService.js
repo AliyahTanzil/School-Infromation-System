@@ -37,7 +37,9 @@ export async function getUser(id, tenantId, includeDeleted = false) {
 
 export async function createUser(input, actorId, tenantId, requestContext = {}) {
   const email = input.email.toLowerCase();
-  const existing = await prisma.user.findFirst({ where: { email } });
+  // Scope the duplicate-email check to the authenticated tenant so the conflict
+  // response cannot be used to confirm that an email exists in another school.
+  const existing = await prisma.user.findFirst({ where: { email, tenantId } });
   const passwordHash = await passwordService.hashPassword(input.password);
   if (existing && !existing.deletedAt)
     throw new ConflictError('A user with this email already exists');

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import { useAuth } from './context/AuthContext.jsx';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function FeedbackWorkspace() {
   const { user } = useAuth();
@@ -133,14 +134,13 @@ export default function FeedbackWorkspace() {
           ))}
         </select>
       </section>
-      {error && (
-        <p className="error-state" role="alert">
-          {error}
-        </p>
-      )}
-      {busy && <p className="loading-state">Loading feedback…</p>}
+      {error && <WorkspaceError message={getApiErrorMessage(error, 'Unable to load feedback')} />}
+      {busy && <WorkspaceLoading message="Loading feedback…" />}
       {!busy && assignmentId && !grades.length && (
-        <p className="empty-state">No released feedback is available yet.</p>
+        <WorkspaceEmpty
+          title="No feedback yet"
+          message="No released feedback is available for this assignment."
+        />
       )}
       {grades.map((row) => (
         <article className="panel" key={row.id}>

@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function PaymentGatewayDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [intents, setIntents] = useState([]);
   const [health, setHealth] = useState(null);
   const [message, setMessage] = useState('');
@@ -19,7 +27,7 @@ export default function PaymentGatewayDashboard() {
       setIntents(intentResponse.data.data ?? []);
       setHealth(healthResponse.data.data ?? null);
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load Monime payments.');
+      setMessage(getApiErrorMessage(error, 'Unable to load Monime payments.'));
     }
   }, [headers, schoolId]);
   useEffect(() => {
@@ -56,6 +64,16 @@ export default function PaymentGatewayDashboard() {
       );
     }
   };
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 lg:px-8">
       <div className="mx-auto max-w-7xl">
@@ -81,16 +99,6 @@ export default function PaymentGatewayDashboard() {
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="text-lg font-semibold">Start invoice payment</h2>
           <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={pay}>
-            <input
-              required
-              className="rounded-xl bg-slate-800 p-3"
-              placeholder="School UUID"
-              value={schoolId}
-              onChange={(event) => {
-                setSchoolId(event.target.value);
-                sessionStorage.setItem('schoolId', event.target.value);
-              }}
-            />
             <input
               required
               className="rounded-xl bg-slate-800 p-3"

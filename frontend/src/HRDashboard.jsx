@@ -2,12 +2,20 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BriefcaseBusiness, CalendarDays, CircleDollarSign, Users } from 'lucide-react';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const emptyEmployee = { employeeNumber: '', firstName: '', lastName: '', email: '' };
 const emptyLeave = { employeeId: '', leaveType: '', startsAt: '', endsAt: '', reason: '' };
 
 export default function HRDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [data, setData] = useState({
     employees: 0,
     pendingLeave: 0,
@@ -36,7 +44,7 @@ export default function HRDashboard() {
       setEmployees(people.data.data ?? []);
       setLeaveRequests(requests.data.data ?? []);
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load HR data.');
+      setMessage(getApiErrorMessage(error, 'Unable to load HR data.'));
     }
   }, [schoolId]);
   useEffect(() => void load(), [load]);
@@ -49,7 +57,7 @@ export default function HRDashboard() {
       setMessage('HR record saved.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to save the HR record.');
+      setMessage(getApiErrorMessage(error, 'Unable to save the HR record.'));
     }
   };
   const decide = async (id, status) => {
@@ -57,7 +65,7 @@ export default function HRDashboard() {
       await api.patch(`/hr/leave-requests/${id}`, { status }, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to decide this request.');
+      setMessage(getApiErrorMessage(error, 'Unable to decide this request.'));
     }
   };
   const finalize = async (id) => {
@@ -65,9 +73,19 @@ export default function HRDashboard() {
       await api.post(`/hr/payroll-runs/${id}/finalize`, {}, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to finalize payroll.');
+      setMessage(getApiErrorMessage(error, 'Unable to finalize payroll.'));
     }
   };
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
 
   return (
     <main className="min-h-screen bg-slate-950 px-5 py-8 text-slate-100 lg:px-10">
@@ -86,20 +104,6 @@ export default function HRDashboard() {
             ← Back to administration
           </Link>
         </header>
-        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <label>
-            School context{' '}
-            <input
-              className="ml-3 rounded-lg bg-slate-800 p-2"
-              value={schoolId}
-              placeholder="School UUID"
-              onChange={(event) => {
-                setSchoolId(event.target.value.trim());
-                sessionStorage.setItem('schoolId', event.target.value.trim());
-              }}
-            />
-          </label>
-        </section>
         {message && (
           <p role="status" className="mt-5 rounded-xl border border-indigo-700 p-3">
             {message}

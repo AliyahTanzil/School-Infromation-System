@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function SubjectManagement() {
   const [saving, setSaving] = useState(false);
@@ -17,11 +18,11 @@ export default function SubjectManagement() {
     classAssignments: [],
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       const [subjectResponse, classResponse] = await Promise.all([
         api.get('/subjects'),
@@ -30,7 +31,7 @@ export default function SubjectManagement() {
       setSubjects(subjectResponse.data.data ?? []);
       setClasses(classResponse.data.data?.items ?? []);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to load subjects'));
+      setError(requestError);
     } finally {
       setLoading(false);
     }
@@ -42,7 +43,7 @@ export default function SubjectManagement() {
 
   const create = async (event) => {
     event.preventDefault();
-    setError('');
+    setError(null);
     setSaving(true);
     try {
       const payload = { ...form, code: form.code || undefined };
@@ -52,7 +53,7 @@ export default function SubjectManagement() {
       setForm({ code: '', name: '', description: '', classAssignments: [] });
       await load();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to save subject'));
+      setError(requestError);
     } finally {
       setSaving(false);
     }
@@ -72,7 +73,7 @@ export default function SubjectManagement() {
   };
   const remove = async () => {
     setSaving(true);
-    setError('');
+    setError(null);
     try {
       await api.delete('/subjects/' + deleting.id);
       if (editingId === deleting.id) {
@@ -82,7 +83,7 @@ export default function SubjectManagement() {
       setDeleting(null);
       await load();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to delete subject'));
+      setError(requestError);
     } finally {
       setSaving(false);
     }
@@ -137,11 +138,12 @@ export default function SubjectManagement() {
       </section>
 
       <section className="data-panel" style={{ marginBottom: '1.5rem' }}>
-        {loading && <p className="loading-state">Loading subjects…</p>}
+        {loading && <WorkspaceLoading message="Loading subjects…" />}
         {error && (
-          <p className="inline-alert" role="alert">
-            {error}
-          </p>
+          <WorkspaceError
+            message={getApiErrorMessage(error, 'Unable to load subjects')}
+            onRetry={load}
+          />
         )}
       </section>
 
@@ -197,7 +199,10 @@ export default function SubjectManagement() {
           <fieldset className="form-field" style={{ gridColumn: '1 / -1' }}>
             <legend className="form-field__label">Classes (select at least one)</legend>
             {classes.length === 0 && (
-              <p className="empty-state">Create a class before creating a subject.</p>
+              <WorkspaceEmpty
+                title="No classes yet"
+                message="Create a class before creating a subject."
+              />
             )}
             <div className="result-list">
               {classes.map((klass) => {
@@ -268,7 +273,7 @@ export default function SubjectManagement() {
         </div>
 
         {!loading && subjects.length === 0 && !error && (
-          <p className="empty-state">No subjects found.</p>
+          <WorkspaceEmpty title="No subjects found" message="Add a subject using the form above." />
         )}
         {subjects.length > 0 && (
           <div className="result-list">

@@ -101,7 +101,8 @@ export async function changePassword(req, res) {
   await authService.changePassword({
     userId: req.user.id,
     sessionId: req.auth.sessionId,
-    ...req.body,
+    currentPassword: req.body.currentPassword,
+    newPassword: req.body.newPassword,
     context,
   });
   res.status(200).json({ success: true, data: { message: 'Password changed' } });

@@ -82,6 +82,8 @@ import analyticsRouter from '../presentation/http/routes/analyticsRoutes.js';
 import searchRouter from '../presentation/http/routes/searchRoutes.js';
 // @ts-expect-error Single-school route is implemented in the active JavaScript module layer.
 import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.js';
+// @ts-expect-error Data import router is implemented in the active JavaScript module layer.
+import importRouter from '../presentation/http/routes/importRoutes.js';
 
 export function isCorsOriginAllowed(origin?: string): boolean {
   if (!origin) return true;
@@ -241,6 +243,8 @@ export const createApp = () => {
   app.use('/api/v1/lms/search', searchRouter);
   app.use('/api/search', searchRouter);
   app.use('/api/v1/search', searchRouter);
+  app.use('/api/import', importRouter);
+  app.use('/api/v1/import', importRouter);
   app.use('/api/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));
   app.use('/api/v1/ai-intelligence', featureUnavailableRoutes('AI intelligence', 'AI-001'));
   app.get('/', (_request, response) => {

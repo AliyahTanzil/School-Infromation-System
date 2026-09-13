@@ -3,6 +3,7 @@ import { Check, Plus, Search, Send, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function Gradebook() {
   const [classrooms, setClassrooms] = useState([]);
@@ -235,18 +236,17 @@ export default function Gradebook() {
           <Plus /> New rubric
         </button>
       </section>
-      {error && (
-        <p className="error-state" role="alert">
-          {error}
-        </p>
-      )}
-      {busy && <p className="loading-state">Loading gradebook…</p>}
+      {error && <WorkspaceError message={getApiErrorMessage(error, 'Unable to load gradebook')} />}
+      {busy && <WorkspaceLoading message="Loading gradebook…" />}
       {!busy && !visible.length && (
-        <p className="empty-state">
-          {assignmentId
-            ? 'No submissions are ready for grading.'
-            : 'Select a classroom and assignment to begin.'}
-        </p>
+        <WorkspaceEmpty
+          title={assignmentId ? 'No submissions ready' : 'Select an assignment'}
+          message={
+            assignmentId
+              ? 'No submissions are ready for grading.'
+              : 'Select a classroom and assignment to begin grading.'
+          }
+        />
       )}
       {!!visible.length && (
         <section className="gradebook-table-wrap">

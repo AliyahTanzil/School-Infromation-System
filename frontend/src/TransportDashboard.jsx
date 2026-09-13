@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const emptyVehicle = { vehicleNumber: '', registrationNumber: '', type: '', capacity: 1 };
 const emptyDriver = { name: '', phone: '', licenseNumber: '' };
 const emptyRoute = { code: '', name: '', stops: '' };
 
 export default function TransportDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [overview, setOverview] = useState({
     vehicles: 0,
     drivers: 0,
@@ -42,7 +50,7 @@ export default function TransportDashboard() {
       setTrips(t.data.data ?? []);
       setMessage('');
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load transport data.');
+      setMessage(getApiErrorMessage(error, 'Unable to load transport data.'));
     }
   }, [schoolId]);
   useEffect(() => void load(), [load]);
@@ -54,7 +62,7 @@ export default function TransportDashboard() {
       setMessage('Transport record saved.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to save transport record.');
+      setMessage(getApiErrorMessage(error, 'Unable to save transport record.'));
     }
   };
   const status = async (id, value) => {
@@ -62,7 +70,7 @@ export default function TransportDashboard() {
       await api.patch(`/transport/vehicles/${id}/status`, { status: value }, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to update vehicle.');
+      setMessage(getApiErrorMessage(error, 'Unable to update vehicle.'));
     }
   };
   const inspect = async (id) => {
@@ -75,7 +83,7 @@ export default function TransportDashboard() {
       setMessage('Inspection recorded.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to record inspection.');
+      setMessage(getApiErrorMessage(error, 'Unable to record inspection.'));
     }
   };
   const routePayload = {
@@ -86,6 +94,16 @@ export default function TransportDashboard() {
       .map((name, index) => ({ name: name.trim(), sequence: index + 1 }))
       .filter((row) => row.name),
   };
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
       <div className="mx-auto max-w-7xl">
@@ -99,21 +117,6 @@ export default function TransportDashboard() {
             ← Back to administration
           </Link>
         </header>
-        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <label>
-            School context{' '}
-            <input
-              className="ml-3 rounded bg-slate-800 p-2"
-              placeholder="School UUID"
-              value={schoolId}
-              onChange={(event) => {
-                const value = event.target.value.trim();
-                setSchoolId(value);
-                sessionStorage.setItem('schoolId', value);
-              }}
-            />
-          </label>
-        </section>
         {message && (
           <p role="status" className="mt-5 rounded-xl border border-cyan-700 p-3">
             {message}

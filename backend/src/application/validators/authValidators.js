@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { MAX_OPAQUE_TOKEN_LENGTH } from '../../shared/utils/tokenUtils.js';
 
 /**
  * Zod schemas for every auth endpoint. These enforce shape/format only.
@@ -8,7 +9,7 @@ import { z } from 'zod';
 
 const email = z.string().trim().toLowerCase().email('A valid email address is required').max(320);
 const password = z.string().min(1, 'Password is required').max(128);
-const requiredToken = z.string().trim().min(1, 'Token is required');
+const requiredToken = z.string().max(MAX_OPAQUE_TOKEN_LENGTH).trim().min(1, 'Token is required');
 
 export const registerSchema = z.object({
   body: z.object({
@@ -46,7 +47,7 @@ export const loginSchema = z.object({
 export const refreshSchema = z.object({
   body: z
     .object({
-      refreshToken: z.string().trim().min(1).optional(),
+      refreshToken: requiredToken.optional(),
     })
     .default({}),
 });
@@ -63,10 +64,12 @@ export const resetPasswordSchema = z.object({
 });
 
 export const changePasswordSchema = z.object({
-  body: z.object({
-    currentPassword: z.string().min(1, 'Current password is required'),
-    newPassword: password,
-  }),
+  body: z
+    .object({
+      currentPassword: z.string().min(1, 'Current password is required').max(128),
+      newPassword: password,
+    })
+    .strict(),
 });
 
 export const verifyEmailSchema = z.object({
@@ -78,7 +81,7 @@ export const resendVerificationSchema = z.object({
 });
 
 export const sessionIdParamSchema = z.object({
-  params: z.object({ id: z.string().uuid('A valid session id is required') }),
+  params: z.object({ id: z.string().uuid('A valid session id is required') }).strict(),
 });
 
 export default {

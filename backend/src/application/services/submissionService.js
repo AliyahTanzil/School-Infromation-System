@@ -2,6 +2,7 @@ import prisma from '../../infrastructure/orm/prismaClient.js';
 import AuthorizationError from '../../shared/errors/AuthorizationError.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
 import ValidationError from '../../shared/errors/ValidationError.js';
+import ConflictError from '../../shared/errors/ConflictError.js';
 
 const owned = ({ tenantId, schoolId }) => ({ tenantId, schoolId });
 const isAdministrator = (access = {}) =>
@@ -141,20 +142,41 @@ export async function saveVersion(scope, userId, access, data) {
 }
 
 export async function updateStatus(scope, id, userId, access, status) {
-  const submission = await prisma.studentSubmission.findFirst({
-    where: { id, ...owned(scope), studentId: userId },
-    include: { assignment: true },
-  });
-  if (!submission) throw new NotFoundError('Submission not found');
-  await requireAssignment(scope, submission.assignmentId, userId, access, { studentOnly: true });
-  if (submission.status !== 'SUBMITTED' || status !== 'DRAFT') {
-    throw new ValidationError(`Submission cannot move from ${submission.status} to ${status}`);
-  }
-  if (submission.assignment.status !== 'PUBLISHED') {
-    throw new ValidationError('This assignment no longer accepts retractions');
-  }
-  return prisma.studentSubmission.update({
-    where: { id },
-    data: { status: 'DRAFT', submittedAt: null },
-  });
+  return prisma.$transaction(
+    async (tx) => {
+      const where = { id, ...owned(scope), studentId: userId };
+      const submission = await tx.studentSubmission.findFirst({
+        where,
+        include: { assignment: true },
+      });
+      if (!submission) throw new NotFoundError('Submission not found');
+      await requireAssignment(
+        scope,
+        submission.assignmentId,
+        userId,
+        access,
+        { studentOnly: true },
+        tx
+      );
+      if (submission.status !== 'SUBMITTED' || status !== 'DRAFT') {
+        throw new ValidationError(`Submission cannot move from ${submission.status} to ${status}`);
+      }
+      if (submission.assignment.status !== 'PUBLISHED') {
+        throw new ValidationError('This assignment no longer accepts retractions');
+      }
+      const changed = await tx.studentSubmission.updateMany({
+        where: {
+          ...where,
+          assignmentId: submission.assignmentId,
+          status: 'SUBMITTED',
+          assignment: { is: { ...owned(scope), status: 'PUBLISHED' } },
+        },
+        data: { status: 'DRAFT', submittedAt: null },
+      });
+      if (changed.count !== 1)
+        throw new ConflictError('Submission changed; reload before retracting');
+      return tx.studentSubmission.findFirst({ where });
+    },
+    { isolationLevel: 'Serializable' }
+  );
 }

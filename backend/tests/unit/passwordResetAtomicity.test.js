@@ -6,7 +6,7 @@ const { resetPassword } = await import('../../src/application/services/authServi
 const { default: passwords } = await import('../../src/infrastructure/hash/passwordService.js');
 mock.method(passwords, 'hashPassword', async () => 'new-password-hash');
 
-function fixture({ failure, unavailable = false, lostRace = false } = {}) {
+function fixture({ failure, unavailable = false, lostRace = false, account = 'present' } = {}) {
   let state = {
     password: 'old-password-hash',
     used: false,
@@ -46,10 +46,14 @@ function fixture({ failure, unavailable = false, lostRace = false } = {}) {
         },
       },
       user: {
-        update: async ({ where, data }) => {
+        updateMany: async ({ where, data }) => {
           assert.equal(where.id, 'owner');
+          assert.equal(where.deletedAt, null);
+          assert.deepEqual(Object.keys(data), ['passwordHash']);
+          if (account !== 'present') return { count: 0 };
           if (failure === 'password') throw Error('password failed');
           draft.password = data.passwordHash;
+          return { count: 1 };
         },
       },
       refreshToken: {
@@ -99,7 +103,12 @@ for (const failure of ['password', 'invalidate', 'tokens', 'sessions', 'audit'])
   });
 }
 
-for (const options of [{ unavailable: true }, { lostRace: true }]) {
+for (const options of [
+  { unavailable: true },
+  { lostRace: true },
+  { account: 'deleted' },
+  { account: 'missing' },
+]) {
   test(`invalid or competing reset cannot replace credentials (${JSON.stringify(options)})`, async () => {
     const state = fixture(options);
     const before = globalThis.structuredClone(state());

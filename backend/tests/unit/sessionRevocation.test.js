@@ -3,7 +3,36 @@ import test from 'node:test';
 
 const db = { $on() {} };
 globalThis.__prisma = db;
-const { revoke, revokeAll } = await import('../../src/application/services/sessionService.js');
+const { revoke, revokeAll, list } =
+  await import('../../src/application/services/sessionService.js');
+
+test('missing or malformed identity cannot query or revoke sessions', async () => {
+  let databaseCalls = 0;
+  db.$transaction = async () => {
+    databaseCalls += 1;
+  };
+  db.userSession = {
+    findMany: async () => {
+      databaseCalls += 1;
+      return [];
+    },
+  };
+  for (const identity of [undefined, null, '', '   ', 42, {}, []]) {
+    for (const operation of [
+      () => revoke({ userId: identity, sessionId: 'one' }),
+      () => revoke({ userId: 'owner', sessionId: identity }),
+      () => revokeAll({ userId: identity }),
+      () => list({ userId: identity }),
+    ]) {
+      await assert.rejects(operation(), (error) => {
+        assert.equal(error.code, 'AUTHENTICATION_ERROR');
+        assert.equal(error.statusCode, 401);
+        return true;
+      });
+    }
+  }
+  assert.equal(databaseCalls, 0);
+});
 
 function fixture(failure) {
   let state = {

@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
-import useSchoolSelection from './hooks/useSchoolSelection.js';
+import { WorkspaceLoading } from './components/WorkspaceStates.jsx';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
 import { examinationNextTask } from './examinationGuidance.js';
 import ExaminationCandidates from './ExaminationCandidates.jsx';
 import ExaminationSchedules from './ExaminationSchedules.jsx';
@@ -12,16 +13,15 @@ const requestHeaders = (schoolId) => ({
 });
 export default function ExaminationsDashboard() {
   const {
-    schools,
     schoolId,
-    setSchoolId,
-    loading: schoolsLoading,
-    error: schoolsError,
-    retry,
-  } = useSchoolSelection();
+    schoolName,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ name: '', code: '' });
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -35,7 +35,7 @@ export default function ExaminationsDashboard() {
     async (signal) => {
       if (!schoolId) return;
       setLoading(true);
-      setError('');
+      setError(null);
       try {
         const { data } = await api.get('/examinations', {
           headers: requestHeaders(schoolId),
@@ -44,9 +44,8 @@ export default function ExaminationsDashboard() {
         if (signal?.aborted) return;
         if (!Array.isArray(data.data)) throw new Error('Unexpected examination response');
         setItems(data.data);
-        sessionStorage.setItem('schoolId', schoolId);
       } catch (reason) {
-        if (!signal?.aborted) setError(getApiErrorMessage(reason, 'Unable to load examinations'));
+        if (!signal?.aborted) setError(reason);
       } finally {
         if (!signal?.aborted) setLoading(false);
       }
@@ -103,7 +102,7 @@ export default function ExaminationsDashboard() {
       setNotice(
         nextStatus === 'IN_PROGRESS'
           ? `${item.name} is now in progress. Conduct the scheduled examinations before moving to marking.`
-          : `${item.name} is now in marking. Prepare and check each candidate’s subject marks.`
+          : `${item.name} is now in marking. Prepare and check each candidateâ€™s subject marks.`
       );
       await load();
     } catch (reason) {
@@ -147,47 +146,33 @@ export default function ExaminationsDashboard() {
         <div className="section-heading">
           <div>
             <h2>School context</h2>
-            <p>Select the school whose examinations you want to prepare.</p>
+            <p>Prepare examinations for your configured school.</p>
           </div>
         </div>
-        <div className="form-field" style={{ maxWidth: '26rem' }}>
-          <label className="form-field__label" htmlFor="examination-school">
-            School
-          </label>
-          <select
-            id="examination-school"
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            disabled={schoolsLoading || loading || saving}
-          >
-            <option value="">{schoolsLoading ? 'Loading schools…' : 'Select your school'}</option>
-            {schools.map((school) => (
-              <option key={school.id} value={school.id}>
-                {school.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {schoolsError && (
+        {schoolLoading && <WorkspaceLoading message="Loading school details..." />}
+        {schoolError && (
           <p role="alert">
-            {schoolsError}{' '}
-            <button className="secondary-button" onClick={retry}>
-              Retry schools
+            {schoolError}{' '}
+            <button className="secondary-button" onClick={retrySchool}>
+              Retry school details
             </button>
           </p>
         )}
-        {!schoolsLoading && !schoolsError && !schools.length && (
+        {schoolId && <p>School: {schoolName}</p>}
+        {!schoolLoading && !schoolError && !schoolId && (
           <p>
             <Link className="underline" to="/school-setup">
               Create your school
             </Link>{' '}
-            before setting up examinations.
+            before continuing.
           </p>
         )}
         {notice && <p role="status">{notice}</p>}
         {error && (
           <p className="inline-alert" role="alert">
-            {error}
+            {typeof error === 'string'
+              ? error
+              : getApiErrorMessage(error, 'Unable to load examinations')}
             <button
               className="secondary-button"
               disabled={loading || saving}
@@ -317,7 +302,7 @@ export default function ExaminationsDashboard() {
         </div>
 
         {loading ? (
-          <p className="loading-state">Loading examinations…</p>
+          <p className="loading-state">Loading examinationsâ€¦</p>
         ) : error || !schoolId ? null : items.length === 0 ? (
           <div className="empty-state">
             <h3>No examinations configured</h3>

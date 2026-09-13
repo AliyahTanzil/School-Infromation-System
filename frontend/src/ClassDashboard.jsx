@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const currentYear = new Date().getFullYear();
 const academicYears = Array.from({ length: 16 }, (_, index) => currentYear - 5 + index);
@@ -17,7 +18,7 @@ export default function ClassDashboard() {
   const [classes, setClasses] = useState([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [form, setForm] = useState({
     name: '',
     code: '',
@@ -29,12 +30,12 @@ export default function ClassDashboard() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       const response = await api.get('/classes', { params: { query } });
       setClasses(response.data.data?.items ?? []);
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setError(requestError);
     } finally {
       setLoading(false);
     }
@@ -46,7 +47,7 @@ export default function ClassDashboard() {
 
   const create = async (event) => {
     event.preventDefault();
-    setError('');
+    setError(null);
     try {
       await api.post('/classes', {
         ...form,
@@ -63,7 +64,7 @@ export default function ClassDashboard() {
       });
       await load();
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError));
+      setError(requestError);
     }
   };
 
@@ -119,11 +120,12 @@ export default function ClassDashboard() {
           </label>
         </div>
 
-        {loading && <p className="loading-state">Loading classes…</p>}
+        {loading && <WorkspaceLoading message="Loading classes…" />}
         {error && (
-          <p className="inline-alert" role="alert">
-            {error}
-          </p>
+          <WorkspaceError
+            message={getApiErrorMessage(error, 'Unable to load classes')}
+            onRetry={load}
+          />
         )}
       </section>
 
@@ -211,7 +213,10 @@ export default function ClassDashboard() {
         </div>
 
         {!loading && classes.length === 0 && !error && (
-          <p className="empty-state">No classes found.</p>
+          <WorkspaceEmpty
+            title="No classes found"
+            message="Create a class section using the form above."
+          />
         )}
         {classes.length > 0 && (
           <div className="result-list">

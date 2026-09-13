@@ -12,7 +12,11 @@ import AuthenticationError from '../../shared/errors/AuthenticationError.js';
 import ConflictError from '../../shared/errors/ConflictError.js';
 import RateLimitError from '../../shared/errors/RateLimitError.js';
 import logger from '../../infrastructure/logger/index.js';
-import { generateOpaqueToken, hashToken } from '../../shared/utils/tokenUtils.js';
+import {
+  generateOpaqueToken,
+  hashToken,
+  isValidOpaqueTokenInput,
+} from '../../shared/utils/tokenUtils.js';
 import { toPublicUser } from '../dtos/userDto.js';
 import sessionService from './sessionService.js';
 import activationService from './activationService.js';
@@ -39,17 +43,28 @@ function lockoutWindowStart() {
   return new Date(Date.now() - config.auth.lockoutMinutes * 60 * 1000);
 }
 
+function requireIdentity(value) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new AuthenticationError('Authenticated session identity is required');
+  }
+}
+
 async function issueSingleUseToken(repository, { userId, context, ttlMs }) {
   const token = generateOpaqueToken(48);
   const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + ttlMs);
-  await repository.invalidateAllForUser(userId);
-  await repository.create({
-    tokenHash,
-    userId,
-    expiresAt,
-    requestedIp: context?.ipAddress,
-    userAgent: context?.userAgent,
+  await prisma.$transaction(async (tx) => {
+    await repository.invalidateAllForUser(userId, tx);
+    await repository.create(
+      {
+        tokenHash,
+        userId,
+        expiresAt,
+        requestedIp: context?.ipAddress,
+        userAgent: context?.userAgent,
+      },
+      tx
+    );
   });
   return token;
 }
@@ -380,10 +395,11 @@ export async function forgotPassword({ email, context }) {
 }
 
 export async function resetPassword({ token, password, context }) {
-  const tokenHash = hashToken(token);
-  const record = await passwordResetTokenRepository.findByHash(tokenHash);
   const invalid = () =>
     new AuthenticationError('This password reset link is invalid or has expired');
+  if (!isValidOpaqueTokenInput(token)) throw invalid();
+  const tokenHash = hashToken(token);
+  const record = await passwordResetTokenRepository.findByHash(tokenHash);
   if (!record || record.usedAt || record.expiresAt.getTime() <= Date.now()) throw invalid();
 
   // Hash before opening the transaction; the conditional write rechecks expiry and use.
@@ -391,7 +407,8 @@ export async function resetPassword({ token, password, context }) {
   await prisma.$transaction(async (tx) => {
     const consumed = await passwordResetTokenRepository.consume(record.id, tx);
     if (consumed.count !== 1) throw invalid();
-    await userRepository.setPasswordHash(record.userId, passwordHash, tx);
+    const changed = await userRepository.setPasswordHash(record.userId, passwordHash, tx);
+    if (changed.count !== 1) throw invalid();
     await passwordResetTokenRepository.invalidateAllForUser(record.userId, tx);
     await refreshTokenRepository.revokeAllForUser(record.userId, 'password_reset', tx);
     await sessionRepository.revokeAllForUser(record.userId, 'password_reset', tx);
@@ -408,6 +425,8 @@ export async function resetPassword({ token, password, context }) {
 }
 
 export async function changePassword({ userId, sessionId, currentPassword, newPassword, context }) {
+  requireIdentity(userId);
+  requireIdentity(sessionId);
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AuthenticationError('Account not found');
@@ -456,6 +475,9 @@ export async function changePassword({ userId, sessionId, currentPassword, newPa
 // ─── Email verification ──────────────────────────────────────────────────────
 
 export async function verifyEmail({ token, context }) {
+  if (!isValidOpaqueTokenInput(token)) {
+    throw new AuthenticationError('This verification link is invalid or has expired');
+  }
   const tokenHash = hashToken(token);
   return prisma.$transaction(async (tx) => {
     const invalid = () =>
@@ -507,6 +529,7 @@ export async function resendVerification({ email, context }) {
 // ─── Current user ────────────────────────────────────────────────────────────
 
 export async function getCurrentUser({ userId }) {
+  requireIdentity(userId);
   const user = await userRepository.findById(userId);
   if (!user) {
     throw new AuthenticationError('Account not found');

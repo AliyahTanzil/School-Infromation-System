@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 export default function BoardingDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [overview, setOverview] = useState({
     dormitories: 0,
     rooms: 0,
@@ -36,7 +44,7 @@ export default function BoardingDashboard() {
       setAllocations(l.data.data ?? []);
       setMessage('');
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load boarding data.');
+      setMessage(getApiErrorMessage(error, 'Unable to load boarding data.'));
     }
   }, [schoolId]);
   useEffect(() => void load(), [load]);
@@ -48,7 +56,7 @@ export default function BoardingDashboard() {
       setMessage('Boarding record saved.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to save boarding record.');
+      setMessage(getApiErrorMessage(error, 'Unable to save boarding record.'));
     }
   };
   const decide = async (id, status) => {
@@ -56,7 +64,7 @@ export default function BoardingDashboard() {
       await api.patch(`/boarding/applications/${id}`, { status }, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to decide application.');
+      setMessage(getApiErrorMessage(error, 'Unable to decide application.'));
     }
   };
   const checkout = async (id) => {
@@ -64,7 +72,7 @@ export default function BoardingDashboard() {
       await api.post(`/boarding/allocations/${id}/checkout`, {}, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to check out student.');
+      setMessage(getApiErrorMessage(error, 'Unable to check out student.'));
     }
   };
   const availableBeds = dormitories.flatMap((d) =>
@@ -74,6 +82,16 @@ export default function BoardingDashboard() {
         .map((b) => ({ ...b, label: `${d.name} / ${r.roomNumber} / Bed ${b.bedNumber}` }))
     )
   );
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
       <div className="mx-auto max-w-7xl">
@@ -89,21 +107,6 @@ export default function BoardingDashboard() {
             ← Back to administration
           </Link>
         </header>
-        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <label>
-            School context{' '}
-            <input
-              className="ml-3 rounded bg-slate-800 p-2"
-              placeholder="School UUID"
-              value={schoolId}
-              onChange={(event) => {
-                const value = event.target.value.trim();
-                setSchoolId(value);
-                sessionStorage.setItem('schoolId', value);
-              }}
-            />
-          </label>
-        </section>
         {message && (
           <p role="status" className="mt-5 rounded-xl border border-indigo-700 p-3">
             {message}

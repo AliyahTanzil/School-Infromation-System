@@ -1,5 +1,13 @@
 import crypto from 'node:crypto';
 
+export const MAX_OPAQUE_TOKEN_LENGTH = 512;
+
+export function isValidOpaqueTokenInput(token) {
+  return (
+    typeof token === 'string' && token.length <= MAX_OPAQUE_TOKEN_LENGTH && token.trim().length > 0
+  );
+}
+
 /**
  * Cryptographic helpers for opaque tokens (refresh tokens, email verification
  * tokens, password reset tokens).

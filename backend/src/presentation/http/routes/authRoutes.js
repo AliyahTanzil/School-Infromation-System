@@ -11,6 +11,7 @@ import {
   changePasswordSchema,
   verifyEmailSchema,
   resendVerificationSchema,
+  sessionIdParamSchema,
 } from '../../../application/validators/authValidators.js';
 import {
   loginLimiter,
@@ -58,6 +59,11 @@ router.post(
 );
 router.get('/me', authenticate, authController.me);
 router.get('/sessions', authenticate, authController.listSessions);
-router.delete('/sessions/:id', authenticate, authController.revokeSession);
+router.delete(
+  '/sessions/:id',
+  authenticate,
+  validate(sessionIdParamSchema),
+  authController.revokeSession
+);
 
 export default router;

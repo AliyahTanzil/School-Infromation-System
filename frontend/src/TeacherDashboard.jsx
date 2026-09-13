@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AlertTriangle,
   BookOpen,
   BriefcaseBusiness,
   CalendarDays,
@@ -15,17 +14,24 @@ import {
 } from 'lucide-react';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import {
+  WorkspaceLoading,
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceForbidden,
+  WorkspaceOffline,
+} from './components/WorkspaceStates.jsx';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
   const [classrooms, setClassrooms] = useState([]);
   const [assignments, setAssignments] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
-    setError('');
+    setError(null);
     try {
       const [teacherRes, classroomsRes] = await Promise.allSettled([
         api.get('/teachers/me'),
@@ -35,7 +41,7 @@ export default function TeacherDashboard() {
       if (teacherRes.status === 'fulfilled') {
         setTeacher(teacherRes.value.data.data);
       } else {
-        setError(getApiErrorMessage(teacherRes.reason, 'Unable to load teacher profile'));
+        setError(teacherRes.reason);
       }
 
       if (classroomsRes.status === 'fulfilled') {
@@ -56,7 +62,7 @@ export default function TeacherDashboard() {
         }
       }
     } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to load teacher workspace'));
+      setError(requestError);
     } finally {
       setLoading(false);
     }
@@ -65,6 +71,44 @@ export default function TeacherDashboard() {
   useEffect(() => {
     loadDashboard();
   }, [loadDashboard]);
+
+  // ── Full-page states ───────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <main className="teacher-shell">
+        <WorkspaceLoading message="Loading your teacher workspace…" />
+      </main>
+    );
+  }
+
+  if (error && !teacher) {
+    const status = error.response?.status;
+    if (status === 403) {
+      return (
+        <main className="teacher-shell">
+          <WorkspaceForbidden message="Your account does not have an active teacher profile. Contact your school administrator." />
+        </main>
+      );
+    }
+    if (!error.response) {
+      return (
+        <main className="teacher-shell">
+          <WorkspaceOffline onRetry={loadDashboard} />
+        </main>
+      );
+    }
+    return (
+      <main className="teacher-shell">
+        <WorkspaceError
+          message={getApiErrorMessage(error, 'Unable to load teacher workspace')}
+          onRetry={loadDashboard}
+        />
+      </main>
+    );
+  }
+
+  // ── Partial-load banner (teacher loaded but some data failed) ──────────────
 
   return (
     <main className="teacher-shell">
@@ -89,12 +133,6 @@ export default function TeacherDashboard() {
           <RefreshCw size={15} /> Refresh
         </button>
       </header>
-
-      {error && (
-        <section className="teacher-panel" role="alert" style={{ marginBottom: '16px' }}>
-          <AlertTriangle size={18} /> {error}
-        </section>
-      )}
 
       {teacher && (
         <section className="teacher-stats">
@@ -146,12 +184,12 @@ export default function TeacherDashboard() {
           </a>
         </div>
 
-        {loading && <p className="loading-state">Loading classrooms...</p>}
+        {loading && <WorkspaceLoading message="Loading classrooms…" />}
         {!loading && classrooms.length === 0 && (
-          <p className="empty-state">
-            No digital classrooms found for your account. Create or join a classroom to manage
-            classwork.
-          </p>
+          <WorkspaceEmpty
+            title="No digital classrooms"
+            message="Create or join a classroom to manage classwork and track learner progress."
+          />
         )}
         {!loading && classrooms.length > 0 && (
           <div

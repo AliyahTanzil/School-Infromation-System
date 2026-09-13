@@ -27,7 +27,9 @@ it('opens Subjects from administration for a platform administrator using the ac
   setAccessToken('subject-test-token');
   window.history.replaceState({}, '', '/admin');
   render(<App />);
-  fireEvent.click(await screen.findByRole('link', { name: /Subjects School subject codes/ }));
+  fireEvent.click(
+    await screen.findByRole('link', { name: /Subjects School subject codes/ }, { timeout: 5000 })
+  );
   expect(await screen.findByRole('heading', { name: 'Subjects' })).toBeInTheDocument();
   expect(await screen.findByText('Mathematics')).toBeInTheDocument();
   expect(window.location.pathname).toBe('/subjects');

@@ -3,6 +3,7 @@ import { Search, UserPlus, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const emptyForm = {
   firstName: '',
@@ -18,7 +19,7 @@ export default function StudentDashboard() {
   const [totalStudents, setTotalStudents] = useState(0);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -26,7 +27,7 @@ export default function StudentDashboard() {
   const loadStudents = useCallback(
     async (signal) => {
       setLoading(true);
-      setError('');
+      setError(null);
       try {
         const response = await api.get('/students', {
           params: { search: query },
@@ -35,8 +36,8 @@ export default function StudentDashboard() {
         setStudents(response.data.data?.items ?? []);
         setTotalStudents(response.data.data?.pagination?.total ?? 0);
       } catch (requestError) {
-        if (requestError.name !== 'CanceledError') {
-          setError(getApiErrorMessage(requestError, 'Unable to load students'));
+        if (requestError.name !== 'CanceledError' && requestError.code !== 'ERR_CANCELED') {
+          setError(requestError);
         }
       } finally {
         setLoading(false);
@@ -120,14 +121,20 @@ export default function StudentDashboard() {
           </button>
         </div>
 
-        {loading && <p className="loading-state">Loading students...</p>}
-        {error && (
-          <p className="error-state" role="alert">
-            {error}
-          </p>
+        {loading && <WorkspaceLoading message="Loading students…" />}
+        {!loading && error && (
+          <WorkspaceError
+            message={getApiErrorMessage(error, 'Unable to load students')}
+            onRetry={() => loadStudents(new AbortController().signal)}
+          />
         )}
         {!loading && !error && students.length === 0 && (
-          <p className="empty-state">No students found. Add a new record to begin enrollment.</p>
+          <WorkspaceEmpty
+            title="No students found"
+            message={
+              query ? 'Try adjusting your search query.' : 'Add a new record to begin enrollment.'
+            }
+          />
         )}
         {!loading && !error && students.length > 0 && (
           <div className="student-list">

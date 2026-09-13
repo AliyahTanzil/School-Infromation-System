@@ -1,12 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const emptyAsset = { assetNumber: '', name: '', serialNumber: '', category: '', location: '' };
 const emptyItem = { sku: '', name: '', category: '', quantity: 0, reorderLevel: 0 };
 
 export default function AssetInventoryDashboard() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [overview, setOverview] = useState({ assets: 0, inventory: 0, lowStock: 0 });
   const [assets, setAssets] = useState([]);
   const [items, setItems] = useState([]);
@@ -34,7 +42,7 @@ export default function AssetInventoryDashboard() {
       setItems(inventoryRows.data.data ?? []);
       setMessage('');
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to load assets and inventory.');
+      setMessage(getApiErrorMessage(error, 'Unable to load assets and inventory.'));
     }
   }, [schoolId]);
   useEffect(() => void load(), [load]);
@@ -47,7 +55,7 @@ export default function AssetInventoryDashboard() {
       setMessage('Record saved.');
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to save record.');
+      setMessage(getApiErrorMessage(error, 'Unable to save record.'));
     }
   };
   const changeStatus = async (id, status) => {
@@ -55,9 +63,19 @@ export default function AssetInventoryDashboard() {
       await api.patch(`/assets-inventory/assets/${id}/status`, { status }, { headers });
       await load();
     } catch (error) {
-      setMessage(error.response?.data?.error?.message || 'Unable to change asset status.');
+      setMessage(getApiErrorMessage(error, 'Unable to change asset status.'));
     }
   };
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
 
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-8 text-slate-100">
@@ -72,21 +90,6 @@ export default function AssetInventoryDashboard() {
             ← Back to administration
           </Link>
         </header>
-        <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-4">
-          <label>
-            School context{' '}
-            <input
-              className="ml-3 rounded bg-slate-800 p-2"
-              placeholder="School UUID"
-              value={schoolId}
-              onChange={(event) => {
-                const value = event.target.value.trim();
-                setSchoolId(value);
-                sessionStorage.setItem('schoolId', value);
-              }}
-            />
-          </label>
-        </section>
         {message && (
           <p role="status" className="mt-5 rounded-xl border border-indigo-700 p-3">
             {message}

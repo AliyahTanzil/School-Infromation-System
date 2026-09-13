@@ -1,44 +1,91 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from './context/AuthContext.jsx';
+import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import {
+  WorkspaceLoading,
+  WorkspaceEmpty,
+  WorkspaceError,
+  WorkspaceForbidden,
+  WorkspaceOffline,
+} from './components/WorkspaceStates.jsx';
 
 export default function ParentPortal() {
   const { user } = useAuth();
   const [portal, setPortal] = useState(null);
-  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadPortal = useCallback(async (signal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get('/parents/me', { signal });
+      setPortal(response.data.data);
+    } catch (err) {
+      if (err.name !== 'CanceledError' && err.code !== 'ERR_CANCELED') {
+        setError(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/parents/me', {
-      credentials: 'include',
-      headers: { Authorization: `Bearer ${sessionStorage.getItem('accessToken') ?? ''}` },
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(
-            payload.error?.message ?? payload.message ?? 'Unable to load parent portal'
-          );
-        }
-        return payload;
-      })
-      .then(({ data }) => setPortal(data))
-      .catch((reason) => {
-        if (reason.name !== 'AbortError') setError(reason.message);
-      });
+    loadPortal(controller.signal);
     return () => controller.abort();
-  }, [user?.id]);
-  if (error)
+  }, [loadPortal, user?.id]);
+
+  // ── State resolution ───────────────────────────────────────────────────────
+
+  if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 p-8 text-white">
-        <p>{error}</p>
+      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+        <div className="mx-auto max-w-4xl">
+          <WorkspaceLoading message="Loading your family portal…" />
+        </div>
       </main>
     );
-  if (!portal)
+  }
+
+  if (error) {
+    const status = error.response?.status;
+
+    if (status === 403) {
+      return (
+        <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+          <div className="mx-auto max-w-4xl">
+            <WorkspaceForbidden message="Your account is not linked to a parent profile. Contact your school administrator." />
+          </div>
+        </main>
+      );
+    }
+
+    if (!error.response) {
+      return (
+        <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+          <div className="mx-auto max-w-4xl">
+            <WorkspaceOffline onRetry={() => loadPortal(new AbortController().signal)} />
+          </div>
+        </main>
+      );
+    }
+
     return (
-      <main className="min-h-screen bg-slate-950 p-8 text-white">
-        <p>Loading parent portal...</p>
+      <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
+        <div className="mx-auto max-w-4xl">
+          <WorkspaceError
+            message={getApiErrorMessage(error, 'Unable to load parent portal')}
+            onRetry={() => loadPortal(new AbortController().signal)}
+          />
+        </div>
       </main>
     );
+  }
+
+  // ── Successful render ──────────────────────────────────────────────────────
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
       <section className="mx-auto max-w-6xl space-y-8">
@@ -47,19 +94,18 @@ export default function ParentPortal() {
             Family portal
           </p>
           <h1 className="mt-2 text-4xl font-bold">
-            Welcome, {portal.profile?.firstName ?? 'Parent'}
+            Welcome, {portal?.profile?.firstName ?? 'Parent'}
           </h1>
           <p className="mt-2 text-slate-400">
             Secure, read-only access to your linked children&apos;s school information.
           </p>
         </header>
-        {portal.children.length === 0 ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8">
-            <h2 className="text-xl font-semibold">No linked children yet</h2>
-            <p className="mt-2 text-slate-400">
-              Ask your school administrator to verify a student relationship.
-            </p>
-          </div>
+
+        {!portal?.children?.length ? (
+          <WorkspaceEmpty
+            title="No linked children yet"
+            message="Ask your school administrator to verify a student relationship."
+          />
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
             {portal.children.map(({ student, relationship, permissions }) => (
@@ -80,20 +126,22 @@ export default function ParentPortal() {
                     {student.status}
                   </span>
                 </div>
+
                 <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
                   <div className="rounded-xl bg-slate-800 p-3">
                     <span className="text-slate-400">Academic</span>
                     <strong className="mt-1 block">
-                      {permissions.academic ? 'Available' : 'Restricted'}
+                      {permissions?.academic ? 'Available' : 'Restricted'}
                     </strong>
                   </div>
                   <div className="rounded-xl bg-slate-800 p-3">
                     <span className="text-slate-400">Attendance</span>
                     <strong className="mt-1 block">
-                      {permissions.attendance ? 'Available' : 'Restricted'}
+                      {permissions?.attendance ? 'Available' : 'Restricted'}
                     </strong>
                   </div>
                 </div>
+
                 <div className="mt-4 flex justify-end">
                   <a
                     href={`/parent-classroom?studentId=${student.id}`}

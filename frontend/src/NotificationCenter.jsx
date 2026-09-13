@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Check, CheckCheck, Clock3, Settings2, ShieldCheck } from 'lucide-react';
 import api from './api/auth.js';
+import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 const channelLabels = {
   IN_APP: 'In-app inbox',
@@ -10,8 +13,7 @@ const channelLabels = {
   PUSH: 'Push notification',
 };
 const defaults = { IN_APP: true, EMAIL: false, SMS: false, PUSH: false };
-const errorText = (error, fallback) =>
-  error.response?.data?.error?.message || error.response?.data?.message || fallback;
+const errorText = (error, fallback) => getApiErrorMessage(error, fallback);
 const contentOf = (delivery) => {
   const payload = delivery.event?.payload ?? {};
   return {
@@ -23,7 +25,12 @@ const contentOf = (delivery) => {
 };
 
 export default function NotificationCenter() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('schoolId') ?? '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
   const [deliveries, setDeliveries] = useState([]);
   const [preferences, setPreferences] = useState(defaults);
   const [selectedId, setSelectedId] = useState(null);
@@ -106,6 +113,16 @@ export default function NotificationCenter() {
     }
   };
 
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details" />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Complete school setup before using this workspace."
+      />
+    );
+
   return (
     <main className="notification-shell">
       <Link to="/admin" className="notification-ghost">
@@ -122,21 +139,6 @@ export default function NotificationCenter() {
         </span>
       </header>
 
-      <section className="preference-card">
-        <label>
-          School context
-          <input
-            value={schoolId}
-            placeholder="School UUID"
-            onChange={(event) => {
-              const value = event.target.value.trim();
-              setSchoolId(value);
-              sessionStorage.setItem('schoolId', value);
-            }}
-          />
-        </label>
-        {!schoolId && <p>Enter the school UUID used by your current administration workspace.</p>}
-      </section>
       {message && (
         <p role="status" className="notification-toast">
           {message}
