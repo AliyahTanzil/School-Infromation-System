@@ -71,15 +71,10 @@ function start(command, args, env = {}) {
   return child;
 }
 
-const isV0 =
-  process.env.SAIS_RUNTIME === 'v0' ||
-  process.env.VERCEL ||
-  process.env.V0 ||
-  process.env.V0_RUNTIME_URL ||
-  process.env.V0_DEV_APP_URL;
-const backendPort =
-  (Number(process.env.BACKEND_PORT) !== 0 && process.env.BACKEND_PORT) ||
-  String(manifest?.backend || (isV0 ? 44555 : 4000));
+// Keep the backend off the first preview port. v0 may not expose its runtime
+// marker to child processes, so relying on `isV0` here can make the preview
+// open the API health response instead of the Vite application.
+const backendPort = process.env.BACKEND_PORT || String(manifest?.backend || 44555);
 if (!(await backendIsReady(backendPort))) {
   const backend = start('npm', ['run', 'dev', '-w', 'backend'], { PORT: backendPort });
   console.log(
