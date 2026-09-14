@@ -29,16 +29,15 @@ export default function HRDashboard() {
   const [leave, setLeave] = useState(emptyLeave);
   const [payroll, setPayroll] = useState({ periodStart: '', periodEnd: '' });
   const [message, setMessage] = useState('');
-  const headers = { 'x-school-id': schoolId };
 
   const load = useCallback(async () => {
     if (!schoolId) return;
     setMessage('');
     try {
       const [summary, people, requests] = await Promise.all([
-        api.get('/hr/dashboard', { headers: { 'x-school-id': schoolId } }),
-        api.get('/hr/employees', { headers: { 'x-school-id': schoolId } }),
-        api.get('/hr/leave-requests', { headers: { 'x-school-id': schoolId } }),
+        api.get('/hr/dashboard'),
+        api.get('/hr/employees'),
+        api.get('/hr/leave-requests'),
       ]);
       setData(summary.data.data);
       setEmployees(people.data.data ?? []);
@@ -52,7 +51,7 @@ export default function HRDashboard() {
   const submit = async (event, path, body, reset) => {
     event.preventDefault();
     try {
-      await api.post(path, body, { headers });
+      await api.post(path, body);
       reset();
       setMessage('HR record saved.');
       await load();
@@ -62,7 +61,7 @@ export default function HRDashboard() {
   };
   const decide = async (id, status) => {
     try {
-      await api.patch(`/hr/leave-requests/${id}`, { status }, { headers });
+      await api.patch(`/hr/leave-requests/${id}`, { status });
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to decide this request.'));
@@ -70,7 +69,7 @@ export default function HRDashboard() {
   };
   const finalize = async (id) => {
     try {
-      await api.post(`/hr/payroll-runs/${id}/finalize`, {}, { headers });
+      await api.post(`/hr/payroll-runs/${id}/finalize`, {});
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to finalize payroll.'));

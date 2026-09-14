@@ -45,8 +45,7 @@ export default function FinanceDashboard() {
       setState('ready');
       return undefined;
     }
-    const config = { headers: { 'x-school-id': schoolId } };
-    Promise.all([api.get('/finance/summary', config), api.get('/finance/invoices', config)])
+    Promise.all([api.get('/finance/summary'), api.get('/finance/invoices')])
       .then(([summaryResponse, invoicesResponse]) => {
         if (!active) return;
         setSummary(summaryResponse.data?.data ?? null);
@@ -105,10 +104,10 @@ export default function FinanceDashboard() {
     setMessage('');
     try {
       const payload = { ...form, feeId: form.feeId || undefined, dueAt: form.dueAt || undefined };
-      await api.post('/finance/invoices', payload, { headers: { 'x-school-id': schoolId } });
+      await api.post('/finance/invoices', payload);
       const [{ data: summaryData }, { data: invoiceData }] = await Promise.all([
-        api.get('/finance/summary', { headers: { 'x-school-id': schoolId } }),
-        api.get('/finance/invoices', { headers: { 'x-school-id': schoolId } }),
+        api.get('/finance/summary'),
+        api.get('/finance/invoices'),
       ]);
       setSummary(summaryData.data);
       setInvoices(invoiceData.data);

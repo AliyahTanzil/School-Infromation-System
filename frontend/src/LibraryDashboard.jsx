@@ -18,14 +18,13 @@ export default function LibraryDashboard() {
   const [message, setMessage] = useState('');
   const [book, setBook] = useState({ title: '', author: '', isbn: '', category: '' });
   const [loan, setLoan] = useState({ copyId: '', borrowerId: '', dueAt: '' });
-  const headers = { 'x-school-id': schoolId };
   const load = useCallback(async () => {
     if (!schoolId || !libraryId) return;
     try {
       const [o, b, l] = await Promise.all([
-        api.get(`/libraries/${libraryId}/overview`, { headers: { 'x-school-id': schoolId } }),
-        api.get(`/libraries/${libraryId}/books`, { headers: { 'x-school-id': schoolId } }),
-        api.get(`/libraries/${libraryId}/loans`, { headers: { 'x-school-id': schoolId } }),
+        api.get(`/libraries/${libraryId}/overview`),
+        api.get(`/libraries/${libraryId}/books`),
+        api.get(`/libraries/${libraryId}/loans`),
       ]);
       setOverview(o.data.data);
       setBooks(b.data.data ?? []);
@@ -37,7 +36,7 @@ export default function LibraryDashboard() {
   useEffect(() => void load(), [load]);
   const createLibrary = async () => {
     try {
-      const { data } = await api.post('/libraries', { name: 'School Library' }, { headers });
+      const { data } = await api.post('/libraries', { name: 'School Library' });
       setLibraryId(data.data.id);
       setMessage('Library created.');
     } catch (error) {
@@ -47,7 +46,7 @@ export default function LibraryDashboard() {
   const submit = async (event, path, body, reset) => {
     event.preventDefault();
     try {
-      await api.post(path, body, { headers });
+      await api.post(path, body);
       reset();
       await load();
     } catch (error) {
@@ -58,7 +57,7 @@ export default function LibraryDashboard() {
     const barcode = window.prompt('Enter the physical copy barcode');
     if (!barcode) return;
     try {
-      await api.post(`/libraries/${libraryId}/books/${bookId}/copies`, { barcode }, { headers });
+      await api.post(`/libraries/${libraryId}/books/${bookId}/copies`, { barcode });
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to add copy.'));

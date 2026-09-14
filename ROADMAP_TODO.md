@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 operational context checkpoint (2026-09-14), Codex: finance, HR and library reads/mutations no longer send school header overrides. Existing authenticated school readiness and server ownership guards remain in force. Seven focused operational/context tests, targeted ESLint, formatting and frontend production build pass. Other module migrations and SEC-001 acceptance remain open; no live data changes.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove obsolete school headers from finance, HR and library requests, preserving authenticated context and server-side ownership; verify and publish.
+
 SEC-001 examination context checkpoint (2026-09-14), Codex: removed school header overrides from examination lifecycle, candidate registration/roster reads and subject scheduling. Existing server-resolved school context, selectors and cancellation remain intact. All 24 examination frontend tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open; no live data changes.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove obsolete examination school headers across lifecycle, scheduling and candidate workflows while preserving authenticated context, request cancellation and scoped selectors. Verify and publish.
