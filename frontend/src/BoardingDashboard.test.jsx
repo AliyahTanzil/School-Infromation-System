@@ -28,11 +28,7 @@ it('waits for school recovery and ignores a school cached by a previous session'
     data: { data: path === '/school' ? { school: { id: 'current-school' } } : [] },
   }));
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
-  await waitFor(() =>
-    expect(api.get).toHaveBeenCalledWith('/boarding/overview', {
-      headers: { 'x-school-id': 'current-school' },
-    })
-  );
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith('/boarding/overview'));
   expect(screen.queryByPlaceholderText('School UUID')).not.toBeInTheDocument();
 });
 

@@ -2,6 +2,8 @@
 
 Updated: 2026-09-14
 
+Boarding/transport/inventory checkpoint (2026-09-14): removed obsolete client school headers from these operational workflows. Fifteen focused tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open.
+
 Operational context checkpoint (2026-09-14): removed client school headers from finance, HR and library requests. Seven focused tests, targeted ESLint, formatting and frontend production build pass. Other module migrations and remaining SEC-001 acceptance stay open.
 
 Examination context checkpoint (2026-09-14): examination lifecycle, scheduling and candidate workflows now omit client school headers and retain authenticated scope. All 24 examination tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open.

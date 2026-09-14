@@ -241,6 +241,10 @@ expiry, or another transaction lifecycle failure.
 School context is read from `GET /api/school` (also `/api/v1/school`). `/school-setup` is a
 frontend page, not an API endpoint.
 
+**Boarding, transport and inventory** also omit client school headers on reads
+and mutations. Existing authenticated school readiness gates the workspace;
+server-side school ownership and administrator guards still govern operations.
+
 **Finance, HR and library** requests omit client school headers. Their existing
 school-readiness checks gate the workspace, and the APIs resolve authenticated
 school ownership for reads and mutations, including invoice creation, leave,

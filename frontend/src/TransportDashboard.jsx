@@ -32,16 +32,15 @@ export default function TransportDashboard() {
   const [route, setRoute] = useState(emptyRoute);
   const [trip, setTrip] = useState({ routeId: '', vehicleId: '', driverId: '', scheduledAt: '' });
   const [message, setMessage] = useState('');
-  const headers = { 'x-school-id': schoolId };
   const load = useCallback(async () => {
     if (!schoolId) return;
     try {
       const [o, v, d, r, t] = await Promise.all([
-        api.get('/transport/overview', { headers: { 'x-school-id': schoolId } }),
-        api.get('/transport/vehicles', { headers: { 'x-school-id': schoolId } }),
-        api.get('/transport/drivers', { headers: { 'x-school-id': schoolId } }),
-        api.get('/transport/routes', { headers: { 'x-school-id': schoolId } }),
-        api.get('/transport/trips', { headers: { 'x-school-id': schoolId } }),
+        api.get('/transport/overview'),
+        api.get('/transport/vehicles'),
+        api.get('/transport/drivers'),
+        api.get('/transport/routes'),
+        api.get('/transport/trips'),
       ]);
       setOverview(o.data.data);
       setVehicles(v.data.data ?? []);
@@ -57,7 +56,7 @@ export default function TransportDashboard() {
   const create = async (event, path, body, reset) => {
     event.preventDefault();
     try {
-      await api.post(path, body, { headers });
+      await api.post(path, body);
       reset();
       setMessage('Transport record saved.');
       await load();
@@ -67,7 +66,7 @@ export default function TransportDashboard() {
   };
   const status = async (id, value) => {
     try {
-      await api.patch(`/transport/vehicles/${id}/status`, { status: value }, { headers });
+      await api.patch(`/transport/vehicles/${id}/status`, { status: value });
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to update vehicle.'));
@@ -75,11 +74,10 @@ export default function TransportDashboard() {
   };
   const inspect = async (id) => {
     try {
-      await api.post(
-        `/transport/vehicles/${id}/inspections`,
-        { passed: true, notes: 'Routine inspection completed' },
-        { headers }
-      );
+      await api.post(`/transport/vehicles/${id}/inspections`, {
+        passed: true,
+        notes: 'Routine inspection completed',
+      });
       setMessage('Inspection recorded.');
       await load();
     } catch (error) {

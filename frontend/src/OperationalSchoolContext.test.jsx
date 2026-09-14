@@ -4,6 +4,9 @@ import { afterEach, expect, it, vi } from 'vitest';
 import FinanceDashboard from './FinanceDashboard.jsx';
 import HRDashboard from './HRDashboard.jsx';
 import LibraryDashboard from './LibraryDashboard.jsx';
+import BoardingDashboard from './BoardingDashboard.jsx';
+import TransportDashboard from './TransportDashboard.jsx';
+import AssetInventoryDashboard from './AssetInventoryDashboard.jsx';
 import api from './api/auth.js';
 
 vi.mock('./api/auth.js', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -35,6 +38,9 @@ it.each([
   ['Finance', FinanceDashboard],
   ['HR', HRDashboard],
   ['Library', LibraryDashboard],
+  ['Boarding', BoardingDashboard],
+  ['Transport', TransportDashboard],
+  ['Inventory', AssetInventoryDashboard],
 ])('keeps %s unavailable without a configured school', async (_name, Component) => {
   sessionStorage.setItem('sais.schoolId', 'foreign-school');
   api.get.mockResolvedValue({ data: { data: { school: null } } });
@@ -46,6 +52,9 @@ it.each([
 it.each([
   ['Finance', FinanceDashboard, '/finance/invoices'],
   ['HR', HRDashboard, '/hr/employees'],
+  ['Boarding', BoardingDashboard, '/boarding/dormitories'],
+  ['Transport', TransportDashboard, '/transport/vehicles'],
+  ['Inventory', AssetInventoryDashboard, '/assets-inventory/assets'],
 ])(
   'loads %s using authenticated scope without request school overrides',
   async (_name, Component, path) => {

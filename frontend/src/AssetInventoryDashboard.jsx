@@ -27,15 +27,14 @@ export default function AssetInventoryDashboard() {
     reference: '',
   });
   const [message, setMessage] = useState('');
-  const headers = { 'x-school-id': schoolId };
 
   const load = useCallback(async () => {
     if (!schoolId) return;
     try {
       const [summary, assetRows, inventoryRows] = await Promise.all([
-        api.get('/assets-inventory/overview', { headers: { 'x-school-id': schoolId } }),
-        api.get('/assets-inventory/assets', { headers: { 'x-school-id': schoolId } }),
-        api.get('/assets-inventory/inventory', { headers: { 'x-school-id': schoolId } }),
+        api.get('/assets-inventory/overview'),
+        api.get('/assets-inventory/assets'),
+        api.get('/assets-inventory/inventory'),
       ]);
       setOverview(summary.data.data);
       setAssets(assetRows.data.data ?? []);
@@ -50,7 +49,7 @@ export default function AssetInventoryDashboard() {
   const create = async (event, path, body, reset) => {
     event.preventDefault();
     try {
-      await api.post(path, body, { headers });
+      await api.post(path, body);
       reset();
       setMessage('Record saved.');
       await load();
@@ -60,7 +59,7 @@ export default function AssetInventoryDashboard() {
   };
   const changeStatus = async (id, status) => {
     try {
-      await api.patch(`/assets-inventory/assets/${id}/status`, { status }, { headers });
+      await api.patch(`/assets-inventory/assets/${id}/status`, { status });
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to change asset status.'));

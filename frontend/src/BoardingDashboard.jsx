@@ -28,15 +28,14 @@ export default function BoardingDashboard() {
   const [application, setApplication] = useState({ studentId: '', notes: '' });
   const [allocation, setAllocation] = useState({ studentId: '', bedId: '' });
   const [message, setMessage] = useState('');
-  const headers = { 'x-school-id': schoolId };
   const load = useCallback(async () => {
     if (!schoolId) return;
     try {
       const [o, d, a, l] = await Promise.all([
-        api.get('/boarding/overview', { headers: { 'x-school-id': schoolId } }),
-        api.get('/boarding/dormitories', { headers: { 'x-school-id': schoolId } }),
-        api.get('/boarding/applications', { headers: { 'x-school-id': schoolId } }),
-        api.get('/boarding/allocations', { headers: { 'x-school-id': schoolId } }),
+        api.get('/boarding/overview'),
+        api.get('/boarding/dormitories'),
+        api.get('/boarding/applications'),
+        api.get('/boarding/allocations'),
       ]);
       setOverview(o.data.data);
       setDormitories(d.data.data ?? []);
@@ -51,7 +50,7 @@ export default function BoardingDashboard() {
   const create = async (event, path, body, reset) => {
     event.preventDefault();
     try {
-      await api.post(path, body, { headers });
+      await api.post(path, body);
       reset();
       setMessage('Boarding record saved.');
       await load();
@@ -61,7 +60,7 @@ export default function BoardingDashboard() {
   };
   const decide = async (id, status) => {
     try {
-      await api.patch(`/boarding/applications/${id}`, { status }, { headers });
+      await api.patch(`/boarding/applications/${id}`, { status });
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to decide application.'));
@@ -69,7 +68,7 @@ export default function BoardingDashboard() {
   };
   const checkout = async (id) => {
     try {
-      await api.post(`/boarding/allocations/${id}/checkout`, {}, { headers });
+      await api.post(`/boarding/allocations/${id}/checkout`, {});
       await load();
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to check out student.'));
