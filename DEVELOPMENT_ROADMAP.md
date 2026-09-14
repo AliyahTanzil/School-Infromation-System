@@ -2,6 +2,8 @@
 
 Updated: 2026-09-14
 
+Live-learning checkpoint (2026-09-14): migrated live learning to authenticated school context and removed cached school headers. Failed session/recording reads now offer retry, and selecting a session no longer causes a reload. Five focused tests, targeted ESLint, formatting and frontend production build pass. Remaining single-school migrations and live acceptance remain open under SEC-001.
+
 GitHub delivery checkpoint (2026-09-14): corrected the teacher self-profile owner-bypass regression while preserving teacher administration access, and updated the navigation test for Email setup. Backend: 743 passed, one intentional database skip; frontend: 131 passed. Repository lint, changed-file formatting, Prisma generation, backend compilation/runtime smoke checks and frontend production build pass. SEC-001 remains IN_PROGRESS for live browser/recovery delivery and remaining acceptance work. Timetable staffing stays paused.
 
 Assessment classroom checkpoint (2026-09-14): replaced the assessment Classroom UUID input with accessible classroom choices, including loading/retry/empty states. Switching classrooms clears quiz/attempt/editor state and prevents old responses from restoring the previous selection. Six focused tests, targeted ESLint, formatting and frontend production build pass. The existing 100-classroom API limit and remaining workspace migrations remain open; SEC-001 remains IN_PROGRESS.

@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 live-learning checkpoint (2026-09-14), Codex: Live learning now waits for authenticated school context, ignores cached school identity and omits school header overrides. Session or recording read failures show a retryable error instead of silently appearing empty; selection no longer triggers redundant reloads, and refreshed lists reconcile the selected session. Five focused workspace/context tests, targeted ESLint, formatting and frontend production build pass. No backend or live data changes; SEC-001 remains IN_PROGRESS for remaining migrations and acceptance work.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Migrate live learning away from cached school identity, enforce context loading/recovery boundaries, and surface failed session/recording reads rather than presenting failed requests as empty data. Verify and publish this checkpoint.
+
 SEC-001 GitHub delivery checkpoint (2026-09-14), Codex: full verification found and fixed the teacher self-profile owner-bypass regression using explicit role membership, and updated the administration navigation expectation for Email setup. Backend: 743 passed, zero failed, one intentional database skip; frontend: 131 passed across 38 files. Repository lint, staged-file formatting/diff checks, Prisma generation, backend compilation/runtime copy and compiled-route smoke checks, and frontend production build pass. Frontend build/tests required outside-sandbox execution after esbuild directory-access failures. Live browser/recovery delivery and remaining SEC-001 acceptance are still outstanding; timetable staffing remains paused. Publication excludes editor status and local verification logs.
 
 SEC-001 delivery continuation (2026-09-14), Codex: IN_PROGRESS. Validate accumulated roadmap work for GitHub publication. Full frontend testing found one stale administration navigation expectation after adding Email setup; update that contract, normalize changed-file formatting, and complete backend/frontend verification before pushing.

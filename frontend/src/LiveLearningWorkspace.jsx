@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 function SessionRow({ session, selected, onSelect }) {
   const timeStr = session.scheduledAt
@@ -66,39 +68,46 @@ export default function LiveLearningWorkspace() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [schoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
 
-  const loadData = useCallback(async () => {
-    const headers = schoolId ? { 'x-school-id': schoolId } : {};
-    setLoading(true);
-    setError('');
-    try {
-      const [sessionsRes, recordingsRes] = await Promise.allSettled([
-        api.get('/lms/live-sessions', { headers }),
-        api.get('/lms/live-sessions/recordings', { headers }),
-      ]);
-
-      if (sessionsRes.status === 'fulfilled') {
-        const items = sessionsRes.value.data.data || [];
+  const loadData = useCallback(
+    async (signal) => {
+      if (schoolLoading || schoolError || !schoolId) return;
+      setLoading(true);
+      setError('');
+      try {
+        const [sessionsRes, recordingsRes] = await Promise.all([
+          api.get('/lms/live-sessions', { signal }),
+          api.get('/lms/live-sessions/recordings', { signal }),
+        ]);
+        if (signal?.aborted) return;
+        const items = sessionsRes.data.data || [];
         setSessions(items);
-        if (items.length > 0 && !selected) {
-          setSelected(items[0]);
-        }
+        setSelected((current) => items.find((item) => item.id === current?.id) ?? items[0] ?? null);
+        setRecordings(recordingsRes.data.data || []);
+      } catch (requestError) {
+        if (signal?.aborted) return;
+        setSessions([]);
+        setRecordings([]);
+        setSelected(null);
+        setJoined(false);
+        setError(getApiErrorMessage(requestError, 'Unable to load live learning data'));
+      } finally {
+        if (!signal?.aborted) setLoading(false);
       }
-
-      if (recordingsRes.status === 'fulfilled') {
-        setRecordings(recordingsRes.value.data.data || []);
-      }
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to load live learning data'));
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId, selected]);
+    },
+    [schoolId, schoolLoading, schoolError]
+  );
 
   useEffect(() => {
-    sessionStorage.setItem('sais.schoolId', schoolId);
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, [loadData, schoolId]);
 
   const filteredRecordings = useMemo(
@@ -122,6 +131,17 @@ export default function LiveLearningWorkspace() {
     }
     announce(`Joined ${session.title}`);
   };
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details..." />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Contact your school administrator to complete school setup."
+      />
+    );
+  if (error) return <WorkspaceError message={error} onRetry={() => loadData()} />;
 
   return (
     <main className="live-learning-shell">
@@ -170,7 +190,7 @@ export default function LiveLearningWorkspace() {
           </button>
         ))}
         <button
-          onClick={loadData}
+          onClick={() => loadData()}
           disabled={loading}
           className="live-sync"
           style={{
@@ -430,7 +450,7 @@ export default function LiveLearningWorkspace() {
         </span>
         <span>Need technical help? Contact your school administrator.</span>
       </footer>
-      {showDetails && (
+      {showDetails && selected && (
         <div className="live-modal" role="dialog" aria-modal="true">
           <div className="live-modal-card">
             <button

@@ -241,6 +241,12 @@ expiry, or another transaction lifecycle failure.
 School context is read from `GET /api/school` (also `/api/v1/school`). `/school-setup` is a
 frontend page, not an API endpoint.
 
+**Live learning** waits for this context before reading sessions and recordings,
+ignores `sais.schoolId`, and omits school header overrides. If either read fails,
+the workspace clears the displayed results and offers retry; an unavailable
+service is not presented as an empty schedule. Retry reloads both lists. Session
+selection is reconciled with refreshed records without triggering another read.
+
 The student **My work** workspace resolves this context before loading assignments
 or submissions. It ignores the legacy `sais.schoolId` session-storage value and
 does not send `x-school-id` on reads, saves or retractions; the API resolves school
