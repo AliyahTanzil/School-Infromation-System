@@ -5,9 +5,6 @@ import { getApiErrorMessage } from './api/errorMessage.js';
 import { useSchoolContext } from './hooks/useSchoolContext.js';
 import { WorkspaceLoading } from './components/WorkspaceStates.jsx';
 
-const headers = (schoolId) => ({
-  'x-school-id': schoolId,
-});
 const initialForm = {
   name: 'Standard grading policy',
   code: 'STANDARD',
@@ -45,7 +42,6 @@ export default function AcademicPolicyDashboard() {
       setError('');
       try {
         const { data } = await api.get('/academic-policies', {
-          headers: headers(schoolId),
           signal,
         });
         if (signal?.aborted) return;
@@ -89,7 +85,7 @@ export default function AcademicPolicyDashboard() {
     setError('');
     setSaving(true);
     try {
-      await api.post('/academic-policies', form, { headers: headers(schoolId) });
+      await api.post('/academic-policies', form);
       setMessage('Draft grading policy created. Review it before activation.');
       await load();
     } catch (reason) {
@@ -104,11 +100,10 @@ export default function AcademicPolicyDashboard() {
     setError('');
     setMessage('');
     try {
-      await api.patch(
-        `/academic-policies/${id}/status`,
-        { status: 'ACTIVE', reason: 'Approved by school administration' },
-        { headers: headers(schoolId) }
-      );
+      await api.patch(`/academic-policies/${id}/status`, {
+        status: 'ACTIVE',
+        reason: 'Approved by school administration',
+      });
       setMessage('Policy activated.');
       await load();
     } catch (reason) {

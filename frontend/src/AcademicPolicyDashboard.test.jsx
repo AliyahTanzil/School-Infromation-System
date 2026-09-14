@@ -53,8 +53,7 @@ it('uses the configured school and guides creation, activation, and examinations
   await screen.findByRole('link', { name: 'Next: Review and activate a draft' });
   expect(api.post).toHaveBeenCalledWith(
     '/academic-policies',
-    expect.objectContaining({ passMark: 50 }),
-    { headers: { 'x-school-id': 'school-1' } }
+    expect.objectContaining({ passMark: 50 })
   );
   await user.click(screen.getByRole('button', { name: 'Activate' }));
   expect(await screen.findByRole('link', { name: 'Continue to examinations' })).toHaveAttribute(
@@ -63,8 +62,7 @@ it('uses the configured school and guides creation, activation, and examinations
   );
   expect(api.patch).toHaveBeenCalledWith(
     '/academic-policies/policy-1/status',
-    expect.objectContaining({ status: 'ACTIVE' }),
-    { headers: { 'x-school-id': 'school-1' } }
+    expect.objectContaining({ status: 'ACTIVE' })
   );
 });
 
@@ -101,12 +99,7 @@ it('ignores a stale remembered school and uses authenticated school context', as
   show();
   await screen.findByText('School: Central School');
   expect(screen.queryByRole('combobox', { name: 'School' })).not.toBeInTheDocument();
-  expect(api.get).toHaveBeenCalledWith(
-    '/academic-policies',
-    expect.objectContaining({
-      headers: { 'x-school-id': 'school-1' },
-    })
-  );
+  expect(api.get).toHaveBeenCalledWith('/academic-policies', { signal: expect.any(AbortSignal) });
 });
 
 it('shows school lookup failure and retries without suggesting school creation', async () => {

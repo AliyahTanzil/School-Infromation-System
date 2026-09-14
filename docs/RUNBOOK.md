@@ -241,6 +241,10 @@ expiry, or another transaction lifecycle failure.
 School context is read from `GET /api/school` (also `/api/v1/school`). `/school-setup` is a
 frontend page, not an API endpoint.
 
+**Academic policies** uses that context for display and readiness. Policy list,
+creation and activation requests omit `x-school-id`; the API resolves school
+ownership and checks administrator access before executing the operation.
+
 **Student home** waits for authenticated school context, ignores cached
 `sais.schoolId` values, and omits school headers on learning requests. Failure of
 classroom, unread-count, assignment or calendar reads clears results and offers

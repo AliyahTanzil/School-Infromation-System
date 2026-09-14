@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 academic-policy context checkpoint (2026-09-14), Codex: removed obsolete school headers from policy reads, creation and activation. Existing authenticated context and school-admin API guards remain authoritative; UI school loading/retry and missing-school behavior are preserved. Seven focused policy/context tests, targeted ESLint, formatting and frontend production build pass. Remaining module header migrations and SEC-001 acceptance stay open; no live data changes.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove academic-policy school header overrides from reads, creation and activation; verify authenticated context boundaries and publish the checkpoint.
+
 SEC-001 student-home aggregation checkpoint (2026-09-14), Codex: assignments and calendar events now include every classroom returned by the accessible-classroom API, with a shared 30-day calendar interval and chronological event order. Reads run one classroom at a time (two requests concurrently); failures clear the aggregate and offer retry. Nine focused tests, targeted ESLint, formatting and frontend production build pass. The existing classroom API's 100-record limit and remaining SEC-001 acceptance remain open; no live data changes.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Aggregate student-home assignments and calendar records across returned accessible classrooms, retaining scoped reads, bounded concurrency and retryable failures. Verify and publish.

@@ -2,6 +2,8 @@
 
 Updated: 2026-09-14
 
+Academic-policy context checkpoint (2026-09-14): removed school header overrides from policy list/create/activation requests while retaining authenticated school context and administrator guards. Seven focused tests, targeted ESLint, formatting and frontend production build pass. Other module migrations and SEC-001 acceptance remain open.
+
 Student-home aggregation checkpoint (2026-09-14): removed the first-classroom-only restriction for work and calendar events. The dashboard aggregates every classroom returned by the scoped API, orders calendar events chronologically, and rejects partial results on failure. Nine focused tests, targeted ESLint, formatting and frontend production build pass. The API's existing 100-classroom cap and remaining SEC-001 acceptance stay open.
 
 Student-home checkpoint (2026-09-14): migrated student home to authenticated school context and removed cached school headers. Data failures now offer retry rather than silently showing empty learning data. Seven focused tests, targeted ESLint, formatting and frontend production build pass. Multi-classroom assignment/calendar aggregation and remaining SEC-001 acceptance stay open.
