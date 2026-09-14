@@ -64,18 +64,13 @@ it('saves a candidate class subject with a date converted from device time to UT
   });
   await user.click(screen.getByRole('button', { name: 'Save subject schedule' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
-  expect(api.post).toHaveBeenCalledWith(
-    '/examinations/exam-1/schedules',
-    {
-      classId: 'class-1',
-      subjectCode: 'MATH',
-      scheduledAt: new Date('2026-10-15T09:30').toISOString(),
-    },
-    { headers: { 'x-school-id': 'school-1' } }
-  );
+  expect(api.post).toHaveBeenCalledWith('/examinations/exam-1/schedules', {
+    classId: 'class-1',
+    subjectCode: 'MATH',
+    scheduledAt: new Date('2026-10-15T09:30').toISOString(),
+  });
   expect(api.get.mock.calls.filter(([path]) => path === '/classes/class-1')).toHaveLength(1);
-  for (const [, config] of api.get.mock.calls)
-    expect(config.headers['x-school-id']).toBe('school-1');
+  for (const [, config] of api.get.mock.calls) expect(config.headers).toBeUndefined();
   expect(onBusy.mock.calls).toEqual([[true], [false]]);
 });
 
@@ -99,8 +94,7 @@ it('prefills an existing schedule and clearly updates the same class and subject
   await user.click(screen.getByRole('button', { name: 'Update subject schedule' }));
   expect(api.post).toHaveBeenCalledWith(
     '/examinations/exam-1/schedules',
-    expect.objectContaining({ scheduledAt: new Date('2026-10-16T10:00').toISOString() }),
-    expect.anything()
+    expect.objectContaining({ scheduledAt: new Date('2026-10-16T10:00').toISOString() })
   );
 });
 
@@ -169,14 +163,10 @@ it('reviews saved preparation and schedules the exam using its school context', 
   await waitFor(() =>
     expect(onSaved).toHaveBeenCalledWith(expect.stringContaining('Examination scheduled.'))
   );
-  expect(api.patch).toHaveBeenCalledWith(
-    '/examinations/exam-1/status',
-    {
-      status: 'SCHEDULED',
-      reason: 'Candidate classes and subject schedules reviewed by school administration',
-    },
-    { headers: { 'x-school-id': 'school-1' } }
-  );
+  expect(api.patch).toHaveBeenCalledWith('/examinations/exam-1/status', {
+    status: 'SCHEDULED',
+    reason: 'Candidate classes and subject schedules reviewed by school administration',
+  });
   expect(screen.getByRole('status')).toHaveTextContent('Examination scheduled.');
   expect(
     screen.queryByRole('button', { name: 'Mark examination as scheduled' })

@@ -8,9 +8,6 @@ import { examinationNextTask } from './examinationGuidance.js';
 import ExaminationCandidates from './ExaminationCandidates.jsx';
 import ExaminationSchedules from './ExaminationSchedules.jsx';
 
-const requestHeaders = (schoolId) => ({
-  'x-school-id': schoolId,
-});
 export default function ExaminationsDashboard() {
   const {
     schoolId,
@@ -38,7 +35,6 @@ export default function ExaminationsDashboard() {
       setError(null);
       try {
         const { data } = await api.get('/examinations', {
-          headers: requestHeaders(schoolId),
           signal,
         });
         if (signal?.aborted) return;
@@ -71,7 +67,7 @@ export default function ExaminationsDashboard() {
     setNotice('');
     setSaving(true);
     try {
-      await api.post('/examinations', form, { headers: requestHeaders(schoolId) });
+      await api.post('/examinations', form);
       setForm({ name: '', code: '' });
       setNotice('Examination draft saved. Review its next step in the exam cycles below.');
       await load();
@@ -88,17 +84,13 @@ export default function ExaminationsDashboard() {
     setError('');
     setNotice('');
     try {
-      await api.patch(
-        `/examinations/${item.id}/status`,
-        {
-          status: nextStatus,
-          reason:
-            nextStatus === 'IN_PROGRESS'
-              ? 'School administration started the scheduled examination'
-              : 'Examinations completed; school administration opened marking',
-        },
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.patch(`/examinations/${item.id}/status`, {
+        status: nextStatus,
+        reason:
+          nextStatus === 'IN_PROGRESS'
+            ? 'School administration started the scheduled examination'
+            : 'Examinations completed; school administration opened marking',
+      });
       setNotice(
         nextStatus === 'IN_PROGRESS'
           ? `${item.name} is now in progress. Conduct the scheduled examinations before moving to marking.`

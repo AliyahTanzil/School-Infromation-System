@@ -241,6 +241,11 @@ expiry, or another transaction lifecycle failure.
 School context is read from `GET /api/school` (also `/api/v1/school`). `/school-setup` is a
 frontend page, not an API endpoint.
 
+**Examinations** omits `x-school-id` across examination lifecycle, candidate
+registration, class roster reads and subject scheduling. The backend resolves
+school context from the authenticated session; existing scoped selectors and
+request cancellation remain in place.
+
 **Academic policies** uses that context for display and readiness. Policy list,
 creation and activation requests omit `x-school-id`; the API resolves school
 ownership and checks administrator access before executing the operation.

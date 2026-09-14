@@ -53,16 +53,14 @@ it('registers an enrolled student with the selected school and refreshes saved p
   await user.selectOptions(screen.getByRole('combobox', { name: 'Enrolled student' }), 'student-1');
   await user.click(screen.getByRole('button', { name: 'Register candidate' }));
   await waitFor(() => expect(onSaved).toHaveBeenCalledTimes(1));
-  expect(api.post).toHaveBeenCalledWith(
-    '/examinations/exam-1/candidates',
-    { classId: 'class-1', studentId: 'student-1' },
-    { headers: { 'x-school-id': 'school-1' } }
-  );
+  expect(api.post).toHaveBeenCalledWith('/examinations/exam-1/candidates', {
+    classId: 'class-1',
+    studentId: 'student-1',
+  });
   expect(screen.getByText(/1 candidate\(s\) registered/)).toBeInTheDocument();
   expect(screen.queryByRole('option', { name: 'Ada Cole · S001' })).not.toBeInTheDocument();
   expect(onBusy.mock.calls).toEqual([[true], [false]]);
-  for (const [, config] of api.get.mock.calls)
-    expect(config.headers['x-school-id']).toBe('school-1');
+  for (const [, config] of api.get.mock.calls) expect(config.headers).toBeUndefined();
 });
 
 it('excludes registered candidates and inactive students from class choices', async () => {

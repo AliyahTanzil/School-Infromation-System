@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 examination context checkpoint (2026-09-14), Codex: removed school header overrides from examination lifecycle, candidate registration/roster reads and subject scheduling. Existing server-resolved school context, selectors and cancellation remain intact. All 24 examination frontend tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open; no live data changes.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove obsolete examination school headers across lifecycle, scheduling and candidate workflows while preserving authenticated context, request cancellation and scoped selectors. Verify and publish.
+
 SEC-001 academic-policy context checkpoint (2026-09-14), Codex: removed obsolete school headers from policy reads, creation and activation. Existing authenticated context and school-admin API guards remain authoritative; UI school loading/retry and missing-school behavior are preserved. Seven focused policy/context tests, targeted ESLint, formatting and frontend production build pass. Remaining module header migrations and SEC-001 acceptance stay open; no live data changes.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove academic-policy school header overrides from reads, creation and activation; verify authenticated context boundaries and publish the checkpoint.

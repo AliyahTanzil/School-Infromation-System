@@ -19,7 +19,7 @@ export default function ExaminationCandidates({ schoolId, examination, onSaved, 
   const [rosterRefresh, setRosterRefresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    const config = { headers: { 'x-school-id': schoolId }, signal: controller.signal };
+    const config = { signal: controller.signal };
     setLoading(true);
     setError('');
     async function load() {
@@ -69,7 +69,6 @@ export default function ExaminationCandidates({ schoolId, examination, onSaved, 
     if (classId) {
       api
         .get(`/classes/${classId}`, {
-          headers: { 'x-school-id': schoolId },
           signal: controller.signal,
         })
         .then(({ data }) => {
@@ -109,11 +108,7 @@ export default function ExaminationCandidates({ schoolId, examination, onSaved, 
     setSaving(true);
     onBusy(true);
     try {
-      await api.post(
-        `/examinations/${examination.id}/candidates`,
-        { classId, studentId },
-        { headers: { 'x-school-id': schoolId } }
-      );
+      await api.post(`/examinations/${examination.id}/candidates`, { classId, studentId });
       setCandidates((current) => [...current, { classId, studentId }]);
       setStudentId('');
       await onSaved();

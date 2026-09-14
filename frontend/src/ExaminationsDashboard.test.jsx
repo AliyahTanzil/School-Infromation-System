@@ -47,11 +47,7 @@ it('uses the configured school and updates next steps after draft creation', asy
   await user.type(screen.getByRole('textbox', { name: 'Examination code' }), 'TERM1');
   await user.click(screen.getByRole('button', { name: 'Create draft' }));
   await screen.findByText('Register candidates from the students actively enrolled in each class.');
-  expect(api.post).toHaveBeenCalledWith(
-    '/examinations',
-    { name: 'First term', code: 'TERM1' },
-    { headers: { 'x-school-id': 'school-1' } }
-  );
+  expect(api.post).toHaveBeenCalledWith('/examinations', { name: 'First term', code: 'TERM1' });
   expect(
     screen.queryByRole('link', { name: 'Next: Create your first examination draft' })
   ).not.toBeInTheDocument();
@@ -91,7 +87,7 @@ it('ignores a stale remembered school and uses authenticated school context', as
   expect(api.get).toHaveBeenCalledWith(
     '/examinations',
     expect.objectContaining({
-      headers: { 'x-school-id': 'school-1' },
+      signal: expect.any(AbortSignal),
     })
   );
 });
@@ -142,15 +138,13 @@ it('starts a scheduled examination and opens marking only after it is in progres
   await user.click(await screen.findByRole('button', { name: 'Start examination: First term' }));
   expect(api.patch).toHaveBeenCalledWith(
     '/examinations/exam-1/status',
-    expect.objectContaining({ status: 'IN_PROGRESS' }),
-    { headers: { 'x-school-id': 'school-1' } }
+    expect.objectContaining({ status: 'IN_PROGRESS' })
   );
   await user.click(await screen.findByRole('button', { name: 'Open marking: First term' }));
   await screen.findByText('MARKING');
   expect(api.patch).toHaveBeenLastCalledWith(
     '/examinations/exam-1/status',
-    expect.objectContaining({ status: 'MARKING' }),
-    { headers: { 'x-school-id': 'school-1' } }
+    expect.objectContaining({ status: 'MARKING' })
   );
   expect(
     screen.queryByRole('button', { name: /Start examination:|Open marking:/ })

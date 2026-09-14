@@ -31,7 +31,7 @@ export default function ExaminationSchedules({
   const [refresh, setRefresh] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
-    const config = { headers: { 'x-school-id': schoolId }, signal: controller.signal };
+    const config = { signal: controller.signal };
     setLoading(true);
     setError('');
     async function load() {
@@ -90,14 +90,10 @@ export default function ExaminationSchedules({
     setSaving(true);
     onBusy(true);
     try {
-      await api.patch(
-        `/examinations/${examination.id}/status`,
-        {
-          status: 'SCHEDULED',
-          reason: 'Candidate classes and subject schedules reviewed by school administration',
-        },
-        { headers: { 'x-school-id': schoolId } }
-      );
+      await api.patch(`/examinations/${examination.id}/status`, {
+        status: 'SCHEDULED',
+        reason: 'Candidate classes and subject schedules reviewed by school administration',
+      });
       setScheduled(true);
       await onSaved(
         'Examination scheduled. Confirm the candidate register and dates before the examination begins.'
@@ -125,11 +121,11 @@ export default function ExaminationSchedules({
     setSaving(true);
     onBusy(true);
     try {
-      await api.post(
-        `/examinations/${examination.id}/schedules`,
-        { classId, subjectCode, scheduledAt: date.toISOString() },
-        { headers: { 'x-school-id': schoolId } }
-      );
+      await api.post(`/examinations/${examination.id}/schedules`, {
+        classId,
+        subjectCode,
+        scheduledAt: date.toISOString(),
+      });
       await onSaved();
     } catch (reason) {
       setError(getApiErrorMessage(reason, 'Unable to save subject schedule'));
