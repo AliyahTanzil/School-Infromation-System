@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 student-home checkpoint (2026-09-14), Codex: student home now waits for authenticated school context, ignores cached school identity and omits school request headers. Failures in classroom, notification, assignment or calendar reads show a retryable error and clear stale results. Seven focused dashboard/context tests, targeted ESLint, formatting and frontend production build pass. Assignment/calendar coverage still uses the first accessible classroom; broader aggregation and remaining SEC-001 acceptance remain open. No live data changes.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Migrate student home to authenticated school context and show retryable data failures; verify the scoped request flow and publish the checkpoint.
+
 SEC-001 live-learning checkpoint (2026-09-14), Codex: Live learning now waits for authenticated school context, ignores cached school identity and omits school header overrides. Session or recording read failures show a retryable error instead of silently appearing empty; selection no longer triggers redundant reloads, and refreshed lists reconcile the selected session. Five focused workspace/context tests, targeted ESLint, formatting and frontend production build pass. No backend or live data changes; SEC-001 remains IN_PROGRESS for remaining migrations and acceptance work.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Migrate live learning away from cached school identity, enforce context loading/recovery boundaries, and surface failed session/recording reads rather than presenting failed requests as empty data. Verify and publish this checkpoint.

@@ -2,6 +2,8 @@
 
 Updated: 2026-09-14
 
+Student-home checkpoint (2026-09-14): migrated student home to authenticated school context and removed cached school headers. Data failures now offer retry rather than silently showing empty learning data. Seven focused tests, targeted ESLint, formatting and frontend production build pass. Multi-classroom assignment/calendar aggregation and remaining SEC-001 acceptance stay open.
+
 Live-learning checkpoint (2026-09-14): migrated live learning to authenticated school context and removed cached school headers. Failed session/recording reads now offer retry, and selecting a session no longer causes a reload. Five focused tests, targeted ESLint, formatting and frontend production build pass. Remaining single-school migrations and live acceptance remain open under SEC-001.
 
 GitHub delivery checkpoint (2026-09-14): corrected the teacher self-profile owner-bypass regression while preserving teacher administration access, and updated the navigation test for Email setup. Backend: 743 passed, one intentional database skip; frontend: 131 passed. Repository lint, changed-file formatting, Prisma generation, backend compilation/runtime smoke checks and frontend production build pass. SEC-001 remains IN_PROGRESS for live browser/recovery delivery and remaining acceptance work. Timetable staffing stays paused.

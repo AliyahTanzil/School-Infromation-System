@@ -20,6 +20,8 @@ import {
 import api from './api/auth.js';
 import { useAuth } from './context/AuthContext.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 
 function ShieldCheckIcon() {
   return <Sparkles size={14} />;
@@ -51,65 +53,87 @@ export default function StudentHomeDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [schoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
 
-  const loadData = useCallback(async () => {
-    const headers = schoolId ? { 'x-school-id': schoolId } : {};
-    setLoading(true);
-    setError('');
-    try {
-      const [classroomsRes, notificationsRes] = await Promise.allSettled([
-        api.get('/lms/classrooms', { headers }),
-        api.get('/communication/unread-count', { headers }),
-      ]);
+  const loadData = useCallback(
+    async (signal) => {
+      if (schoolLoading || schoolError || !schoolId) return;
+      setLoading(true);
+      setError('');
+      try {
+        const [classroomsRes, notificationsRes] = await Promise.allSettled([
+          api.get('/lms/classrooms', { signal }),
+          api.get('/communication/unread-count', { signal }),
+        ]);
+        if (signal?.aborted) return;
+        if (classroomsRes.status === 'rejected') throw classroomsRes.reason;
+        if (notificationsRes.status === 'rejected') throw notificationsRes.reason;
 
-      if (notificationsRes.status === 'fulfilled') {
-        setUnreadCount(notificationsRes.value.data.data?.unreadCount ?? 0);
-      }
+        if (notificationsRes.status === 'fulfilled') {
+          setUnreadCount(notificationsRes.value.data.data?.unreadCount ?? 0);
+        }
 
-      if (classroomsRes.status === 'fulfilled') {
-        const rooms = classroomsRes.value.data.data || [];
-        setClassrooms(rooms);
+        if (classroomsRes.status === 'fulfilled') {
+          const rooms = classroomsRes.value.data.data || [];
+          setClassrooms(rooms);
+          setAssignments([]);
+          setCalendarEvents([]);
 
-        if (rooms.length > 0) {
-          const primaryRoomId = rooms[0].id;
-          const calendarStart = new Date();
-          const calendarEnd = new Date();
-          calendarEnd.setDate(calendarEnd.getDate() + 30);
+          if (rooms.length > 0) {
+            const primaryRoomId = rooms[0].id;
+            const calendarStart = new Date();
+            const calendarEnd = new Date();
+            calendarEnd.setDate(calendarEnd.getDate() + 30);
 
-          const [assignmentRes, calendarRes] = await Promise.allSettled([
-            api.get('/lms/assignments', {
-              headers,
-              params: { classroomId: primaryRoomId, status: 'PUBLISHED' },
-            }),
-            api.get('/lms/calendar', {
-              headers,
-              params: {
-                classroomId: primaryRoomId,
-                start: calendarStart.toISOString(),
-                end: calendarEnd.toISOString(),
-              },
-            }),
-          ]);
+            const [assignmentRes, calendarRes] = await Promise.allSettled([
+              api.get('/lms/assignments', {
+                signal,
+                params: { classroomId: primaryRoomId, status: 'PUBLISHED' },
+              }),
+              api.get('/lms/calendar', {
+                signal,
+                params: {
+                  classroomId: primaryRoomId,
+                  start: calendarStart.toISOString(),
+                  end: calendarEnd.toISOString(),
+                },
+              }),
+            ]);
+            if (signal?.aborted) return;
+            if (assignmentRes.status === 'rejected') throw assignmentRes.reason;
+            if (calendarRes.status === 'rejected') throw calendarRes.reason;
 
-          if (assignmentRes.status === 'fulfilled') {
-            setAssignments(assignmentRes.value.data.data || []);
-          }
-          if (calendarRes.status === 'fulfilled') {
-            setCalendarEvents(calendarRes.value.data.data || []);
+            if (assignmentRes.status === 'fulfilled') {
+              setAssignments(assignmentRes.value.data.data || []);
+            }
+            if (calendarRes.status === 'fulfilled') {
+              setCalendarEvents(calendarRes.value.data.data || []);
+            }
           }
         }
+      } catch (requestError) {
+        if (signal?.aborted) return;
+        setClassrooms([]);
+        setAssignments([]);
+        setCalendarEvents([]);
+        setUnreadCount(0);
+        setError(getApiErrorMessage(requestError, 'Unable to load student learning data'));
+      } finally {
+        if (!signal?.aborted) setLoading(false);
       }
-    } catch (requestError) {
-      setError(getApiErrorMessage(requestError, 'Unable to load student learning data'));
-    } finally {
-      setLoading(false);
-    }
-  }, [schoolId]);
+    },
+    [schoolId, schoolLoading, schoolError]
+  );
 
   useEffect(() => {
-    sessionStorage.setItem('sais.schoolId', schoolId);
-    loadData();
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
   }, [loadData, schoolId]);
 
   const initials = useMemo(() => {
@@ -128,6 +152,17 @@ export default function StudentHomeDashboard() {
       ),
     [classrooms, query]
   );
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details..." />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Contact your school administrator to complete school setup."
+      />
+    );
+  if (error) return <WorkspaceError message={error} onRetry={() => loadData()} />;
 
   return (
     <main className="student-home-shell">

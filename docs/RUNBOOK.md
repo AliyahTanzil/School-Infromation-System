@@ -241,6 +241,12 @@ expiry, or another transaction lifecycle failure.
 School context is read from `GET /api/school` (also `/api/v1/school`). `/school-setup` is a
 frontend page, not an API endpoint.
 
+**Student home** waits for authenticated school context, ignores cached
+`sais.schoolId` values, and omits school headers on learning requests. Failure of
+classroom, unread-count, assignment or calendar reads clears results and offers
+retry. Assignments and the next 30 days of calendar events still come from the
+first accessible classroom; this is not yet an aggregate across all classrooms.
+
 **Live learning** waits for this context before reading sessions and recordings,
 ignores `sais.schoolId`, and omits school header overrides. If either read fails,
 the workspace clears the displayed results and offers retry; an unavailable
