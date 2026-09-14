@@ -260,55 +260,59 @@ export default function BoardingDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Applications</h2>
-            {applications.map((row) => (
-              <div
-                key={row.id}
-                className="mt-3 flex justify-between gap-3 border-t border-slate-800 pt-3"
-              >
-                <span>
-                  <strong>{row.studentId}</strong>
-                  <small className="block text-slate-400">{row.status}</small>
-                </span>
-                {row.status === 'PENDING' && (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => decide(row.id, 'APPROVED')}
-                      className="rounded bg-emerald-700 px-3"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => decide(row.id, 'REJECTED')}
-                      className="rounded bg-rose-700 px-3"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {applications.map((row) => (
+                <div
+                  key={row.id}
+                  className="mt-3 flex justify-between gap-3 border-t border-slate-800 pt-3"
+                >
+                  <span>
+                    <strong>{row.studentId}</strong>
+                    <small className="block text-slate-400">{row.status}</small>
+                  </span>
+                  {row.status === 'PENDING' && (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => decide(row.id, 'APPROVED')}
+                        className="rounded bg-emerald-700 px-3"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => decide(row.id, 'REJECTED')}
+                        className="rounded bg-rose-700 px-3"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </article>
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Allocations</h2>
-            {allocations.map((row) => (
-              <div
-                key={row.id}
-                className="mt-3 flex justify-between gap-3 border-t border-slate-800 pt-3"
-              >
-                <span>
-                  <strong>{row.studentId}</strong>
-                  <small className="block text-slate-400">
-                    {row.bed.room.dormitory.name} / {row.bed.room.roomNumber} / Bed{' '}
-                    {row.bed.bedNumber} · {row.status}
-                  </small>
-                </span>
-                {row.status === 'ACTIVE' && (
-                  <button onClick={() => checkout(row.id)} className="rounded bg-amber-700 px-3">
-                    Check out
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {allocations.map((row) => (
+                <div
+                  key={row.id}
+                  className="mt-3 flex justify-between gap-3 border-t border-slate-800 pt-3"
+                >
+                  <span>
+                    <strong>{row.studentId}</strong>
+                    <small className="block text-slate-400">
+                      {row.bed.room.dormitory.name} / {row.bed.room.roomNumber} / Bed{' '}
+                      {row.bed.bedNumber} · {row.status}
+                    </small>
+                  </span>
+                  {row.status === 'ACTIVE' && (
+                    <button onClick={() => checkout(row.id)} className="rounded bg-amber-700 px-3">
+                      Check out
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </article>
         </section>
       </div>

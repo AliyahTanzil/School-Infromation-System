@@ -1,12 +1,38 @@
 # SAIS Development Roadmap
 
-Updated: 2026-09-13
+Updated: 2026-09-14
+
+GitHub delivery checkpoint (2026-09-14): corrected the teacher self-profile owner-bypass regression while preserving teacher administration access, and updated the navigation test for Email setup. Backend: 743 passed, one intentional database skip; frontend: 131 passed. Repository lint, changed-file formatting, Prisma generation, backend compilation/runtime smoke checks and frontend production build pass. SEC-001 remains IN_PROGRESS for live browser/recovery delivery and remaining acceptance work. Timetable staffing stays paused.
+
+Assessment classroom checkpoint (2026-09-14): replaced the assessment Classroom UUID input with accessible classroom choices, including loading/retry/empty states. Switching classrooms clears quiz/attempt/editor state and prevents old responses from restoring the previous selection. Six focused tests, targeted ESLint, formatting and frontend production build pass. The existing 100-classroom API limit and remaining workspace migrations remain open; SEC-001 remains IN_PROGRESS.
+
+Assessment school-context checkpoint (2026-09-14): Classroom quizzes now resolves authenticated school context and offers loading/retry/missing-school states. Manual and stored school identity and school request-header overrides were removed. Four focused tests, targeted ESLint, formatting and frontend production build pass. Assessment classroom selection and remaining single-school migrations are still open; SEC-001 remains IN_PROGRESS.
+
+Student classroom selector checkpoint (2026-09-14): replaced the My work Classroom UUID field with accessible classroom choices from the existing authenticated API. Cached classroom IDs no longer drive requests. Loading/retry/empty states and stale-response protection are covered alongside draft saving and retraction. Six focused tests, targeted ESLint, formatting and frontend production build pass. The existing endpoint's 100-classroom cap and other workspace migrations remain open; SEC-001 remains IN_PROGRESS.
+
+Student submission context checkpoint (2026-09-14): My work now uses the authenticated school context instead of an editable School UUID or session-stored school identity. Assignment/submission reads and draft/retraction writes omit client school overrides. Loading, retry and missing-school states prevent workspace access until context is available. Four focused tests, targeted ESLint, formatting and the frontend production build pass. Classroom selection and other single-school migrations remain open; SEC-001 remains IN_PROGRESS.
+
+Email setup verification checkpoint (2026-09-14): resumed SEC-001 and verified the existing administrator SMTP implementation. All 12 focused backend settings/access/email tests and 16 frontend setup/reset/authentication-client tests pass, along with targeted ESLint and the frontend production build. No application fixes or live configuration changes were needed. Actual provider delivery, browser journeys and the remaining security acceptance criteria are still outstanding; SEC-001 is not complete. Timetable staffing remains paused.
+
+Authentication verification checkpoint (2026-09-14): all four development roles passed the live login/refresh/identity/school/logout/revocation journey. Backend recovery suites passed 22 tests using the required TypeScript loader; frontend recovery/session suites passed 11 tests. SEC-001 is now BLOCKED on browser and recovery-delivery acceptance: no connected browser is available and SMTP is unconfigured. No credentials changed. Configure the intended mail transport and connect a browser to resume; timetable staffing remains paused.
+
+SEC-001 teacher-account checkpoint (2026-09-14): completed the pending live profile reconciliation against the configured hosted database. Seven active teacher accounts now have profile links: five profiles created and one existing profile linked. Repeating the repair performed zero writes. Eight focused tests passed. Credentials and timetable staffing were preserved; timetable subject assignment remains paused by user request. SEC-001 remains IN_PROGRESS pending its remaining verification criteria.
 
 ## Product goal
 
 Deliver a secure, reliable, single-school information system in which administrators, teachers, students, and parents can complete their daily academic and operational work on web and mobile clients.
 
 ## Current baseline
+
+Password-recovery continuation (2026-09-13): added the missing public `/reset-password?token=...` page targeted by recovery emails. The form checks link presence/length and password confirmation, handles API failures, and provides replacement-link/sign-in navigation. Successful reset clears local auth state and removes the URL token. Frontend suite: 109 tests pass, including the mounted public route, successful reset, invalid-link and mismatch handling, expired-token errors, and credential clearing. Browser interaction and actual recovery-email delivery remain unverified; no live password was changed.
+
+Authentication diagnostics continuation (2026-09-13): the previously unexplained administrator login HTTP 500 is identified in the runtime log as `DB_P2028` (request `6c366596-759d-49ec-92d4-a0bcb9d5afb4`). The normalizer now returns 503 with a fixed temporary-unavailability message while preserving the diagnostic code and redacting database metadata. The live verifier prints bounded error codes and request IDs for server failures. Twenty focused normalization/HTTP tests and targeted lint pass. The underlying transaction failure cause remains unproven; no automatic mutation retry was introduced.
+
+Live authentication continuation (2026-09-13): provisioned the four configured development accounts in the existing main school. Live checks exposed a shared dashboard endpoint mismatch: `useSchoolContext` requested `/api/school-setup` (404), while the mounted API is `/api/school`. The hook and regression fixtures now use the canonical endpoint. Frontend verification: 103 tests pass, targeted lint and production build pass. No connected browser is available; browser authentication and password-recovery delivery remain outstanding.
+
+Live API verification: all four roles pass login, httpOnly refresh-cookie rotation, identity, configured-school access, logout, and revoked access/refresh rejection. The administrator passed on an isolated retry after one HTTP 500; its cause was not established. The verifier respected shared login/refresh rate limits. Backend suite: 711 passed, zero failures, one intentional database skip. These results do not certify browser cookie behavior or recovery-email delivery.
+
+Phase 0 continuation (2026-09-13): read-only verification found that none of the four configured development accounts exists in the current database. The development-account bootstrap now resolves the existing configured school instead of creating a separate development school, and rejects missing/ambiguous schools or inactive tenants before provisioning. Four focused tests pass. Live account provisioning and browser authentication journeys remain outstanding; SEC-001 remains IN_PROGRESS.
 
 Latest authentication-client checkpoint (2026-09-13): logout clears in-memory credentials even when its HTTP request fails, and refresh ordering protects logout and newer sessions. Frontend verification: 102 tests pass with two workers, lint and production build pass. The initial default-concurrency run hit two app-loading timing failures. Local app/database startup works; the configured four development-role logins returned 401, and no browser is connected. Live authenticated journeys remain outstanding.
 
@@ -17,7 +43,7 @@ Latest authentication checkpoint (2026-09-12): current-user lookup and password 
 - The application is a Node.js monorepo with an Express/Prisma backend, React/Vite frontend, and Expo mobile client.
 - Core persistence and APIs exist for users, students, parents, teachers, academic periods, subjects, classes, enrollment, attendance, examinations, results, timetables, finance, payments, notifications, HR, library, assets, transport, boarding, and the first six LMS slices.
 - The verified code baseline is 180 passing backend tests, one intentionally skipped live-database test, two passing frontend tests, clean lint, successful production builds, valid Prisma schema, and a passing mobile TypeScript check.
-- Development is currently blocked at runtime because the configured Neon PostgreSQL endpoint cannot establish a Prisma connection.
+- The current database was reachable during the latest read-only check; the earlier database-connectivity blocker is historical. Development-role accounts are missing from the current database.
 - Several web modules expose implementation-oriented UUID fields or incomplete workspaces. The mobile application remains mostly a contract and navigation foundation.
 
 ## Delivery principles
@@ -37,7 +63,7 @@ Target: immediate
 - [x] Upgrade Prisma CLI and Client together to 6.19.0 and regenerate the client.
 - [x] Apply all 29 reviewed migrations to the intended development database.
 - [x] Provision and verify the configured application-owner login with `npm run db:seed:owner -w backend`.
-- [x] Run the current-schema bootstrap and verify school-admin, teacher, student, and parent development accounts.
+- [x] Run the current-schema bootstrap and verify school-admin, teacher, student, and parent development accounts in the current configured database (live API authentication verified 2026-09-13).
 - [ ] Verify login, refresh-token rotation, logout, and password recovery in the browser.
 - [x] Document local setup, database reset, migration, and recovery commands in one current runbook (see [docs/RUNBOOK.md](docs/RUNBOOK.md)).
 

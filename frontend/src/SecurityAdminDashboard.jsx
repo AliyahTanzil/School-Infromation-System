@@ -78,31 +78,35 @@ export default function SecurityAdminDashboard() {
                 {sessions.length} active {sessions.length === 1 ? 'session' : 'sessions'}
               </p>
               {sessions.length === 0 && <p>No active sessions found.</p>}
-              {sessions.map((session) => (
-                <div className="security-row" key={session.id}>
-                  <div>
-                    <strong>{session.deviceName || session.deviceType || 'Unnamed device'}</strong>
-                    <span>{session.current ? 'Current session' : 'Other signed-in device'}</span>
-                    <span>
-                      Last active:{' '}
-                      {session.lastActiveAt
-                        ? new Date(session.lastActiveAt).toLocaleString()
-                        : 'Unavailable'}
-                    </span>
+              <div className="data-record-grid">
+                {sessions.map((session) => (
+                  <div className="security-row" key={session.id}>
+                    <div>
+                      <strong>
+                        {session.deviceName || session.deviceType || 'Unnamed device'}
+                      </strong>
+                      <span>{session.current ? 'Current session' : 'Other signed-in device'}</span>
+                      <span>
+                        Last active:{' '}
+                        {session.lastActiveAt
+                          ? new Date(session.lastActiveAt).toLocaleString()
+                          : 'Unavailable'}
+                      </span>
+                    </div>
+                    {session.current ? (
+                      <span>Use Sign out to end this session.</span>
+                    ) : (
+                      <button
+                        disabled={pending !== null}
+                        onClick={() => revoke(session)}
+                        aria-label={`Revoke session for ${session.deviceName || session.deviceType || 'unnamed device'}`}
+                      >
+                        {pending === session.id ? 'Revoking�' : 'Revoke session'}
+                      </button>
+                    )}
                   </div>
-                  {session.current ? (
-                    <span>Use Sign out to end this session.</span>
-                  ) : (
-                    <button
-                      disabled={pending !== null}
-                      onClick={() => revoke(session)}
-                      aria-label={`Revoke session for ${session.deviceName || session.deviceType || 'unnamed device'}`}
-                    >
-                      {pending === session.id ? 'Revoking�' : 'Revoke session'}
-                    </button>
-                  )}
-                </div>
-              ))}
+                ))}
+              </div>
             </>
           )
         )}

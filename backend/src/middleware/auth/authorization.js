@@ -28,6 +28,7 @@ export function requirePermission(
 
 export function requireRole(...roleCodes) {
   return async (req, _res, next) => {
+    if (req.user?.platformRole === 'OWNER') return next();
     const roles = new Set(req.user?.roles ?? []);
     if (!roleCodes.some((role) => roles.has(role))) {
       throw new AuthorizationError('Required role not present', 'ROLE_REQUIRED');

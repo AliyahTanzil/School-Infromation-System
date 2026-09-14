@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowRight, Clock3, FileQuestion, Plus, Save, Send } from 'lucide-react';
 import api from './api/auth.js';
+import { useSchoolContext } from './hooks/useSchoolContext.js';
+import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
 import './classroom.css';
 import './digital-classroom.css';
 
@@ -16,10 +18,18 @@ const emptyQuestion = {
 };
 
 export default function AssessmentEngine() {
-  const [schoolId, setSchoolId] = useState(() => sessionStorage.getItem('sais.schoolId') || '');
-  const [classroomId, setClassroomId] = useState(
-    () => sessionStorage.getItem('sais.classroomId') || ''
-  );
+  const {
+    schoolId,
+    loading: schoolLoading,
+    error: schoolError,
+    retry: retrySchool,
+  } = useSchoolContext();
+  const [classroomId, setClassroomId] = useState('');
+  const [classrooms, setClassrooms] = useState([]);
+  const [classroomsLoading, setClassroomsLoading] = useState(true);
+  const [classroomsError, setClassroomsError] = useState('');
+  const [classroomsAttempt, setClassroomsAttempt] = useState(0);
+  const scopeVersion = useRef(0);
   const [quizzes, setQuizzes] = useState([]);
   const [selected, setSelected] = useState(null);
   const [quiz, setQuiz] = useState(emptyQuiz);
@@ -27,31 +37,68 @@ export default function AssessmentEngine() {
   const [attempt, setAttempt] = useState(null);
   const [answers, setAnswers] = useState({});
   const [notice, setNotice] = useState('');
-  const headers = schoolId ? { 'x-school-id': schoolId } : {};
+
+  useEffect(() => {
+    if (schoolLoading || schoolError || !schoolId) return;
+    const controller = new AbortController();
+    setClassroomsLoading(true);
+    setClassroomsError('');
+    setClassroomId('');
+    setClassrooms([]);
+    api
+      .get('/lms/classrooms', { signal: controller.signal })
+      .then(({ data }) => {
+        if (controller.signal.aborted) return;
+        setClassrooms(data.data ?? []);
+        setClassroomId(data.data?.[0]?.id ?? '');
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted) setClassroomsError(errorMessage(error));
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setClassroomsLoading(false);
+      });
+    return () => {
+      controller.abort();
+      scopeVersion.current += 1;
+    };
+  }, [schoolId, schoolLoading, schoolError, classroomsAttempt]);
 
   const load = useCallback(async () => {
-    if (!schoolId || !classroomId) return setQuizzes([]);
+    const version = scopeVersion.current;
+    if (schoolLoading || schoolError || !schoolId || !classroomId) return setQuizzes([]);
     try {
       const response = await api.get('/lms/quizzes', {
-        headers: { 'x-school-id': schoolId },
         params: { classroomId },
       });
+      if (version !== scopeVersion.current) return;
       setQuizzes(response.data.data);
       setNotice('');
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
-  }, [classroomId, schoolId]);
+  }, [classroomId, schoolId, schoolLoading, schoolError]);
 
   useEffect(() => {
-    sessionStorage.setItem('sais.schoolId', schoolId);
-    sessionStorage.setItem('sais.classroomId', classroomId);
+    scopeVersion.current += 1;
+    setQuizzes([]);
+    setSelected(null);
+    setAttempt(null);
+    setAnswers({});
+    setQuiz(emptyQuiz);
+    setQuestion(emptyQuestion);
+    setNotice('');
     load();
+    return () => {
+      scopeVersion.current += 1;
+    };
   }, [classroomId, load, schoolId]);
 
   async function openQuiz(id) {
+    const version = scopeVersion.current;
     try {
-      const response = await api.get(`/lms/quizzes/${id}`, { headers });
+      const response = await api.get(`/lms/quizzes/${id}`);
+      if (version !== scopeVersion.current) return;
       setSelected(response.data.data);
       setAttempt(
         response.data.data.attempts?.find((item) => item.status === 'IN_PROGRESS') || null
@@ -59,33 +106,33 @@ export default function AssessmentEngine() {
       setAnswers({});
       setNotice('');
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function createQuiz(event) {
+    const version = scopeVersion.current;
     event.preventDefault();
     try {
-      const response = await api.post(
-        '/lms/quizzes',
-        {
-          ...quiz,
-          classroomId,
-          durationMinutes: Number(quiz.durationMinutes),
-          maxAttempts: Number(quiz.maxAttempts),
-        },
-        { headers }
-      );
+      const response = await api.post('/lms/quizzes', {
+        ...quiz,
+        classroomId,
+        durationMinutes: Number(quiz.durationMinutes),
+        maxAttempts: Number(quiz.maxAttempts),
+      });
+      if (version !== scopeVersion.current) return;
       setQuiz(emptyQuiz);
       setNotice('Quiz draft created.');
       await load();
+      if (version !== scopeVersion.current) return;
       await openQuiz(response.data.data.id);
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function addQuestion(event) {
+    const version = scopeVersion.current;
     event.preventDefault();
     const options =
       question.type === 'SHORT_ANSWER'
@@ -95,65 +142,92 @@ export default function AssessmentEngine() {
             .map((item) => item.trim())
             .filter(Boolean);
     try {
-      await api.post(
-        `/lms/quizzes/${selected.id}/questions`,
-        { ...question, options, points: Number(question.points) },
-        { headers }
-      );
+      await api.post(`/lms/quizzes/${selected.id}/questions`, {
+        ...question,
+        options,
+        points: Number(question.points),
+      });
+      if (version !== scopeVersion.current) return;
       setQuestion(emptyQuestion);
       await openQuiz(selected.id);
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function changeStatus(status) {
+    const version = scopeVersion.current;
     try {
-      await api.patch(`/lms/quizzes/${selected.id}/status`, { status }, { headers });
+      await api.patch(`/lms/quizzes/${selected.id}/status`, { status });
+      if (version !== scopeVersion.current) return;
       await openQuiz(selected.id);
+      if (version !== scopeVersion.current) return;
       await load();
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function startAttempt() {
+    const version = scopeVersion.current;
     try {
-      const response = await api.post(`/lms/quizzes/${selected.id}/attempts`, {}, { headers });
+      const response = await api.post(`/lms/quizzes/${selected.id}/attempts`, {});
+      if (version !== scopeVersion.current) return;
       setAttempt(response.data.data);
       setNotice('Timed attempt started.');
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function saveAnswer(questionId, response) {
+    const version = scopeVersion.current;
     setAnswers((current) => ({ ...current, [questionId]: response }));
     if (!attempt) return;
     try {
-      await api.put(
-        `/lms/quizzes/attempts/${attempt.id}/answers`,
-        { questionId, response },
-        { headers }
-      );
+      await api.put(`/lms/quizzes/attempts/${attempt.id}/answers`, { questionId, response });
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
 
   async function submitAttempt() {
+    const version = scopeVersion.current;
     try {
-      const response = await api.post(
-        `/lms/quizzes/attempts/${attempt.id}/submit`,
-        {},
-        { headers }
-      );
+      const response = await api.post(`/lms/quizzes/attempts/${attempt.id}/submit`, {});
+      if (version !== scopeVersion.current) return;
       setNotice(`Attempt submitted: ${response.data.data.score}/${response.data.data.maxScore}.`);
       await openQuiz(selected.id);
     } catch (error) {
-      setNotice(errorMessage(error));
+      if (version === scopeVersion.current) setNotice(errorMessage(error));
     }
   }
+
+  if (schoolLoading) return <WorkspaceLoading message="Loading school details..." />;
+  if (schoolError) return <WorkspaceError message={schoolError} onRetry={retrySchool} />;
+  if (!schoolId)
+    return (
+      <WorkspaceEmpty
+        title="School setup required"
+        message="Contact your school administrator to complete school setup."
+      />
+    );
+
+  if (classroomsLoading) return <WorkspaceLoading message="Loading classrooms..." />;
+  if (classroomsError)
+    return (
+      <WorkspaceError
+        message={classroomsError}
+        onRetry={() => setClassroomsAttempt((value) => value + 1)}
+      />
+    );
+  if (!classrooms.length)
+    return (
+      <WorkspaceEmpty
+        title="No accessible classrooms"
+        message="Your classrooms will appear here when your school adds you."
+      />
+    );
 
   return (
     <main className="assessment-shell">
@@ -169,20 +243,20 @@ export default function AssessmentEngine() {
       </header>
       <section className="assessment-metrics">
         <label>
-          School ID
-          <input
-            value={schoolId}
-            onChange={(event) => setSchoolId(event.target.value)}
-            placeholder="School UUID"
-          />
-        </label>
-        <label>
-          Classroom ID
-          <input
+          Classroom
+          <select
             value={classroomId}
-            onChange={(event) => setClassroomId(event.target.value)}
-            placeholder="Classroom UUID"
-          />
+            onChange={(event) => {
+              scopeVersion.current += 1;
+              setClassroomId(event.target.value);
+            }}
+          >
+            {classrooms.map((room) => (
+              <option key={room.id} value={room.id}>
+                {room.name}
+              </option>
+            ))}
+          </select>
         </label>
         <div>
           <FileQuestion />
@@ -202,14 +276,16 @@ export default function AssessmentEngine() {
             </button>
           </div>
           <div className="question-nav">
-            {quizzes.map((item) => (
-              <button key={item.id} onClick={() => openQuiz(item.id)} type="button">
-                <strong>{item.title}</strong>
-                <small>
-                  {item.status} · {item._count.questions} questions
-                </small>
-              </button>
-            ))}
+            <div className="data-record-grid">
+              {quizzes.map((item) => (
+                <button key={item.id} onClick={() => openQuiz(item.id)} type="button">
+                  <strong>{item.title}</strong>
+                  <small>
+                    {item.status} · {item._count.questions} questions
+                  </small>
+                </button>
+              ))}
+            </div>
           </div>
           <form className="create-form" onSubmit={createQuiz}>
             <input

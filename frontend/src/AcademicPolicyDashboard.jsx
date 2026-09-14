@@ -308,35 +308,37 @@ export default function AcademicPolicyDashboard() {
         {!loading && !error && schoolId && policies.length === 0 && (
           <p>No grading policies found.</p>
         )}
-        {!loading &&
-          !error &&
-          policies.map((policy) => (
-            <article className="student-row" key={policy.id}>
-              <span>
-                <strong>{policy.name}</strong>
-                <small>
-                  {policy.code} Â· pass mark {policy.passMark}% Â· effective{' '}
-                  {String(policy.effectiveFrom).slice(0, 10)}
-                </small>
-                <small>
-                  {policy.bands.length} bands Â·{' '}
-                  {policy.weights.map((item) => `${item.name} ${item.weight}%`).join(', ')}
-                </small>
-              </span>
-              <span>
-                <span className="status-pill">{policy.status}</span>
-                {policy.status === 'DRAFT' && (
-                  <button
-                    className="primary-button"
-                    disabled={saving}
-                    onClick={() => activate(policy.id)}
-                  >
-                    Activate
-                  </button>
-                )}
-              </span>
-            </article>
-          ))}
+        <div className="data-record-grid">
+          {!loading &&
+            !error &&
+            policies.map((policy) => (
+              <article className="student-row" key={policy.id}>
+                <span>
+                  <strong>{policy.name}</strong>
+                  <small>
+                    {policy.code} Â· pass mark {policy.passMark}% Â· effective{' '}
+                    {String(policy.effectiveFrom).slice(0, 10)}
+                  </small>
+                  <small>
+                    {policy.bands.length} bands Â·{' '}
+                    {policy.weights.map((item) => `${item.name} ${item.weight}%`).join(', ')}
+                  </small>
+                </span>
+                <span>
+                  <span className="status-pill">{policy.status}</span>
+                  {policy.status === 'DRAFT' && (
+                    <button
+                      className="primary-button"
+                      disabled={saving}
+                      onClick={() => activate(policy.id)}
+                    >
+                      Activate
+                    </button>
+                  )}
+                </span>
+              </article>
+            ))}
+        </div>
       </section>
     </main>
   );

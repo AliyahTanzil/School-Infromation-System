@@ -23,7 +23,7 @@ beforeEach(() => {
   sessionStorage.clear();
   policies = [];
   api.get.mockImplementation(async (path) => ({
-    data: { data: path === '/school-setup' ? { school } : policies },
+    data: { data: path === '/school' ? { school } : policies },
   }));
   api.post.mockImplementation(async () => {
     policies = [policy];
@@ -82,7 +82,7 @@ it('directs users to create a school when none exist', async () => {
 it('does not treat failed policy loading as an empty setup and allows retry', async () => {
   const user = userEvent.setup();
   api.get.mockImplementation(async (path) => {
-    if (path === '/school-setup') return { data: { data: { school } } };
+    if (path === '/school') return { data: { data: { school } } };
     throw new Error('Unavailable');
   });
   show();

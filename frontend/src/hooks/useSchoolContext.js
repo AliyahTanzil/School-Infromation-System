@@ -18,7 +18,7 @@ export function useSchoolContext() {
     setSchoolId(null);
     setSchoolName('');
     api
-      .get('/school-setup', { signal: controller.signal })
+      .get('/school', { signal: controller.signal })
       .then(({ data }) => {
         if (controller.signal.aborted) return;
         const school = data.data?.school ?? data.data;

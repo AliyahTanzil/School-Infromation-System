@@ -115,23 +115,25 @@ export default function BillingDashboard() {
         </article>
         <article className="billing-card">
           <p className="card-label">USAGE GUARDRAILS</p>
-          {overview.usage.map((item) => (
-            <div className="usage-row" key={item.metricKey}>
-              <div>
-                <span>{item.metricKey}</span>
-                <b>
-                  {item.quantity.toLocaleString()} / {item.includedQuantity.toLocaleString()}
-                </b>
+          <div className="data-record-grid">
+            {overview.usage.map((item) => (
+              <div className="usage-row" key={item.metricKey}>
+                <div>
+                  <span>{item.metricKey}</span>
+                  <b>
+                    {item.quantity.toLocaleString()} / {item.includedQuantity.toLocaleString()}
+                  </b>
+                </div>
+                <div className="usage-track">
+                  <i
+                    style={{
+                      width: `${Math.min(100, (item.quantity / Math.max(1, item.includedQuantity)) * 100)}%`,
+                    }}
+                  />
+                </div>
               </div>
-              <div className="usage-track">
-                <i
-                  style={{
-                    width: `${Math.min(100, (item.quantity / Math.max(1, item.includedQuantity)) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </article>
       </section>
       <section className="billing-lower">
@@ -142,51 +144,55 @@ export default function BillingDashboard() {
               <h2>Recent invoices</h2>
             </div>
           </div>
-          {overview.invoices.map((invoice) => (
-            <div className="invoice-row" key={invoice.number}>
-              <div>
-                <b>{invoice.number}</b>
-                <small>{new Date(invoice.issuedAt).toLocaleDateString()}</small>
+          <div className="data-record-grid">
+            {overview.invoices.map((invoice) => (
+              <div className="invoice-row" key={invoice.number}>
+                <div>
+                  <b>{invoice.number}</b>
+                  <small>{new Date(invoice.issuedAt).toLocaleDateString()}</small>
+                </div>
+                <span className="paid">{invoice.status}</span>
+                <strong>{money(invoice.totalMinor, invoice.currency)}</strong>
               </div>
-              <span className="paid">{invoice.status}</span>
-              <strong>{money(invoice.totalMinor, invoice.currency)}</strong>
-            </div>
-          ))}
+            ))}
+          </div>
         </article>
         <article className="billing-card">
           <p className="card-label">AVAILABLE PLANS</p>
           <h2>Choose your operating layer</h2>
-          {overview.plans.map((plan) => (
-            <div
-              className={`plan-option ${plan.name === overview.plan?.name ? 'selected' : ''}`}
-              key={plan.key}
-            >
-              <div>
-                <b>{plan.name}</b>
-                <small>{plan.description}</small>
+          <div className="data-record-grid">
+            {overview.plans.map((plan) => (
+              <div
+                className={`plan-option ${plan.name === overview.plan?.name ? 'selected' : ''}`}
+                key={plan.key}
+              >
+                <div>
+                  <b>{plan.name}</b>
+                  <small>{plan.description}</small>
+                </div>
+                <strong>
+                  {money(plan.amountMinor, plan.currency)}
+                  <small>/mo</small>
+                </strong>
+                {plan.name !== overview.plan?.name && (
+                  <button
+                    className="ghost"
+                    disabled={busy}
+                    onClick={() =>
+                      lifecycle(
+                        plan.amountMinor > (overview.plan?.amountMinor ?? 0)
+                          ? 'upgrade'
+                          : 'downgrade',
+                        plan.key
+                      )
+                    }
+                  >
+                    Select
+                  </button>
+                )}
               </div>
-              <strong>
-                {money(plan.amountMinor, plan.currency)}
-                <small>/mo</small>
-              </strong>
-              {plan.name !== overview.plan?.name && (
-                <button
-                  className="ghost"
-                  disabled={busy}
-                  onClick={() =>
-                    lifecycle(
-                      plan.amountMinor > (overview.plan?.amountMinor ?? 0)
-                        ? 'upgrade'
-                        : 'downgrade',
-                      plan.key
-                    )
-                  }
-                >
-                  Select
-                </button>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </article>
       </section>
     </main>

@@ -158,7 +158,7 @@ export default function AnalyticsDashboard() {
                 Tenant scoped
               </span>
             </div>
-            <div className="mt-6 divide-y divide-slate-800">
+            <div className="mt-6 data-record-grid">
               {[
                 ['Executive weekly brief', 'Ready · Today, 06:00'],
                 ['Attendance intervention list', 'Scheduled · Tomorrow, 07:00'],

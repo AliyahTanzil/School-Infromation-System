@@ -180,26 +180,28 @@ export default function AcademicIntegrityWorkspace() {
             </div>
           </div>
           <div className="integrity-case-list">
-            {filtered.map((item) => (
-              <button
-                key={item.id}
-                className={`integrity-case ${selected.id === item.id ? 'selected' : ''}`}
-                onClick={() => setSelected(item)}
-              >
-                <span className={`integrity-case-icon ${item.tone}`}>
-                  <FileText size={16} />
-                </span>
-                <span>
-                  <strong>{item.student}</strong>
-                  <small>{item.work}</small>
-                  <small>
-                    {item.id} · {item.signal}
-                  </small>
-                </span>
-                <em className={`integrity-badge ${item.tone}`}>{item.status}</em>
-                <ChevronRight size={15} />
-              </button>
-            ))}
+            <div className="data-record-grid">
+              {filtered.map((item) => (
+                <button
+                  key={item.id}
+                  className={`integrity-case ${selected.id === item.id ? 'selected' : ''}`}
+                  onClick={() => setSelected(item)}
+                >
+                  <span className={`integrity-case-icon ${item.tone}`}>
+                    <FileText size={16} />
+                  </span>
+                  <span>
+                    <strong>{item.student}</strong>
+                    <small>{item.work}</small>
+                    <small>
+                      {item.id} · {item.signal}
+                    </small>
+                  </span>
+                  <em className={`integrity-badge ${item.tone}`}>{item.status}</em>
+                  <ChevronRight size={15} />
+                </button>
+              ))}
+            </div>
           </div>
           {filtered.length === 0 && (
             <div className="integrity-empty">No cases match this search.</div>

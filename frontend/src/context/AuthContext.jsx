@@ -51,7 +51,9 @@ export function AuthProvider({ children }) {
         return authApi.forgotPassword(email);
       },
       async resetPassword(values) {
-        return authApi.resetPassword(values);
+        const result = await authApi.resetPassword(values);
+        setUser(null);
+        return result;
       },
     }),
     [user, loading]

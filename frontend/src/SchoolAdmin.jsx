@@ -188,7 +188,7 @@ export default function SchoolAdmin() {
                 </p>
               </div>
             ) : (
-              <ul className="mt-5 space-y-2">
+              <ul className="mt-5 space-y-2 data-record-grid">
                 {schools.map((school) => (
                   <li key={school.id}>
                     <button

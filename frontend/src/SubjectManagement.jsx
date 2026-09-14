@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
+import './subject-management.css';
 
 export default function SubjectManagement() {
   const [saving, setSaving] = useState(false);
@@ -196,7 +197,7 @@ export default function SubjectManagement() {
             />
           </label>
 
-          <fieldset className="form-field" style={{ gridColumn: '1 / -1' }}>
+          <fieldset className="form-field subject-class-field" style={{ gridColumn: '1 / -1' }}>
             <legend className="form-field__label">Classes (select at least one)</legend>
             {classes.length === 0 && (
               <WorkspaceEmpty
@@ -204,13 +205,13 @@ export default function SubjectManagement() {
                 message="Create a class before creating a subject."
               />
             )}
-            <div className="result-list">
+            <div className="subject-class-grid">
               {classes.map((klass) => {
                 const assignment = form.classAssignments.find((item) => item.classId === klass.id);
                 return (
-                  <div className="result-row" key={klass.id}>
+                  <div className="result-row subject-class-card" key={klass.id}>
                     <label className="result-row__meta">
-                      <span>
+                      <span className="subject-class-card__heading">
                         <input
                           type="checkbox"
                           checked={Boolean(assignment)}
@@ -276,9 +277,9 @@ export default function SubjectManagement() {
           <WorkspaceEmpty title="No subjects found" message="Add a subject using the form above." />
         )}
         {subjects.length > 0 && (
-          <div className="result-list">
+          <div className="subject-catalog-grid">
             {subjects.map((subject) => (
-              <article className="result-row" key={subject.id}>
+              <article className="result-row subject-catalog-card" key={subject.id}>
                 <span className="result-row__meta">
                   <strong>{subject.name}</strong>
                   <small>{subject.code}</small>
@@ -292,20 +293,22 @@ export default function SubjectManagement() {
                   </small>
                 </span>
                 <span className="status-pill">{subject.status}</span>
-                <button
-                  disabled={saving}
-                  onClick={() => edit(subject)}
-                  aria-label={'Edit ' + subject.name}
-                >
-                  Edit
-                </button>
-                <button
-                  disabled={saving}
-                  onClick={() => setDeleting(subject)}
-                  aria-label={'Delete ' + subject.name}
-                >
-                  Delete
-                </button>
+                <div className="subject-catalog-card__actions">
+                  <button
+                    disabled={saving}
+                    onClick={() => edit(subject)}
+                    aria-label={'Edit ' + subject.name}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    disabled={saving}
+                    onClick={() => setDeleting(subject)}
+                    aria-label={'Delete ' + subject.name}
+                  >
+                    Delete
+                  </button>
+                </div>
               </article>
             ))}
           </div>

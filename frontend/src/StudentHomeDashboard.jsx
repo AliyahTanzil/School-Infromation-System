@@ -236,37 +236,39 @@ export default function StudentHomeDashboard() {
                       No upcoming calendar events scheduled.
                     </p>
                   )}
-                  {calendarEvents.map((item) => (
-                    <div
-                      className={`student-schedule-item ${item.type === 'ASSIGNMENT_DUE' ? 'now' : ''}`}
-                      key={item.id}
-                    >
-                      <span className="student-time">
-                        <Clock3 />{' '}
-                        {new Date(item.startsAt).toLocaleTimeString([], {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                        })}
-                      </span>
-                      <span
-                        className={`student-schedule-line ${item.type === 'ASSIGNMENT_DUE' ? 'amber' : 'mint'}`}
-                      />
-                      <div className="student-schedule-copy">
-                        <strong>{item.title}</strong>
-                        <small>
-                          <MapPin />{' '}
-                          {item.type === 'ASSIGNMENT_DUE'
-                            ? 'Assignment Deadline'
-                            : item.type === 'LESSON'
-                              ? 'Scheduled Lesson'
-                              : 'Classroom Event'}
-                        </small>
+                  <div className="data-record-grid">
+                    {calendarEvents.map((item) => (
+                      <div
+                        className={`student-schedule-item ${item.type === 'ASSIGNMENT_DUE' ? 'now' : ''}`}
+                        key={item.id}
+                      >
+                        <span className="student-time">
+                          <Clock3 />{' '}
+                          {new Date(item.startsAt).toLocaleTimeString([], {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                        <span
+                          className={`student-schedule-line ${item.type === 'ASSIGNMENT_DUE' ? 'amber' : 'mint'}`}
+                        />
+                        <div className="student-schedule-copy">
+                          <strong>{item.title}</strong>
+                          <small>
+                            <MapPin />{' '}
+                            {item.type === 'ASSIGNMENT_DUE'
+                              ? 'Assignment Deadline'
+                              : item.type === 'LESSON'
+                                ? 'Scheduled Lesson'
+                                : 'Classroom Event'}
+                          </small>
+                        </div>
+                        <Badge tone={item.type === 'ASSIGNMENT_DUE' ? 'amber' : 'mint'}>
+                          {item.type === 'ASSIGNMENT_DUE' ? 'DUE' : 'LESSON'}
+                        </Badge>
                       </div>
-                      <Badge tone={item.type === 'ASSIGNMENT_DUE' ? 'amber' : 'mint'}>
-                        {item.type === 'ASSIGNMENT_DUE' ? 'DUE' : 'LESSON'}
-                      </Badge>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </section>
               <section className="student-panel">
@@ -285,31 +287,33 @@ export default function StudentHomeDashboard() {
                       No published assignments found.
                     </p>
                   )}
-                  {assignments.map((item) => (
-                    <a
-                      className="student-work-item"
-                      href="/student-submission-center"
-                      key={item.id}
-                    >
-                      <span className="student-work-icon mint">
-                        {item.type === 'PROJECT' ? (
-                          <Target />
-                        ) : item.type === 'LESSON' ? (
-                          <FileText />
-                        ) : (
-                          <BookOpen />
-                        )}
-                      </span>
-                      <span>
-                        <strong>{item.title}</strong>
-                        <small>
-                          {item.points} pts{' '}
-                          {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
-                        </small>
-                      </span>
-                      <MoreHorizontal />
-                    </a>
-                  ))}
+                  <div className="data-record-grid">
+                    {assignments.map((item) => (
+                      <a
+                        className="student-work-item"
+                        href="/student-submission-center"
+                        key={item.id}
+                      >
+                        <span className="student-work-icon mint">
+                          {item.type === 'PROJECT' ? (
+                            <Target />
+                          ) : item.type === 'LESSON' ? (
+                            <FileText />
+                          ) : (
+                            <BookOpen />
+                          )}
+                        </span>
+                        <span>
+                          <strong>{item.title}</strong>
+                          <small>
+                            {item.points} pts{' '}
+                            {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
+                          </small>
+                        </span>
+                        <MoreHorizontal />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </section>
             </div>
@@ -339,16 +343,18 @@ export default function StudentHomeDashboard() {
                       No classrooms match your query.
                     </p>
                   )}
-                  {filteredClasses.map((item) => (
-                    <a className="student-class" href="/student-submission-center" key={item.id}>
-                      <span className="class-mark mint">{item.code}</span>
-                      <span>
-                        <strong>{item.name}</strong>
-                        <small>{item._count?.memberships ?? 0} members</small>
-                      </span>
-                      <ChevronRight />
-                    </a>
-                  ))}
+                  <div className="data-record-grid">
+                    {filteredClasses.map((item) => (
+                      <a className="student-class" href="/student-submission-center" key={item.id}>
+                        <span className="class-mark mint">{item.code}</span>
+                        <span>
+                          <strong>{item.name}</strong>
+                          <small>{item._count?.memberships ?? 0} members</small>
+                        </span>
+                        <ChevronRight />
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </section>
             </div>

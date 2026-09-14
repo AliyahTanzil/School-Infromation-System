@@ -312,30 +312,38 @@ export default function ExaminationsDashboard() {
           </div>
         ) : (
           <div className="data-table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Code</th>
-                  <th>Status</th>
-                  <th>Candidates</th>
-                  <th>Schedules</th>
-                  <th>Marks</th>
-                  <th>Next step</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.name}</td>
-                    <td>{item.code}</td>
-                    <td>
+            <div className="data-record-grid">
+              {items.map((item) => (
+                <article className="data-record-card" key={item.id}>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Name</span>
+                    <div>{item.name}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Code</span>
+                    <div>{item.code}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Status</span>
+                    <div>
                       <span className="status-chip">{item.status}</span>
-                    </td>
-                    <td>{item._count?.candidates ?? 0}</td>
-                    <td>{item._count?.schedules ?? 0}</td>
-                    <td>{item._count?.marks ?? 0}</td>
-                    <td>
+                    </div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Candidates</span>
+                    <div>{item._count?.candidates ?? 0}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Schedules</span>
+                    <div>{item._count?.schedules ?? 0}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Marks</span>
+                    <div>{item._count?.marks ?? 0}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Next step</span>
+                    <div>
                       <p>{examinationNextTask(item)}</p>
                       {['SCHEDULED', 'IN_PROGRESS'].includes(item.status) && (
                         <button
@@ -377,11 +385,11 @@ export default function ExaminationsDashboard() {
                           Open result management
                         </Link>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </section>

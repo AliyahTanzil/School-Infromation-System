@@ -142,60 +142,62 @@ export default function FeedbackWorkspace() {
           message="No released feedback is available for this assignment."
         />
       )}
-      {grades.map((row) => (
-        <article className="panel" key={row.id}>
-          <div className="feedback-score-line">
-            <span className="eyebrow">Released grade</span>
-            <strong>
-              {row.grade.score} / {row.grade.maxScore}
-            </strong>
-          </div>
-          <h2>{assignments.find((item) => item.id === assignmentId)?.title || 'Assignment'}</h2>
-          <p>{row.grade.summary || 'Your teacher has not added a summary.'}</p>
-          {!!row.grade.rubricScores?.length && (
-            <section className="rubric-card">
-              <h3>Rubric scores</h3>
-              {row.grade.rubricScores.map((item) => (
-                <p key={item.criterionId}>
+      <div className="data-record-grid">
+        {grades.map((row) => (
+          <article className="panel" key={row.id}>
+            <div className="feedback-score-line">
+              <span className="eyebrow">Released grade</span>
+              <strong>
+                {row.grade.score} / {row.grade.maxScore}
+              </strong>
+            </div>
+            <h2>{assignments.find((item) => item.id === assignmentId)?.title || 'Assignment'}</h2>
+            <p>{row.grade.summary || 'Your teacher has not added a summary.'}</p>
+            {!!row.grade.rubricScores?.length && (
+              <section className="rubric-card">
+                <h3>Rubric scores</h3>
+                {row.grade.rubricScores.map((item) => (
+                  <p key={item.criterionId}>
+                    <strong>
+                      {item.criterion.title}: {item.points} / {item.criterion.maxPoints}
+                    </strong>
+                    {item.comment ? ` — ${item.comment}` : ''}
+                  </p>
+                ))}
+              </section>
+            )}
+            <section className="feedback-thread">
+              <h3>
+                <MessageCircle /> Conversation
+              </h3>
+              {row.grade.feedback.map((item) => (
+                <p key={item.id}>
                   <strong>
-                    {item.criterion.title}: {item.points} / {item.criterion.maxPoints}
+                    {item.author.firstName} {item.author.lastName}
                   </strong>
-                  {item.comment ? ` — ${item.comment}` : ''}
+                  <br />
+                  {item.body}
                 </p>
               ))}
+              <div className="gradebook-row-actions">
+                <input
+                  aria-label="Reply to feedback"
+                  value={reply}
+                  onChange={(event) => setReply(event.target.value)}
+                  placeholder="Ask a question about this feedback"
+                />
+                <button
+                  className="primary-action"
+                  type="button"
+                  onClick={() => sendReply(row.grade.id)}
+                >
+                  <Send /> Reply
+                </button>
+              </div>
             </section>
-          )}
-          <section className="feedback-thread">
-            <h3>
-              <MessageCircle /> Conversation
-            </h3>
-            {row.grade.feedback.map((item) => (
-              <p key={item.id}>
-                <strong>
-                  {item.author.firstName} {item.author.lastName}
-                </strong>
-                <br />
-                {item.body}
-              </p>
-            ))}
-            <div className="gradebook-row-actions">
-              <input
-                aria-label="Reply to feedback"
-                value={reply}
-                onChange={(event) => setReply(event.target.value)}
-                placeholder="Ask a question about this feedback"
-              />
-              <button
-                className="primary-action"
-                type="button"
-                onClick={() => sendReply(row.grade.id)}
-              >
-                <Send /> Reply
-              </button>
-            </div>
-          </section>
-        </article>
-      ))}
+          </article>
+        ))}
+      </div>
     </main>
   );
 }

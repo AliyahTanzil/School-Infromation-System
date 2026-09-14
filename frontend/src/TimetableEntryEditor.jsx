@@ -175,7 +175,7 @@ export default function TimetableEntryEditor({ timetable, options, rooms, onSave
           </div>
         </form>
       )}
-      <ul className="mt-4 space-y-2">
+      <ul className="mt-4 space-y-2 data-record-grid">
         {timetable.entries.map((entry) => (
           <li key={entry.id} className="flex items-center justify-between gap-3 border-t py-2">
             <span>

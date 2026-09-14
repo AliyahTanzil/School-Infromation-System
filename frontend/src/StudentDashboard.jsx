@@ -138,17 +138,19 @@ export default function StudentDashboard() {
         )}
         {!loading && !error && students.length > 0 && (
           <div className="student-list">
-            {students.map((student) => (
-              <a className="student-row" href={`/students/${student.id}`} key={student.id}>
-                <span className="student-row__meta">
-                  <strong className="student-row__name">
-                    {student.firstName} {student.lastName}
-                  </strong>
-                  <small className="student-row__id">{student.admissionNumber}</small>
-                </span>
-                <span className="status-pill">{student.status}</span>
-              </a>
-            ))}
+            <div className="data-record-grid">
+              {students.map((student) => (
+                <a className="student-row" href={`/students/${student.id}`} key={student.id}>
+                  <span className="student-row__meta">
+                    <strong className="student-row__name">
+                      {student.firstName} {student.lastName}
+                    </strong>
+                    <small className="student-row__id">{student.admissionNumber}</small>
+                  </span>
+                  <span className="status-pill">{student.status}</span>
+                </a>
+              ))}
+            </div>
           </div>
         )}
       </section>

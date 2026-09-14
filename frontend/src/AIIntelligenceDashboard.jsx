@@ -80,17 +80,19 @@ export default function AIIntelligenceDashboard() {
             </div>
             <button className="quiet-button">Export brief</button>
           </div>
-          {insights.map((item) => (
-            <article className="insight" key={item.title}>
-              <div className={`signal ${item.tone}`} />
-              <div>
-                <h3>{item.title}</h3>
-                <p>{item.body}</p>
-                <small>{item.evidence}</small>
-              </div>
-              <button className="review-button">Review</button>
-            </article>
-          ))}
+          <div className="data-record-grid">
+            {insights.map((item) => (
+              <article className="insight" key={item.title}>
+                <div className={`signal ${item.tone}`} />
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{item.body}</p>
+                  <small>{item.evidence}</small>
+                </div>
+                <button className="review-button">Review</button>
+              </article>
+            ))}
+          </div>
         </div>
         <aside className="panel">
           <p className="eyebrow">Safe assistant</p>

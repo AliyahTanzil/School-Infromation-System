@@ -290,14 +290,16 @@ export default function LiveLearningWorkspace() {
                     No live sessions found for your accessible classrooms.
                   </p>
                 )}
-                {sessions.map((session) => (
-                  <SessionRow
-                    key={session.id}
-                    session={session}
-                    selected={selected?.id === session.id}
-                    onSelect={setSelected}
-                  />
-                ))}
+                <div className="data-record-grid">
+                  {sessions.map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      selected={selected?.id === session.id}
+                      onSelect={setSelected}
+                    />
+                  ))}
+                </div>
               </div>
               <div className="live-schedule-footer">
                 <Clock3 size={14} />
@@ -366,30 +368,32 @@ export default function LiveLearningWorkspace() {
                   No session recordings found.
                 </p>
               )}
-              {filteredRecordings.map((item) => (
-                <button
-                  className="live-recording-row"
-                  key={item.id}
-                  onClick={() => {
-                    if (item.recordingUrl)
-                      window.open(item.recordingUrl, '_blank', 'noopener,noreferrer');
-                    announce(`Opening ${item.recordingTitle || item.title}`);
-                  }}
-                  type="button"
-                >
-                  <span className="live-recording-icon mint">
-                    <PlayCircle size={18} />
-                  </span>
-                  <span>
-                    <strong>{item.recordingTitle || item.title}</strong>
-                    <small>
-                      {item.classroom?.name || 'Classroom'} ·{' '}
-                      {new Date(item.updatedAt).toLocaleDateString()}
-                    </small>
-                  </span>
-                  <ChevronRight size={15} />
-                </button>
-              ))}
+              <div className="data-record-grid">
+                {filteredRecordings.map((item) => (
+                  <button
+                    className="live-recording-row"
+                    key={item.id}
+                    onClick={() => {
+                      if (item.recordingUrl)
+                        window.open(item.recordingUrl, '_blank', 'noopener,noreferrer');
+                      announce(`Opening ${item.recordingTitle || item.title}`);
+                    }}
+                    type="button"
+                  >
+                    <span className="live-recording-icon mint">
+                      <PlayCircle size={18} />
+                    </span>
+                    <span>
+                      <strong>{item.recordingTitle || item.title}</strong>
+                      <small>
+                        {item.classroom?.name || 'Classroom'} ·{' '}
+                        {new Date(item.updatedAt).toLocaleDateString()}
+                      </small>
+                    </span>
+                    <ChevronRight size={15} />
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
           <aside className="live-recordings-note">

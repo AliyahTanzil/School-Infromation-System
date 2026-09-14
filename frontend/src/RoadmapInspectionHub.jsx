@@ -249,29 +249,31 @@ export default function RoadmapInspectionHub() {
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map(([version, name, moduleStatus, route, notes]) => (
-            <article
-              key={version}
-              className="flex min-h-52 flex-col rounded-2xl border border-slate-800 bg-slate-900/75 p-5 transition hover:border-indigo-400/40"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <span className="font-mono text-xs font-bold text-indigo-300">{version}</span>
-                <span
-                  className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${statusStyles[moduleStatus]}`}
-                >
-                  {moduleStatus}
-                </span>
-              </div>
-              <h2 className="mt-5 text-lg font-semibold text-white">{name}</h2>
-              <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">{notes}</p>
-              <Link
-                to={route}
-                className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+          <div className="data-record-grid">
+            {filtered.map(([version, name, moduleStatus, route, notes]) => (
+              <article
+                key={version}
+                className="flex min-h-52 flex-col rounded-2xl border border-slate-800 bg-slate-900/75 p-5 transition hover:border-indigo-400/40"
               >
-                Inspect workspace <ArrowUpRight size={15} />
-              </Link>
-            </article>
-          ))}
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-mono text-xs font-bold text-indigo-300">{version}</span>
+                  <span
+                    className={`rounded-full border px-2 py-1 text-[10px] font-bold uppercase tracking-wide ${statusStyles[moduleStatus]}`}
+                  >
+                    {moduleStatus}
+                  </span>
+                </div>
+                <h2 className="mt-5 text-lg font-semibold text-white">{name}</h2>
+                <p className="mt-2 flex-1 text-sm leading-6 text-slate-400">{notes}</p>
+                <Link
+                  to={route}
+                  className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-indigo-300 hover:text-indigo-200"
+                >
+                  Inspect workspace <ArrowUpRight size={15} />
+                </Link>
+              </article>
+            ))}
+          </div>
         </div>
         {!filtered.length && (
           <div className="rounded-2xl border border-dashed border-slate-700 py-16 text-center text-sm text-slate-500">

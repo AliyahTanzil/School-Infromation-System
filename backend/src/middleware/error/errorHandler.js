@@ -1,5 +1,6 @@
 import logger from '../../infrastructure/logger/index.js';
 import normalizeError from '../../shared/errors/normalizeError.js';
+import transactionDiagnostic from '../../shared/errors/transactionDiagnostic.js';
 
 /**
  * Global error-handling middleware (must keep 4 args to be recognized by Express).
@@ -12,6 +13,7 @@ export default function errorHandler(err, req, res, next) {
   const normalized = normalizeError(err);
 
   logger.error('Unhandled application error', {
+    ...transactionDiagnostic(err),
     requestId: req.requestId,
     code: normalized.code,
     status: normalized.statusCode,

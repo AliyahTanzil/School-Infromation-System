@@ -2,7 +2,7 @@ import { Router } from 'express';
 import authenticate from '../../../middleware/auth/authenticate.js';
 import teacherContext from '../../../middleware/auth/teacherContext.js';
 import validate from '../../../middleware/validation/validate.js';
-import authorize from '../../../middleware/auth/authorize.js';
+import authorize, { authorizeRoleMembership } from '../../../middleware/auth/authorize.js';
 import * as controller from '../controllers/teacherController.js';
 import {
   teacherCreateSchema,
@@ -24,7 +24,7 @@ export function administerTeachers(req, res, next) {
 }
 router.use(authenticate);
 router.use(teacherContext);
-router.get('/me', authorize('TEACHER'), controller.me);
+router.get('/me', authorizeRoleMembership('TEACHER'), controller.me);
 router.get('/', administerTeachers, validate(teacherQuerySchema), controller.list);
 router.get('/:id', administerTeachers, validate(teacherIdSchema), controller.get);
 router.post('/', administerTeachers, validate(teacherCreateSchema), controller.create);

@@ -245,20 +245,22 @@ export default function ParentClassroomWorkspace() {
                       No active digital classrooms found for this student.
                     </p>
                   )}
-                  {classrooms.map((item) => (
-                    <div className="parent-schedule-item" key={item.id}>
-                      <time>{item.code}</time>
-                      <i className="parent-schedule-line mint" />
-                      <div>
-                        <strong>{item.name}</strong>
-                        <small>
-                          {item._count?.memberships ?? 0} members ·{' '}
-                          {item.description || 'Active classroom'}
-                        </small>
+                  <div className="data-record-grid">
+                    {classrooms.map((item) => (
+                      <div className="parent-schedule-item" key={item.id}>
+                        <time>{item.code}</time>
+                        <i className="parent-schedule-line mint" />
+                        <div>
+                          <strong>{item.name}</strong>
+                          <small>
+                            {item._count?.memberships ?? 0} members ·{' '}
+                            {item.description || 'Active classroom'}
+                          </small>
+                        </div>
+                        <span className="parent-badge live">ACTIVE</span>
                       </div>
-                      <span className="parent-badge live">ACTIVE</span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               </section>
               <section className="parent-panel">
@@ -274,26 +276,28 @@ export default function ParentClassroomWorkspace() {
                       No published assignments available.
                     </p>
                   )}
-                  {assignments.map((item) => (
-                    <button
-                      className="parent-assignment"
-                      key={item.id}
-                      onClick={() => setSelectedAssignment(item)}
-                    >
-                      <span className="parent-work-icon mint">
-                        <FileText aria-hidden="true" />
-                      </span>
-                      <span>
-                        <strong>{item.title}</strong>
-                        <small>
-                          {item.type} · {item.points} pts{' '}
-                          {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
-                        </small>
-                      </span>
-                      <span className="parent-badge mint">{item.status}</span>
-                      <ChevronRight aria-hidden="true" />
-                    </button>
-                  ))}
+                  <div className="data-record-grid">
+                    {assignments.map((item) => (
+                      <button
+                        className="parent-assignment"
+                        key={item.id}
+                        onClick={() => setSelectedAssignment(item)}
+                      >
+                        <span className="parent-work-icon mint">
+                          <FileText aria-hidden="true" />
+                        </span>
+                        <span>
+                          <strong>{item.title}</strong>
+                          <small>
+                            {item.type} · {item.points} pts{' '}
+                            {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
+                          </small>
+                        </span>
+                        <span className="parent-badge mint">{item.status}</span>
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </section>
             </div>
@@ -326,20 +330,22 @@ export default function ParentClassroomWorkspace() {
                   </button>
                 </div>
                 <div className="parent-class-list">
-                  {classrooms.map((item) => (
-                    <button
-                      className="parent-class"
-                      key={item.id}
-                      onClick={() => notify(`Opening ${item.name} progress.`)}
-                    >
-                      <span className="parent-class-mark mint">{item.code}</span>
-                      <span>
-                        <strong>{item.name}</strong>
-                        <small>{item.description || 'Digital classroom'}</small>
-                      </span>
-                      <ChevronRight aria-hidden="true" />
-                    </button>
-                  ))}
+                  <div className="data-record-grid">
+                    {classrooms.map((item) => (
+                      <button
+                        className="parent-class"
+                        key={item.id}
+                        onClick={() => notify(`Opening ${item.name} progress.`)}
+                      >
+                        <span className="parent-class-mark mint">{item.code}</span>
+                        <span>
+                          <strong>{item.name}</strong>
+                          <small>{item.description || 'Digital classroom'}</small>
+                        </span>
+                        <ChevronRight aria-hidden="true" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </section>
             </div>

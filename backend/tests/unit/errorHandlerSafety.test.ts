@@ -1,13 +1,17 @@
 import assert from 'node:assert/strict';
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import express from 'express';
+import { Prisma } from '@prisma/client';
 import request from 'supertest';
 import { AppError } from '../../src/foundation/errors.js';
 import { errorHandler, requestId } from '../../src/foundation/middleware.js';
+import { logger } from '../../src/foundation/logger.js';
 // @ts-expect-error Legacy application errors remain supported during migration.
 import ValidationError from '../../src/shared/errors/ValidationError.js';
 
 test('active HTTP error handler normalizes untrusted errors and preserves typed contracts', async (t) => {
+  const log = mock.method(logger, 'error', () => {});
+  t.after(() => log.mock.restore());
   const originalEnvironment = process.env.NODE_ENV;
   process.env.NODE_ENV = 'production';
   t.after(() => {
@@ -31,6 +35,18 @@ test('active HTTP error handler normalizes untrusted errors and preserves typed 
       error: { statusCode: 9999, code: 'DRIVER_FAILURE', message: 'private credentials' },
       status: 500,
       code: 'INTERNAL_ERROR',
+    },
+    {
+      name: 'transaction failure',
+      error: new Prisma.PrismaClientKnownRequestError('private transaction diagnostics', {
+        code: 'P2028',
+        clientVersion: '6.19.0',
+        meta: {
+          error: 'Transaction already closed: expired transaction; private connection details',
+        },
+      }),
+      status: 503,
+      code: 'DB_P2028',
     },
     { name: 'null', error: null, status: 500, code: 'INTERNAL_ERROR' },
     { name: 'undefined', error: undefined, status: 500, code: 'INTERNAL_ERROR' },
@@ -62,6 +78,14 @@ test('active HTTP error handler normalizes untrusted errors and preserves typed 
       assert.equal(response.body.requestId, 'error-safety-test');
       assert.equal(response.body.stack, undefined);
       assert.doesNotMatch(JSON.stringify(response.body), /private/);
+      if (entry.code === 'DB_P2028') {
+        const fields = log.mock.calls.at(-1)?.arguments[1];
+        assert.equal(fields?.requestId, 'error-safety-test');
+        assert.equal(fields?.transactionFailure, 'execution_timeout');
+        assert.doesNotMatch(JSON.stringify(fields), /private/);
+        assert.equal(response.body.error.transactionFailure, undefined);
+        assert.equal(response.body.error.details, null);
+      }
       if (entry.code === 'INTERNAL_ERROR') {
         assert.equal(
           response.body.error.message,

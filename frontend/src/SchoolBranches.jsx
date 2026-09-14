@@ -59,7 +59,7 @@ export default function SchoolBranches({ schoolId }) {
       {error && <p role="alert">{error}</p>}
       {!loaded && !error && <p>Loading branches...</p>}
       {loaded && !branches.length && <p className="my-4">No branches yet.</p>}
-      <ul className="my-4 space-y-3">
+      <ul className="my-4 space-y-3 data-record-grid">
         {branches.map((branch) => (
           <li key={branch.id} className="flex items-center justify-between gap-3">
             <span>

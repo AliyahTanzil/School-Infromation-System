@@ -204,47 +204,53 @@ export default function AssetInventoryDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Serialized assets</h2>
-            {assets.map((row) => (
-              <div
-                key={row.id}
-                className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-3"
-              >
-                <span>
-                  <strong>
-                    {row.assetNumber} · {row.name}
-                  </strong>
-                  <small className="block text-slate-400">
-                    {row.location || 'No location'} · {row.status}
-                  </small>
-                </span>
-                <select
-                  value={row.status}
-                  onChange={(event) => changeStatus(row.id, event.target.value)}
-                  className="rounded bg-slate-800 p-2"
+            <div className="data-record-grid">
+              {assets.map((row) => (
+                <div
+                  key={row.id}
+                  className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-800 pt-3"
                 >
-                  <option>ACTIVE</option>
-                  <option>ASSIGNED</option>
-                  <option>MAINTENANCE</option>
-                  <option>DISPOSED</option>
-                </select>
-              </div>
-            ))}
+                  <span>
+                    <strong>
+                      {row.assetNumber} · {row.name}
+                    </strong>
+                    <small className="block text-slate-400">
+                      {row.location || 'No location'} · {row.status}
+                    </small>
+                  </span>
+                  <select
+                    value={row.status}
+                    onChange={(event) => changeStatus(row.id, event.target.value)}
+                    className="rounded bg-slate-800 p-2"
+                  >
+                    <option>ACTIVE</option>
+                    <option>ASSIGNED</option>
+                    <option>MAINTENANCE</option>
+                    <option>DISPOSED</option>
+                  </select>
+                </div>
+              ))}
+            </div>
             {!assets.length && <p className="mt-3 text-slate-500">No assets registered.</p>}
           </article>
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Inventory balances</h2>
-            {items.map((row) => (
-              <div key={row.id} className="mt-3 border-t border-slate-800 pt-3">
-                <strong>
-                  {row.sku} · {row.name}
-                </strong>
-                <p
-                  className={row.quantity <= row.reorderLevel ? 'text-amber-300' : 'text-slate-400'}
-                >
-                  {row.quantity} available · reorder at {row.reorderLevel}
-                </p>
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {items.map((row) => (
+                <div key={row.id} className="mt-3 border-t border-slate-800 pt-3">
+                  <strong>
+                    {row.sku} · {row.name}
+                  </strong>
+                  <p
+                    className={
+                      row.quantity <= row.reorderLevel ? 'text-amber-300' : 'text-slate-400'
+                    }
+                  >
+                    {row.quantity} available · reorder at {row.reorderLevel}
+                  </p>
+                </div>
+              ))}
+            </div>
             {!items.length && <p className="mt-3 text-slate-500">No inventory items.</p>}
           </article>
         </section>

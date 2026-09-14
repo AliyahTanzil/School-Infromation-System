@@ -408,30 +408,32 @@ export default function LearningAnalyticsWorkspace() {
               />
             </label>
             <div className="cohort-list">
-              {filteredGroups.map((item) => (
-                <button
-                  key={item.name}
-                  className="cohort-row"
-                  onClick={() => announce(`${item.name} cohort opened`)}
-                >
-                  <span className={`cohort-mark ${item.color}`}>
-                    {item.name.split('·')[0].trim().replace('Year ', 'Y')}
-                  </span>
-                  <span>
-                    <strong>{item.name}</strong>
-                    <small>{item.detail}</small>
-                  </span>
-                  <b>
-                    {item.score}
-                    <small>{item.trend}</small>
-                  </b>
-                  <em
-                    className={`risk-badge ${item.risk === 'Priority' ? 'priority' : item.risk === 'Watch' ? 'watch' : 'healthy'}`}
+              <div className="data-record-grid">
+                {filteredGroups.map((item) => (
+                  <button
+                    key={item.name}
+                    className="cohort-row"
+                    onClick={() => announce(`${item.name} cohort opened`)}
                   >
-                    {item.risk}
-                  </em>
-                </button>
-              ))}
+                    <span className={`cohort-mark ${item.color}`}>
+                      {item.name.split('·')[0].trim().replace('Year ', 'Y')}
+                    </span>
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.detail}</small>
+                    </span>
+                    <b>
+                      {item.score}
+                      <small>{item.trend}</small>
+                    </b>
+                    <em
+                      className={`risk-badge ${item.risk === 'Priority' ? 'priority' : item.risk === 'Watch' ? 'watch' : 'healthy'}`}
+                    >
+                      {item.risk}
+                    </em>
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
           <section className="analytics-panel analytics-quick">

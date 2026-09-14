@@ -7,6 +7,8 @@ import refreshRepo from '../../infrastructure/repositories/refreshTokenRepositor
 import { toUserDto, toUserListDto } from '../dtos/userDto.js';
 import { ConflictError, NotFoundError, AuthorizationError } from '../../shared/errors/index.js';
 import passwordService from '../../infrastructure/hash/passwordService.js';
+import { ensureTeacherAccount } from './teacherAccountService.js';
+import { resolveSingleSchool } from './singleSchoolContextService.js';
 
 const validTransitions = {
   PENDING_VERIFICATION: new Set(['ACTIVE', 'SUSPENDED']),
@@ -43,6 +45,7 @@ export async function createUser(input, actorId, tenantId, requestContext = {}) 
   const passwordHash = await passwordService.hashPassword(input.password);
   if (existing && !existing.deletedAt)
     throw new ConflictError('A user with this email already exists');
+  const school = input.accountType === 'TEACHER' ? await resolveSingleSchool({ tenantId }) : null;
   const user = await prisma.$transaction(async (tx) => {
     const created = await userRepo.create(
       {
@@ -58,6 +61,7 @@ export async function createUser(input, actorId, tenantId, requestContext = {}) 
     );
     if (input.profile) await profileRepo.upsert(created.id, input.profile, tx);
     if (input.preference) await profileRepo.upsertPreference(created.id, input.preference, tx);
+    if (school) await ensureTeacherAccount(tx, created, school.id);
     await audit(
       {
         actorId,

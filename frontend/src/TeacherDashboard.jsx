@@ -13,6 +13,8 @@ import {
   UserRound,
 } from 'lucide-react';
 import api from './api/auth.js';
+import { useAuth } from './context/AuthContext.jsx';
+import TeacherManagement from './TeacherManagement.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import {
   WorkspaceLoading,
@@ -23,6 +25,16 @@ import {
 } from './components/WorkspaceStates.jsx';
 
 export default function TeacherDashboard() {
+  const { user } = useAuth();
+  const administrator =
+    user?.platformRole === 'OWNER' ||
+    user?.roles?.some((role) =>
+      ['PLATFORM_ADMIN', 'SCHOOL_ADMIN', 'APPLICATION_MANAGER', 'OWNER'].includes(role)
+    );
+  return administrator ? <TeacherManagement /> : <PersonalTeacherDashboard />;
+}
+
+function PersonalTeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
   const [classrooms, setClassrooms] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -199,84 +211,86 @@ export default function TeacherDashboard() {
               gap: '12px',
             }}
           >
-            {classrooms.map((room) => (
-              <div
-                key={room.id}
-                style={{
-                  border: '1px solid #274663',
-                  borderRadius: '12px',
-                  background: '#0d1b2e',
-                  padding: '16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justify: 'space-between',
-                  gap: '12px',
-                }}
-              >
-                <div>
+            <div className="data-record-grid">
+              {classrooms.map((room) => (
+                <div
+                  key={room.id}
+                  style={{
+                    border: '1px solid #274663',
+                    borderRadius: '12px',
+                    background: '#0d1b2e',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justify: 'space-between',
+                    gap: '12px',
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                      }}
+                    >
+                      <strong style={{ fontSize: '16px', color: '#e8eef7' }}>{room.name}</strong>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          color: '#48d8c9',
+                          background: '#12383c',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {room.code}
+                      </span>
+                    </div>
+                    {room.description && (
+                      <p style={{ fontSize: '13px', color: '#9aabc0', margin: '6px 0 0' }}>
+                        {room.description}
+                      </p>
+                    )}
+                  </div>
                   <div
                     style={{
                       display: 'flex',
                       justifyContent: 'space-between',
-                      alignItems: 'flex-start',
+                      alignItems: 'center',
+                      borderTop: '1px solid #1f374e',
+                      paddingTop: '10px',
                     }}
                   >
-                    <strong style={{ fontSize: '16px', color: '#e8eef7' }}>{room.name}</strong>
                     <span
                       style={{
-                        fontSize: '11px',
-                        color: '#48d8c9',
-                        background: '#12383c',
-                        padding: '2px 8px',
-                        borderRadius: '4px',
+                        fontSize: '12px',
+                        color: '#9aabc0',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
                       }}
                     >
-                      {room.code}
+                      <Users size={14} /> {room._count?.memberships ?? 0} members
                     </span>
+                    <a
+                      href="/classroom"
+                      style={{
+                        color: '#48d8c9',
+                        fontSize: '13px',
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                      }}
+                    >
+                      View <ChevronRight size={14} />
+                    </a>
                   </div>
-                  {room.description && (
-                    <p style={{ fontSize: '13px', color: '#9aabc0', margin: '6px 0 0' }}>
-                      {room.description}
-                    </p>
-                  )}
                 </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    borderTop: '1px solid #1f374e',
-                    paddingTop: '10px',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      color: '#9aabc0',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <Users size={14} /> {room._count?.memberships ?? 0} members
-                  </span>
-                  <a
-                    href="/classroom"
-                    style={{
-                      color: '#48d8c9',
-                      fontSize: '13px',
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    View <ChevronRight size={14} />
-                  </a>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         )}
       </section>
@@ -311,40 +325,42 @@ export default function TeacherDashboard() {
             </a>
           </div>
           <div style={{ display: 'grid', gap: '8px' }}>
-            {assignments.slice(0, 5).map((item) => (
-              <div
-                key={item.id}
-                style={{
-                  border: '1px solid #274663',
-                  borderRadius: '8px',
-                  background: '#0b1b2e',
-                  padding: '12px 16px',
-                  display: 'flex',
-                  justify: 'space-between',
-                  alignItems: 'center',
-                }}
-              >
-                <div>
-                  <strong style={{ color: '#edf5ff', display: 'block' }}>{item.title}</strong>
-                  <span style={{ fontSize: '12px', color: '#9cb2cb' }}>
-                    {item.type} · {item.points} pts{' '}
-                    {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
-                  </span>
-                </div>
-                <span
+            <div className="data-record-grid">
+              {assignments.slice(0, 5).map((item) => (
+                <div
+                  key={item.id}
                   style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    background: item.status === 'PUBLISHED' ? '#12383c' : '#28445f',
-                    color: item.status === 'PUBLISHED' ? '#21c4c9' : '#bdd2e9',
+                    border: '1px solid #274663',
+                    borderRadius: '8px',
+                    background: '#0b1b2e',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
                   }}
                 >
-                  {item.status}
-                </span>
-              </div>
-            ))}
+                  <div>
+                    <strong style={{ color: '#edf5ff', display: 'block' }}>{item.title}</strong>
+                    <span style={{ fontSize: '12px', color: '#9cb2cb' }}>
+                      {item.type} · {item.points} pts{' '}
+                      {item.dueAt ? `· Due ${new Date(item.dueAt).toLocaleDateString()}` : ''}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: item.status === 'PUBLISHED' ? '#12383c' : '#28445f',
+                      color: item.status === 'PUBLISHED' ? '#21c4c9' : '#bdd2e9',
+                    }}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}

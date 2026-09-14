@@ -82,6 +82,8 @@ import analyticsRouter from '../presentation/http/routes/analyticsRoutes.js';
 import searchRouter from '../presentation/http/routes/searchRoutes.js';
 // @ts-expect-error Single-school route is implemented in the active JavaScript module layer.
 import singleSchoolRouter from '../presentation/http/routes/singleSchoolRoutes.js';
+// @ts-expect-error Email setup uses the active JavaScript module layer.
+import emailSettingsRouter from '../presentation/http/routes/emailSettingsRoutes.js';
 // @ts-expect-error Data import router is implemented in the active JavaScript module layer.
 import importRouter from '../presentation/http/routes/importRoutes.js';
 
@@ -172,6 +174,8 @@ export const createApp = () => {
   app.use('/api/activation-requests', activationRouter);
   app.use('/api/v1/activation-requests', activationRouter);
   app.use('/api/school', singleSchoolRouter);
+  app.use('/api/settings/email', emailSettingsRouter);
+  app.use('/api/v1/settings/email', emailSettingsRouter);
   app.use('/api/v1/school', singleSchoolRouter);
   app.use('/api/users', userRouter);
   app.use('/api/v1/users', userRouter);

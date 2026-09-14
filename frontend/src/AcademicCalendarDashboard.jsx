@@ -322,46 +322,48 @@ export default function AcademicCalendarDashboard() {
           {!loading && !loadFailed && visible.length === 0 && (
             <p className="p-5 text-sm text-slate-500">No calendar items found.</p>
           )}
-          {visible.map((item) => (
-            <div
-              key={`${item.type}-${item.id}`}
-              className="grid gap-3 border-b border-slate-100 px-5 py-4 md:grid-cols-[1.3fr_0.5fr_1fr_1fr] md:items-center"
-            >
-              <div>
-                <p className="font-semibold">{item.name}</p>
-                <p className="mt-1 text-xs text-slate-400">{item.code}</p>
-              </div>
-              <span className="text-sm text-slate-500">{item.type}</span>
-              <span className="text-sm text-slate-500">{dateRange(item)}</span>
-              <div className="flex flex-wrap items-center gap-2">
-                <span
-                  className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.status]}`}
-                >
-                  {item.status}
-                </span>
-                {item.status === 'PLANNED' && (
-                  <button
-                    disabled={saving}
-                    type="button"
-                    onClick={() => changeStatus(item, 'ACTIVE')}
-                    className="text-xs font-semibold text-indigo-600"
+          <div className="data-record-grid">
+            {visible.map((item) => (
+              <div
+                key={`${item.type}-${item.id}`}
+                className="grid gap-3 border-b border-slate-100 px-5 py-4 md:grid-cols-[1.3fr_0.5fr_1fr_1fr] md:items-center"
+              >
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="mt-1 text-xs text-slate-400">{item.code}</p>
+                </div>
+                <span className="text-sm text-slate-500">{item.type}</span>
+                <span className="text-sm text-slate-500">{dateRange(item)}</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[item.status]}`}
                   >
-                    Activate
-                  </button>
-                )}
-                {item.status === 'ACTIVE' && (
-                  <button
-                    disabled={saving}
-                    type="button"
-                    onClick={() => changeStatus(item, 'CLOSED')}
-                    className="text-xs font-semibold text-slate-600"
-                  >
-                    Close
-                  </button>
-                )}
+                    {item.status}
+                  </span>
+                  {item.status === 'PLANNED' && (
+                    <button
+                      disabled={saving}
+                      type="button"
+                      onClick={() => changeStatus(item, 'ACTIVE')}
+                      className="text-xs font-semibold text-indigo-600"
+                    >
+                      Activate
+                    </button>
+                  )}
+                  {item.status === 'ACTIVE' && (
+                    <button
+                      disabled={saving}
+                      type="button"
+                      onClick={() => changeStatus(item, 'CLOSED')}
+                      className="text-xs font-semibold text-slate-600"
+                    >
+                      Close
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </section>
       </div>
     </main>

@@ -121,26 +121,28 @@ export default function AttendanceDashboard() {
       <section className="panel">
         <h2>Registers</h2>
         {!loading && sessions.length === 0 && <p>No attendance sessions found.</p>}
-        {sessions.map((session) => (
-          <article className="student-row" key={session.id}>
-            <span>
-              <strong>{session.title}</strong>
-              <small>
-                {new Date(session.sessionDate).toLocaleDateString()} · {session.class?.name} ·{' '}
-                {session._count?.records ?? 0} learners
-              </small>
-            </span>
-            <span className="space-x-2">
-              <b>{session.status}</b>
-              {session.status === 'DRAFT' && (
-                <button onClick={() => transition(session, 'OPEN')}>Open</button>
-              )}
-              {session.status === 'OPEN' && (
-                <button onClick={() => transition(session, 'LOCKED')}>Lock</button>
-              )}
-            </span>
-          </article>
-        ))}
+        <div className="data-record-grid">
+          {sessions.map((session) => (
+            <article className="student-row" key={session.id}>
+              <span>
+                <strong>{session.title}</strong>
+                <small>
+                  {new Date(session.sessionDate).toLocaleDateString()} · {session.class?.name} ·{' '}
+                  {session._count?.records ?? 0} learners
+                </small>
+              </span>
+              <span className="space-x-2">
+                <b>{session.status}</b>
+                {session.status === 'DRAFT' && (
+                  <button onClick={() => transition(session, 'OPEN')}>Open</button>
+                )}
+                {session.status === 'OPEN' && (
+                  <button onClick={() => transition(session, 'LOCKED')}>Lock</button>
+                )}
+              </span>
+            </article>
+          ))}
+        </div>
       </section>
     </main>
   );

@@ -273,47 +273,51 @@ export default function TransportDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Fleet</h2>
-            {vehicles.map((row) => (
-              <div
-                key={row.id}
-                className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-3"
-              >
-                <span>
-                  <strong>
-                    {row.vehicleNumber} · {row.registrationNumber}
-                  </strong>
-                  <small className="block text-slate-400">
-                    {row.type} · capacity {row.capacity}
-                  </small>
-                </span>
-                <div className="flex gap-2">
-                  <select
-                    className="rounded bg-slate-800 p-2"
-                    value={row.status}
-                    onChange={(event) => status(row.id, event.target.value)}
-                  >
-                    <option>ACTIVE</option>
-                    <option>MAINTENANCE</option>
-                    <option>INACTIVE</option>
-                    <option>RETIRED</option>
-                  </select>
-                  <button onClick={() => inspect(row.id)} className="rounded bg-emerald-700 px-3">
-                    Pass inspection
-                  </button>
+            <div className="data-record-grid">
+              {vehicles.map((row) => (
+                <div
+                  key={row.id}
+                  className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-800 pt-3"
+                >
+                  <span>
+                    <strong>
+                      {row.vehicleNumber} · {row.registrationNumber}
+                    </strong>
+                    <small className="block text-slate-400">
+                      {row.type} · capacity {row.capacity}
+                    </small>
+                  </span>
+                  <div className="flex gap-2">
+                    <select
+                      className="rounded bg-slate-800 p-2"
+                      value={row.status}
+                      onChange={(event) => status(row.id, event.target.value)}
+                    >
+                      <option>ACTIVE</option>
+                      <option>MAINTENANCE</option>
+                      <option>INACTIVE</option>
+                      <option>RETIRED</option>
+                    </select>
+                    <button onClick={() => inspect(row.id)} className="rounded bg-emerald-700 px-3">
+                      Pass inspection
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </article>
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Trips</h2>
-            {trips.map((row) => (
-              <div key={row.id} className="mt-3 border-t border-slate-800 pt-3">
-                <strong>{row.route.name}</strong>
-                <p className="text-slate-400">
-                  {new Date(row.scheduledAt).toLocaleString()} · {row.status}
-                </p>
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {trips.map((row) => (
+                <div key={row.id} className="mt-3 border-t border-slate-800 pt-3">
+                  <strong>{row.route.name}</strong>
+                  <p className="text-slate-400">
+                    {new Date(row.scheduledAt).toLocaleString()} · {row.status}
+                  </p>
+                </div>
+              ))}
+            </div>
           </article>
         </section>
       </div>

@@ -15,12 +15,21 @@ import AuthorizationError from '../../shared/errors/AuthorizationError.js';
  *   simply requires an authenticated user.
  */
 export default function authorize(...allowedRoles) {
+  return roleGuard(allowedRoles, true);
+}
+
+// Personal-profile routes require an actual role, even for platform owners.
+export function authorizeRoleMembership(...allowedRoles) {
+  return roleGuard(allowedRoles, false);
+}
+
+function roleGuard(allowedRoles, allowOwner) {
   return (req, _res, next) => {
     if (!req.user) {
       throw new AuthenticationError('Authentication required');
     }
 
-    if (allowedRoles.length === 0) {
+    if ((allowOwner && req.user.platformRole === 'OWNER') || allowedRoles.length === 0) {
       return next();
     }
 

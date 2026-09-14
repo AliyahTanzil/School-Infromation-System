@@ -181,27 +181,29 @@ export default function NotificationCenter() {
               ))}
             </div>
             <div className="notification-items">
-              {visible.map((delivery) => {
-                const content = contentOf(delivery);
-                return (
-                  <button
-                    key={delivery.id}
-                    className={`notification-item ${selectedId === delivery.id ? 'selected' : ''} ${delivery.status !== 'READ' ? 'unread' : ''}`}
-                    onClick={() => setSelectedId(delivery.id)}
-                  >
-                    <span className="notification-icon mint">
-                      <Bell size={15} />
-                    </span>
-                    <span className="notification-copy">
-                      <strong>{content.title}</strong>
-                      <span>{content.body}</span>
-                      <small>
-                        {new Date(delivery.createdAt).toLocaleString()} · {delivery.channel}
-                      </small>
-                    </span>
-                  </button>
-                );
-              })}
+              <div className="data-record-grid">
+                {visible.map((delivery) => {
+                  const content = contentOf(delivery);
+                  return (
+                    <button
+                      key={delivery.id}
+                      className={`notification-item ${selectedId === delivery.id ? 'selected' : ''} ${delivery.status !== 'READ' ? 'unread' : ''}`}
+                      onClick={() => setSelectedId(delivery.id)}
+                    >
+                      <span className="notification-icon mint">
+                        <Bell size={15} />
+                      </span>
+                      <span className="notification-copy">
+                        <strong>{content.title}</strong>
+                        <span>{content.body}</span>
+                        <small>
+                          {new Date(delivery.createdAt).toLocaleString()} · {delivery.channel}
+                        </small>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
               {!loading && !visible.length && <p>No notifications match this view.</p>}
               {loading && <p>Loading notifications…</p>}
             </div>

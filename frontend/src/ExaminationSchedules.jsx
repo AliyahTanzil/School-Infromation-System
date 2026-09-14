@@ -258,7 +258,7 @@ export default function ExaminationSchedules({
           {!schedules.length ? (
             <p>No subject schedules saved yet.</p>
           ) : (
-            <ul className="my-3 space-y-2">
+            <ul className="my-3 space-y-2 data-record-grid">
               {schedules.map((item) => (
                 <li key={item.id ?? `${item.classId}:${item.subjectCode}`}>
                   {classes.find((klass) => klass.id === item.classId)?.name ??
@@ -285,7 +285,7 @@ export default function ExaminationSchedules({
               {candidates.length} registered candidate(s) across {classes.length} class(es);{' '}
               {schedules.length} saved subject schedule(s).
             </p>
-            <ul className="my-3 space-y-2">
+            <ul className="my-3 space-y-2 data-record-grid">
               {classes.map((item) => {
                 const saved = schedules.filter((schedule) => schedule.classId === item.id);
                 return (

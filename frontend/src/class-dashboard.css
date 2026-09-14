@@ -1,0 +1,19 @@
+.class-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+}
+
+.class-catalog-grid .class-catalog-card {
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  overflow-wrap: anywhere;
+}
+
+.class-catalog-card .status-pill {
+  margin-top: auto;
+  max-width: 100%;
+  white-space: normal;
+}

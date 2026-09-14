@@ -223,56 +223,60 @@ export default function HRDashboard() {
         <section className="mt-8 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl font-semibold">Leave decisions</h2>
-            {leaveRequests.map((item) => (
-              <div key={item.id} className="mt-3 rounded-xl border border-slate-800 p-4">
-                <strong>{item.leaveType}</strong>
-                <p className="text-sm text-slate-400">
-                  {item.status} · {new Date(item.startsAt).toLocaleDateString()}–
-                  {new Date(item.endsAt).toLocaleDateString()}
-                </p>
-                {item.status === 'PENDING' && (
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => decide(item.id, 'APPROVED')}
-                      className="rounded bg-emerald-700 px-3 py-1"
-                    >
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => decide(item.id, 'REJECTED')}
-                      className="rounded bg-rose-700 px-3 py-1"
-                    >
-                      Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {leaveRequests.map((item) => (
+                <div key={item.id} className="mt-3 rounded-xl border border-slate-800 p-4">
+                  <strong>{item.leaveType}</strong>
+                  <p className="text-sm text-slate-400">
+                    {item.status} · {new Date(item.startsAt).toLocaleDateString()}–
+                    {new Date(item.endsAt).toLocaleDateString()}
+                  </p>
+                  {item.status === 'PENDING' && (
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => decide(item.id, 'APPROVED')}
+                        className="rounded bg-emerald-700 px-3 py-1"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => decide(item.id, 'REJECTED')}
+                        className="rounded bg-rose-700 px-3 py-1"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
             {!leaveRequests.length && <p className="mt-3 text-slate-500">No leave requests.</p>}
           </article>
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl font-semibold">Payroll control</h2>
-            {data.payrollRuns.map((run) => (
-              <div
-                key={run.id}
-                className="mt-3 flex items-center justify-between rounded-xl border border-slate-800 p-4"
-              >
-                <span>
-                  <strong>{run.status}</strong>
-                  <small className="block text-slate-400">
-                    Total {(run.totalMinor / 100).toFixed(2)}
-                  </small>
-                </span>
-                {run.status === 'DRAFT' && (
-                  <button
-                    onClick={() => finalize(run.id)}
-                    className="rounded bg-indigo-600 px-3 py-2"
-                  >
-                    Finalize
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {data.payrollRuns.map((run) => (
+                <div
+                  key={run.id}
+                  className="mt-3 flex items-center justify-between rounded-xl border border-slate-800 p-4"
+                >
+                  <span>
+                    <strong>{run.status}</strong>
+                    <small className="block text-slate-400">
+                      Total {(run.totalMinor / 100).toFixed(2)}
+                    </small>
+                  </span>
+                  {run.status === 'DRAFT' && (
+                    <button
+                      onClick={() => finalize(run.id)}
+                      className="rounded bg-indigo-600 px-3 py-2"
+                    >
+                      Finalize
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
             {!data.payrollRuns.length && <p className="mt-3 text-slate-500">No payroll runs.</p>}
           </article>
         </section>

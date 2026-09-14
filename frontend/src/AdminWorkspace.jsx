@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
+  Mail,
   BookOpenCheck,
   CalendarDays,
   ClipboardCheck,
@@ -62,6 +63,12 @@ export const administrationModuleGroups = [
         BrainCircuit,
       ],
       ['/users', 'User management', 'Roles, permissions, and platform accounts.', ShieldCheck],
+      [
+        '/settings/email',
+        'Email setup',
+        'Configure email delivery for recovery and verification.',
+        Mail,
+      ],
     ],
   },
   {

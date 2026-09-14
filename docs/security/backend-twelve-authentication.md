@@ -1,5 +1,43 @@
 # Backend 12 authentication security
 
+Teacher self-profile boundary (2026-09-14): `/api/teachers/me` and its versioned
+alias require explicit `TEACHER` role membership even when the authenticated
+identity has platform ownership. The shared `authorizeRoleMembership` guard
+retains this personal-route boundary; owner-aware administration guards continue
+to permit owners to manage school teacher records. Existing behavioral tests
+cover owner/admin rejection from the self-profile route and teacher acceptance.
+
+Transaction diagnostics (2026-09-13): both HTTP error handlers attach a server-only
+`transactionFailure` label to genuine Prisma `P2028` errors, alongside the request ID.
+Recognized message patterns produce `start_timeout`, `execution_timeout`,
+`connection_closed`, or `transaction_closed`; all other cases produce `unknown`.
+These are diagnostic hints from driver text, not proof of the underlying cause.
+Raw Prisma messages and metadata are not copied into this field. The public response
+remains the redacted `503 DB_P2028` contract without diagnostic details. No transaction
+timeouts or automatic authentication retries were changed. The running backend must
+load the updated code before a new failure can supply this evidence.
+
+Live verification (2026-09-13): administrator, teacher and parent authentication
+journeys passed. Student login returned `503 DB_P2028` with request ID
+`fc859ddb-df6a-4135-9e47-429ca50b3418`. Transaction failure is therefore not confined
+to the administrator role; its cause remains undetermined. The configured environment
+has no SMTP host, so external recovery delivery is blocked by configuration.
+
+Authentication email logging (2026-09-13): the development JSON transport logs only
+recipient and subject, never rendered bodies or reset/verification bearer links.
+The generated message remains available to the internal caller for controlled tests.
+`backend/tests/unit/authEmailLogging.test.js` verifies both email payloads retain their
+encoded links while logs exclude tokens and message content. With no SMTP host,
+messages are not delivered; this check does not certify external email delivery.
+
+Frontend recovery (2026-09-13): recovery emails open the public `/reset-password?token=...`
+route. The form requires matching passwords, rejects missing/oversized tokens locally, and
+submits `{ token, password }` to `/api/auth/reset-password`; password strength and token validity
+remain server-enforced. Successful reset clears the in-memory access token and React user,
+removes query parameters with history replacement, and offers sign-in. Failed resets preserve
+local authentication state and offer a new recovery link. The 109-test frontend suite includes
+route, form, and credential-clearing regressions; this is not evidence of browser or SMTP delivery.
+
 Refresh, password-reset and email-verification tokens must be nonblank strings of at most 512 characters. Body validation applies the limit before trimming and returns `400 VALIDATION_ERROR` for malformed input. The services independently reject malformed values with `401 AUTHENTICATION_ERROR` before hashing or persistence, including JSON objects/arrays decoded from refresh cookies. Cookie-only refresh remains supported, and currently generated 64-character base64url tokens remain accepted. `backend/tests/unit/opaqueTokenBoundary.test.js` covers service rejection, schema limits and both active refresh route aliases.
 
 Current-user lookup requires a nonblank string user identity, and password changes require both user and session identities before any account lookup or password processing. Missing, null, blank, and non-string identities return `401 AUTHENTICATION_ERROR` before persistence access. This prevents omitted Prisma filters from selecting an unrelated account or session when a service caller supplies incomplete authentication context. `backend/tests/unit/authServiceIdentity.test.js` covers these boundaries; password-change atomicity tests retain coverage for valid identities and session ownership.

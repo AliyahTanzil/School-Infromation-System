@@ -91,6 +91,14 @@ it('renders server-verified blockers when a readiness report is supplied', () =>
   );
   expect(screen.getByRole('status')).toHaveTextContent('1 server readiness issue');
   expect(screen.getByText('MISSING TEACHING ASSIGNMENT')).toBeInTheDocument();
+  expect(screen.getByText('Next: Assign teachers to subjects')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Go to next task' })).toHaveAttribute(
+    'href',
+    '#timetable-staffing'
+  );
+  expect(
+    within(metric('Subjects needing a teaching assignment')).getByText('1')
+  ).toBeInTheDocument();
   expect(
     screen.getByText('SSS 3A: Mathematics has no active teacher assignment')
   ).toBeInTheDocument();

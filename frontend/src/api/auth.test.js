@@ -1,8 +1,28 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import api, { logout, me, refresh, setAccessToken } from './auth.js';
+import api, { logout, me, refresh, resetPassword, setAccessToken } from './auth.js';
 import { subscribeSetupChanges } from '../setupProgressEvents.js';
 
 const originalAdapter = api.defaults.adapter;
+
+it('clears in-memory credentials only after a successful password reset', async () => {
+  setAccessToken('old-session');
+  let fail = true;
+  const requests = [];
+  api.defaults.adapter = async (config) => {
+    if (config.url === '/auth/reset-password' && fail) throw new Error('Expired link');
+    requests.push(config);
+    return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  await expect(
+    resetPassword({ token: 'expired', password: 'StrongPassword!42' })
+  ).rejects.toThrow();
+  await api.get('/subjects');
+  expect(requests.at(-1).headers.get('Authorization')).toBe('Bearer old-session');
+  fail = false;
+  await resetPassword({ token: 'valid', password: 'StrongPassword!42' });
+  await api.get('/subjects');
+  expect(requests.at(-1).headers.get('Authorization')).toBeUndefined();
+});
 
 afterEach(() => {
   api.defaults.adapter = originalAdapter;

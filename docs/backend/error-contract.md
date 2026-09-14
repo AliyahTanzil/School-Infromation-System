@@ -23,10 +23,19 @@ All API errors use a stable envelope:
 - `RATE_LIMITED` — abuse protection threshold exceeded (`429`)
 - `INTERNAL_ERROR` — unexpected server failure (`500`)
 - `DATABASE_UNAVAILABLE` — database connection or client unavailable (`503`)
+- `DB_P2028` — database transaction unavailable (`503`); transaction details are redacted.
 
 Clients must branch on `error.code`, not message text. `requestId` is safe to expose and should be supplied to support; stack traces and database details are never returned in production.
 
 ## Message safety
+
+Verification (2026-09-13): 20 focused normalizer/HTTP tests, targeted lint, TypeScript
+compilation, runtime copying, and compiled health/protected-route smoke checks pass.
+The combined build stopped during Prisma regeneration with a Windows engine-DLL rename
+`EPERM`; separate compilation used the existing generated client. No schema changed.
+Transaction errors preserve `DB_P2028` for correlation but expose no raw message or metadata.
+This response change does not resolve the underlying transaction lifecycle failure and does
+not automatically retry database mutations.
 
 Recognized body-parser errors use fixed messages and null details. Submitted bodies, parser diagnostics, and encoding metadata are never copied into these responses. Unknown parser types and mismatched statuses remain internal errors. `backend/tests/unit/requestBodyErrors.test.ts` exercises malformed JSON, oversized JSON, and unsupported encodings through the active API before authentication.
 

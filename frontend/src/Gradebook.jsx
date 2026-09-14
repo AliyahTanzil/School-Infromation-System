@@ -250,26 +250,20 @@ export default function Gradebook() {
       )}
       {!!visible.length && (
         <section className="gradebook-table-wrap">
-          <table className="gradebook-table">
-            <thead>
-              <tr>
-                <th>Student</th>
-                <th>Score</th>
-                <th>Maximum</th>
-                <th>Feedback summary</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visible.map((row) => (
-                <tr key={row.id}>
-                  <td>
+          <div className="data-record-grid">
+            {visible.map((row) => (
+              <article className="data-record-card" key={row.id}>
+                <div className="data-record-field">
+                  <span className="data-record-label">Student</span>
+                  <div>
                     <strong>
                       {row.student.firstName} {row.student.lastName}
                     </strong>
-                  </td>
-                  <td>
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Score</span>
+                  <div>
                     <input
                       aria-label={`${row.student.firstName} score`}
                       type="number"
@@ -277,8 +271,11 @@ export default function Gradebook() {
                       value={drafts[row.id]?.score ?? ''}
                       onChange={(event) => update(row.id, 'score', event.target.value)}
                     />
-                  </td>
-                  <td>
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Maximum</span>
+                  <div>
                     <input
                       aria-label={`${row.student.firstName} maximum`}
                       type="number"
@@ -286,8 +283,11 @@ export default function Gradebook() {
                       value={drafts[row.id]?.maxScore ?? 100}
                       onChange={(event) => update(row.id, 'maxScore', event.target.value)}
                     />
-                  </td>
-                  <td>
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Feedback summary</span>
+                  <div>
                     <input
                       aria-label={`${row.student.firstName} feedback`}
                       value={drafts[row.id]?.summary ?? ''}
@@ -326,11 +326,17 @@ export default function Gradebook() {
                         />
                       </label>
                     ))}
-                  </td>
-                  <td>
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Status</span>
+                  <div>
                     <span className="status-pill">{row.grade?.status || 'UNGRADED'}</span>
-                  </td>
-                  <td className="gradebook-row-actions">
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Actions</span>
+                  <div>
                     <button type="button" className="secondary-action" onClick={() => save(row)}>
                       <Check /> Save
                     </button>
@@ -342,11 +348,11 @@ export default function Gradebook() {
                     >
                       <Send /> Release
                     </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
         </section>
       )}
       {showRubric && (

@@ -28,6 +28,7 @@ import {
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import SetupGuide from './SetupGuide.jsx';
+import ResetPassword from './ResetPassword.jsx';
 import toast, { Toaster } from 'react-hot-toast';
 
 /* =========================================================
@@ -35,6 +36,7 @@ import toast, { Toaster } from 'react-hot-toast';
  * ======================================================= */
 
 const SchoolAdmin = lazy(() => import('./SchoolAdmin.jsx'));
+const EmailSetup = lazy(() => import('./EmailSetup.jsx'));
 const ActivationWorkspace = lazy(() => import('./ActivationWorkspace.jsx'));
 const StudentDashboard = lazy(() => import('./StudentDashboard.jsx'));
 const StudentHomeDashboard = lazy(() => import('./StudentHomeDashboard.jsx'));
@@ -926,6 +928,7 @@ function Protected({ children, allowed }) {
 
   if (
     allowed?.length &&
+    user.platformRole !== 'OWNER' &&
     !allowed.some(
       (value) =>
         user.accountType === value ||
@@ -1047,6 +1050,15 @@ export default function App() {
             />
 
             <Route path="/forgot-password" element={<Forgot />} />
+            <Route
+              path="/settings/email"
+              element={
+                <Protected allowed={['SCHOOL_ADMIN', 'ADMIN', 'APPLICATION_MANAGER']}>
+                  <EmailSetup />
+                </Protected>
+              }
+            />
+            <Route path="/reset-password" element={<ResetPassword />} />
 
             {/* ===============================
                 CORE WORKSPACES

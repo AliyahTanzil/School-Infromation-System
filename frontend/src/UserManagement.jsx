@@ -177,28 +177,30 @@ export default function UserManagement() {
         </div>
 
         <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Status</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id}>
-                  <td>{user.email}</td>
-                  <td>{user.accountType ?? '—'}</td>
-                  <td>
+          <div className="data-record-grid">
+            {users.map((user) => (
+              <article className="data-record-card" key={user.id}>
+                <div className="data-record-field">
+                  <span className="data-record-label">Email</span>
+                  <div>{user.email}</div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Role</span>
+                  <div>{user.accountType ?? '—'}</div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Status</span>
+                  <div>
                     <span className="status-chip">{user.status}</span>
-                  </td>
-                  <td>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+                <div className="data-record-field">
+                  <span className="data-record-label">Created</span>
+                  <div>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}</div>
+                </div>
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </main>

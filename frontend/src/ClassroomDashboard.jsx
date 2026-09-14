@@ -313,20 +313,22 @@ export default function ClassroomDashboard() {
           {!notice && !busy && !classrooms.length && (
             <p>No classroom has been created for this school.</p>
           )}
-          {classrooms.map((classroom) => (
-            <button
-              className="dc-row"
-              key={classroom.id}
-              onClick={() => openClassroom(classroom.id)}
-              type="button"
-            >
-              <span>
-                <strong>{classroom.name}</strong>
-                <small>{classroom.code}</small>
-              </span>
-              <b>{classroom._count.memberships} members</b>
-            </button>
-          ))}
+          <div className="data-record-grid">
+            {classrooms.map((classroom) => (
+              <button
+                className="dc-row"
+                key={classroom.id}
+                onClick={() => openClassroom(classroom.id)}
+                type="button"
+              >
+                <span>
+                  <strong>{classroom.name}</strong>
+                  <small>{classroom.code}</small>
+                </span>
+                <b>{classroom._count.memberships} members</b>
+              </button>
+            ))}
+          </div>
         </section>
       </div>
 
@@ -395,12 +397,14 @@ export default function ClassroomDashboard() {
                 </button>
               </form>
               <div className="dc-feed">
-                {stream.announcements.map((item) => (
-                  <article key={item.id}>
-                    <strong>{item.title}</strong>
-                    <p>{item.body}</p>
-                  </article>
-                ))}
+                <div className="data-record-grid">
+                  {stream.announcements.map((item) => (
+                    <article key={item.id}>
+                      <strong>{item.title}</strong>
+                      <p>{item.body}</p>
+                    </article>
+                  ))}
+                </div>
               </div>
             </section>
             <section>
@@ -417,12 +421,14 @@ export default function ClassroomDashboard() {
                 </button>
               </form>
               <div className="dc-feed">
-                {stream.posts.map((item) => (
-                  <article key={item.id}>
-                    <p>{item.body}</p>
-                    <small>{item.comments.length} comments</small>
-                  </article>
-                ))}
+                <div className="data-record-grid">
+                  {stream.posts.map((item) => (
+                    <article key={item.id}>
+                      <p>{item.body}</p>
+                      <small>{item.comments.length} comments</small>
+                    </article>
+                  ))}
+                </div>
               </div>
             </section>
           </div>
@@ -431,26 +437,28 @@ export default function ClassroomDashboard() {
               <CalendarDays size={18} /> Upcoming calendar
             </h3>
             <div className="dc-calendar">
-              {calendarEvents.map((item) => (
-                <article key={item.id}>
-                  <time dateTime={item.startsAt}>
-                    {new Date(item.startsAt).toLocaleString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </time>
-                  <strong>{item.title}</strong>
-                  <small>
-                    {item.type === 'ASSIGNMENT_DUE'
-                      ? 'Due'
-                      : item.type === 'LESSON'
-                        ? 'Lesson'
-                        : 'Available'}
-                  </small>
-                </article>
-              ))}
+              <div className="data-record-grid">
+                {calendarEvents.map((item) => (
+                  <article key={item.id}>
+                    <time dateTime={item.startsAt}>
+                      {new Date(item.startsAt).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </time>
+                    <strong>{item.title}</strong>
+                    <small>
+                      {item.type === 'ASSIGNMENT_DUE'
+                        ? 'Due'
+                        : item.type === 'LESSON'
+                          ? 'Lesson'
+                          : 'Available'}
+                    </small>
+                  </article>
+                ))}
+              </div>
               {!calendarEvents.length && <p>No upcoming assignments are scheduled.</p>}
             </div>
           </section>
@@ -500,41 +508,43 @@ export default function ClassroomDashboard() {
               </button>
             </form>
             <div className="dc-feed">
-              {assignments.map((item) => (
-                <article key={item.id}>
-                  <strong>{item.title}</strong>
-                  <p>{item.description || item.type}</p>
-                  <small>
-                    {item.status} · {item.points} points
-                  </small>
-                  <div className="dc-lifecycle">
-                    {item.status === 'DRAFT' && (
-                      <button
-                        onClick={() => changeAssignmentStatus(item.id, 'PUBLISHED')}
-                        type="button"
-                      >
-                        Publish
-                      </button>
-                    )}
-                    {item.status === 'PUBLISHED' && (
-                      <button
-                        onClick={() => changeAssignmentStatus(item.id, 'CLOSED')}
-                        type="button"
-                      >
-                        Close
-                      </button>
-                    )}
-                    {item.status !== 'ARCHIVED' && (
-                      <button
-                        onClick={() => changeAssignmentStatus(item.id, 'ARCHIVED')}
-                        type="button"
-                      >
-                        Archive
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
+              <div className="data-record-grid">
+                {assignments.map((item) => (
+                  <article key={item.id}>
+                    <strong>{item.title}</strong>
+                    <p>{item.description || item.type}</p>
+                    <small>
+                      {item.status} · {item.points} points
+                    </small>
+                    <div className="dc-lifecycle">
+                      {item.status === 'DRAFT' && (
+                        <button
+                          onClick={() => changeAssignmentStatus(item.id, 'PUBLISHED')}
+                          type="button"
+                        >
+                          Publish
+                        </button>
+                      )}
+                      {item.status === 'PUBLISHED' && (
+                        <button
+                          onClick={() => changeAssignmentStatus(item.id, 'CLOSED')}
+                          type="button"
+                        >
+                          Close
+                        </button>
+                      )}
+                      {item.status !== 'ARCHIVED' && (
+                        <button
+                          onClick={() => changeAssignmentStatus(item.id, 'ARCHIVED')}
+                          type="button"
+                        >
+                          Archive
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
             </div>
           </section>
           <section className="dc-classwork">
@@ -562,21 +572,23 @@ export default function ClassroomDashboard() {
               </button>
             </form>
             <div className="dc-feed">
-              {materials.map((item) => (
-                <article key={item.id}>
-                  <strong>{item.title}</strong>
-                  <p>{item.description || item.contentType}</p>
-                  <small>{Math.ceil(item.size / 1024)} KB</small>
-                  <div className="dc-lifecycle">
-                    <button onClick={() => downloadMaterial(item)} type="button">
-                      Download
-                    </button>
-                    <button onClick={() => archiveMaterial(item.id)} type="button">
-                      Archive
-                    </button>
-                  </div>
-                </article>
-              ))}
+              <div className="data-record-grid">
+                {materials.map((item) => (
+                  <article key={item.id}>
+                    <strong>{item.title}</strong>
+                    <p>{item.description || item.contentType}</p>
+                    <small>{Math.ceil(item.size / 1024)} KB</small>
+                    <div className="dc-lifecycle">
+                      <button onClick={() => downloadMaterial(item)} type="button">
+                        Download
+                      </button>
+                      <button onClick={() => archiveMaterial(item.id)} type="button">
+                        Archive
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
               {!materials.length && <p>No materials have been uploaded.</p>}
             </div>
           </section>

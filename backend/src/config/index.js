@@ -166,8 +166,8 @@ const config = {
   },
 
   email: {
-    // When SMTP host is absent (local/dev), the mailer streams messages to logs
-    // instead of sending, so flows are fully testable without a mail server.
+    // Without SMTP, the JSON transport returns messages without delivery.
+    // Logs contain metadata only; authentication links must never be logged.
     host: process.env.SMTP_HOST ?? '',
     port: toInt(process.env.SMTP_PORT, 587),
     secure: toBool(process.env.SMTP_SECURE, false),

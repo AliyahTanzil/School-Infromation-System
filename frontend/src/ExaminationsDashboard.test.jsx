@@ -14,7 +14,7 @@ beforeEach(() => {
   sessionStorage.clear();
   exams = [];
   api.get.mockImplementation(async (path) => ({
-    data: { data: path === '/school-setup' ? { school } : exams },
+    data: { data: path === '/school' ? { school } : exams },
   }));
   api.post.mockImplementation(async () => {
     exams = [
@@ -60,7 +60,7 @@ it('uses the configured school and updates next steps after draft creation', asy
 it('does not confuse a failed examination check with an empty register', async () => {
   const user = userEvent.setup();
   api.get.mockImplementation(async (path) => {
-    if (path === '/school-setup') return { data: { data: { school } } };
+    if (path === '/school') return { data: { data: { school } } };
     throw new Error('Unavailable');
   });
   show();

@@ -128,39 +128,41 @@ export default function BiometricManagementDashboard() {
           </div>
         </section>
         <section className="grid gap-4">
-          {devices.map((device) => (
-            <article
-              key={device.id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5"
-            >
-              <div className="flex items-center gap-4">
-                <div className="rounded-xl bg-slate-800 p-3">
-                  {device.status === 'OFFLINE' ? (
-                    <WifiOff className="text-amber-300" />
-                  ) : (
-                    <Fingerprint className="text-cyan-300" />
-                  )}
+          <div className="data-record-grid">
+            {devices.map((device) => (
+              <article
+                key={device.id}
+                className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900 p-5"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="rounded-xl bg-slate-800 p-3">
+                    {device.status === 'OFFLINE' ? (
+                      <WifiOff className="text-amber-300" />
+                    ) : (
+                      <Fingerprint className="text-cyan-300" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className="font-semibold">{device.displayName}</h2>
+                    <p className="text-sm text-slate-400">
+                      {device.location} · {device.capabilities.join(' · ')}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h2 className="font-semibold">{device.displayName}</h2>
-                  <p className="text-sm text-slate-400">
-                    {device.location} · {device.capabilities.join(' · ')}
-                  </p>
+                <div className="flex items-center gap-3">
+                  <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold">
+                    {health[device.id] || device.status}
+                  </span>
+                  <button
+                    className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800"
+                    onClick={() => checkHealth(device)}
+                  >
+                    Check health
+                  </button>
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="rounded-full bg-slate-800 px-3 py-1 text-xs font-semibold">
-                  {health[device.id] || device.status}
-                </span>
-                <button
-                  className="rounded-lg border border-slate-700 px-3 py-2 text-sm hover:bg-slate-800"
-                  onClick={() => checkHealth(device)}
-                >
-                  Check health
-                </button>
-              </div>
-            </article>
-          ))}
+              </article>
+            ))}
+          </div>
         </section>
       </div>
     </main>

@@ -157,12 +157,14 @@ export default function CommunicationDashboard() {
         </section>
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <h2 className="text-xl font-semibold">Recent notifications</h2>
-          {notifications.map((item) => (
-            <article key={item.id} className="mt-3 rounded-xl border border-slate-800 p-4">
-              <strong>{item.payload?.title || item.eventType}</strong>
-              <p className="text-slate-400">{item.payload?.body}</p>
-            </article>
-          ))}
+          <div className="data-record-grid">
+            {notifications.map((item) => (
+              <article key={item.id} className="mt-3 rounded-xl border border-slate-800 p-4">
+                <strong>{item.payload?.title || item.eventType}</strong>
+                <p className="text-slate-400">{item.payload?.body}</p>
+              </article>
+            ))}
+          </div>
           {!notifications.length && <p className="mt-4 text-slate-500">No notifications yet.</p>}
         </section>
       </div>

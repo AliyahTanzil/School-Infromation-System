@@ -25,7 +25,7 @@ it('waits for school recovery and ignores a school cached by a previous session'
   expect(screen.queryByPlaceholderText('School UUID')).not.toBeInTheDocument();
 
   api.get.mockImplementation(async (path) => ({
-    data: { data: path === '/school-setup' ? { school: { id: 'current-school' } } : [] },
+    data: { data: path === '/school' ? { school: { id: 'current-school' } } : [] },
   }));
   fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
   await waitFor(() =>

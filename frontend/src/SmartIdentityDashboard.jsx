@@ -105,37 +105,39 @@ export default function SmartIdentityDashboard() {
               </div>
             </div>
             <div className="mt-6 divide-y divide-slate-800">
-              {visibleChecks.map(([name, provider, status, time, tone]) => (
-                <div
-                  key={`${name}-${time}`}
-                  className="flex items-center justify-between gap-4 py-4"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <span
-                      className={`grid size-9 shrink-0 place-items-center rounded-xl ${tone === 'blocked' ? 'bg-rose-400/10 text-rose-300' : 'bg-emerald-400/10 text-emerald-300'}`}
-                    >
-                      {provider === 'QR code' ? (
-                        <QrCode size={17} />
-                      ) : provider === 'Device' ? (
-                        <Laptop size={17} />
-                      ) : (
-                        <KeyRound size={17} />
-                      )}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-slate-200">{name}</p>
-                      <p className="text-sm text-slate-500">
-                        {provider} · {time}
-                      </p>
-                    </div>
-                  </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${tone === 'blocked' ? 'bg-rose-400/10 text-rose-300' : 'bg-emerald-400/10 text-emerald-300'}`}
+              <div className="data-record-grid">
+                {visibleChecks.map(([name, provider, status, time, tone]) => (
+                  <div
+                    key={`${name}-${time}`}
+                    className="flex items-center justify-between gap-4 py-4"
                   >
-                    {status}
-                  </span>
-                </div>
-              ))}
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        className={`grid size-9 shrink-0 place-items-center rounded-xl ${tone === 'blocked' ? 'bg-rose-400/10 text-rose-300' : 'bg-emerald-400/10 text-emerald-300'}`}
+                      >
+                        {provider === 'QR code' ? (
+                          <QrCode size={17} />
+                        ) : provider === 'Device' ? (
+                          <Laptop size={17} />
+                        ) : (
+                          <KeyRound size={17} />
+                        )}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-200">{name}</p>
+                        <p className="text-sm text-slate-500">
+                          {provider} · {time}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${tone === 'blocked' ? 'bg-rose-400/10 text-rose-300' : 'bg-emerald-400/10 text-emerald-300'}`}
+                    >
+                      {status}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </article>
 

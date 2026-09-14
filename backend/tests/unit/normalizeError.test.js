@@ -53,6 +53,7 @@ describe('normalizeError', () => {
     ['P2002', 409, 'DB_UNIQUE_CONSTRAINT'],
     ['P2025', 404, 'NOT_FOUND'],
     ['P2003', 500, 'DB_P2003'],
+    ['P2028', 503, 'DB_P2028'],
   ]) {
     it(`maps ${code} without exposing database text or metadata`, () => {
       const normalized = normalizeError(

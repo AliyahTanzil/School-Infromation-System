@@ -18,6 +18,7 @@ const expectedDestinations = [
   '/classes',
   '/classroom',
   '/users',
+  '/settings/email',
   '/timetables',
   '/academic-calendar',
   '/attendance',
@@ -61,7 +62,7 @@ it('maps every administration module card to its intended application route', ()
     modules.map(([href]) => href)
   );
   expect(configuredDestinations).toEqual(expectedDestinations);
-  expect(screen.getByText('37')).toBeInTheDocument();
+  expect(screen.getByText('38')).toBeInTheDocument();
   expect(new Set(configuredDestinations).size).toBe(configuredDestinations.length);
 
   for (const destination of expectedDestinations) {

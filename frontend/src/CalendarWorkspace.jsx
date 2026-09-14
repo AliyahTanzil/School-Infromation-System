@@ -304,27 +304,29 @@ export default function CalendarWorkspace() {
               </div>
               <button onClick={() => setView('Agenda')}>View all</button>
             </div>
-            {filtered.slice(0, 4).map((event) => (
-              <button
-                className="upcoming-item"
-                key={event.id}
-                onClick={() => {
-                  setSelected(event);
-                  setActiveDay(event.day);
-                }}
-              >
-                <span className={`upcoming-date ${event.color}`}>
-                  <strong>{event.day}</strong>
-                  <small>{event.month}</small>
-                </span>
-                <span>
-                  <strong>{event.title}</strong>
-                  <small>
-                    {event.time} · {event.location}
-                  </small>
-                </span>
-              </button>
-            ))}
+            <div className="data-record-grid">
+              {filtered.slice(0, 4).map((event) => (
+                <button
+                  className="upcoming-item"
+                  key={event.id}
+                  onClick={() => {
+                    setSelected(event);
+                    setActiveDay(event.day);
+                  }}
+                >
+                  <span className={`upcoming-date ${event.color}`}>
+                    <strong>{event.day}</strong>
+                    <small>{event.month}</small>
+                  </span>
+                  <span>
+                    <strong>{event.title}</strong>
+                    <small>
+                      {event.time} · {event.location}
+                    </small>
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </aside>
       </section>

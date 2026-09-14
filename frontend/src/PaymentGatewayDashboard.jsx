@@ -152,16 +152,18 @@ export default function PaymentGatewayDashboard() {
         </section>
         <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
           <h2 className="text-lg font-semibold">Recent intents</h2>
-          {intents.map((intent) => (
-            <div
-              key={intent.id}
-              className="mt-3 flex justify-between border-b border-slate-800 py-3"
-            >
-              <span>{intent.internalReference}</span>
-              <span>{intent.channel}</span>
-              <span>{intent.status}</span>
-            </div>
-          ))}
+          <div className="data-record-grid">
+            {intents.map((intent) => (
+              <div
+                key={intent.id}
+                className="mt-3 flex justify-between border-b border-slate-800 py-3"
+              >
+                <span>{intent.internalReference}</span>
+                <span>{intent.channel}</span>
+                <span>{intent.status}</span>
+              </div>
+            ))}
+          </div>
           {!intents.length && <p className="mt-4 text-slate-400">No payments started yet.</p>}
         </section>
       </div>

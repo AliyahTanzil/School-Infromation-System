@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import api from './api/auth.js';
 import { getApiErrorMessage } from './api/errorMessage.js';
 import { WorkspaceLoading, WorkspaceEmpty, WorkspaceError } from './components/WorkspaceStates.jsx';
+import './class-dashboard.css';
 
 const currentYear = new Date().getFullYear();
 const academicYears = Array.from({ length: 16 }, (_, index) => currentYear - 5 + index);
@@ -219,9 +220,13 @@ export default function ClassDashboard() {
           />
         )}
         {classes.length > 0 && (
-          <div className="result-list">
+          <div className="class-catalog-grid">
             {classes.map((item) => (
-              <Link className="result-row" key={item.id} to={`/classes/${item.id}`}>
+              <Link
+                className="result-row class-catalog-card"
+                key={item.id}
+                to={`/classes/${item.id}`}
+              >
                 <span className="result-row__meta">
                   <strong>
                     {item.name}

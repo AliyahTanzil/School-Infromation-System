@@ -1,0 +1,115 @@
+/* Shared layout for record collections across school workspaces. */
+.room-card-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.room-card-details {
+  min-width: 0;
+}
+
+.room-card-header .room-card-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 5rem;
+  height: 1.75rem;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  line-height: 1;
+}
+
+.data-record-grid,
+.page-shell .result-list {
+  --saas-card: #102036;
+  --saas-border: #36516d;
+  --saas-text: #e8eef7;
+  --saas-text-muted: #aebed0;
+  color: var(--saas-text);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  list-style: none;
+}
+
+.data-record-grid > *,
+.page-shell .result-list > .result-row {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--saas-border, #29445e);
+  border-radius: 16px;
+  background: var(--saas-card, #102238);
+  color: var(--saas-text);
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.data-record-grid :is(h2, h3, h4, strong) {
+  color: #e8eef7;
+}
+
+.data-record-grid :is(small, .text-slate-400, .data-record-label) {
+  color: #aebed0;
+}
+
+.data-record-grid > :is(a, button):focus-visible {
+  outline: 2px solid #48d8c9;
+  outline-offset: 3px;
+}
+
+.data-record-grid > :is(div, article, li, a, button),
+.page-shell .result-list > .result-row {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.data-record-grid :is(input, select, textarea) {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.data-record-grid :is(.status-pill, .status-chip),
+.page-shell .result-list .status-pill {
+  align-self: flex-start;
+  max-width: 100%;
+  white-space: normal;
+}
+
+.data-record-field {
+  min-width: 0;
+}
+
+.data-record-label {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--saas-text-muted, #94a3b8);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.data-record-field > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+:is(.data-table-wrap, .finance-table-wrap, .gradebook-table-wrap):has(> .data-record-grid) {
+  overflow: visible;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+}

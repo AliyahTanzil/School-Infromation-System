@@ -4,6 +4,8 @@ import { isAppError } from './errors.js';
 import { logger } from './logger.js';
 // @ts-expect-error Legacy normalizer handles Prisma and application errors during migration.
 import normalizeError from '../shared/errors/normalizeError.js';
+// @ts-expect-error Shared JavaScript diagnostic returns fixed server-only labels.
+import transactionDiagnostic from '../shared/errors/transactionDiagnostic.js';
 
 export const requestId: RequestHandler = (request, response, next) => {
   const supplied = request.header('x-request-id');
@@ -48,6 +50,7 @@ export const errorHandler: ErrorRequestHandler = (error, _request, response, nex
   };
   const normalizedError = isAppError(error) ? error : normalizedLegacy;
   logger.error('request failed', {
+    ...transactionDiagnostic(error),
     requestId: response.locals.requestId,
     code: normalizedError?.code ?? 'INTERNAL_ERROR',
     status: normalizedError?.statusCode ?? 500,

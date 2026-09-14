@@ -108,50 +108,52 @@ export default function ParentPortal() {
           />
         ) : (
           <div className="grid gap-5 md:grid-cols-2">
-            {portal.children.map(({ student, relationship, permissions }) => (
-              <article
-                key={student.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h2 className="text-2xl font-semibold">
-                      {student.profile?.firstName} {student.profile?.lastName}
-                    </h2>
-                    <p className="mt-1 text-slate-400">
-                      {relationship} · {student.admissionNumber}
-                    </p>
+            <div className="data-record-grid">
+              {portal.children.map(({ student, relationship, permissions }) => (
+                <article
+                  key={student.id}
+                  className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h2 className="text-2xl font-semibold">
+                        {student.profile?.firstName} {student.profile?.lastName}
+                      </h2>
+                      <p className="mt-1 text-slate-400">
+                        {relationship} · {student.admissionNumber}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300">
+                      {student.status}
+                    </span>
                   </div>
-                  <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-semibold text-cyan-300">
-                    {student.status}
-                  </span>
-                </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-xl bg-slate-800 p-3">
-                    <span className="text-slate-400">Academic</span>
-                    <strong className="mt-1 block">
-                      {permissions?.academic ? 'Available' : 'Restricted'}
-                    </strong>
+                  <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl bg-slate-800 p-3">
+                      <span className="text-slate-400">Academic</span>
+                      <strong className="mt-1 block">
+                        {permissions?.academic ? 'Available' : 'Restricted'}
+                      </strong>
+                    </div>
+                    <div className="rounded-xl bg-slate-800 p-3">
+                      <span className="text-slate-400">Attendance</span>
+                      <strong className="mt-1 block">
+                        {permissions?.attendance ? 'Available' : 'Restricted'}
+                      </strong>
+                    </div>
                   </div>
-                  <div className="rounded-xl bg-slate-800 p-3">
-                    <span className="text-slate-400">Attendance</span>
-                    <strong className="mt-1 block">
-                      {permissions?.attendance ? 'Available' : 'Restricted'}
-                    </strong>
-                  </div>
-                </div>
 
-                <div className="mt-4 flex justify-end">
-                  <a
-                    href={`/parent-classroom?studentId=${student.id}`}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 px-3.5 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
-                  >
-                    Open classroom workspace →
-                  </a>
-                </div>
-              </article>
-            ))}
+                  <div className="mt-4 flex justify-end">
+                    <a
+                      href={`/parent-classroom?studentId=${student.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-500/10 px-3.5 py-2 text-xs font-semibold text-cyan-300 hover:bg-cyan-500/20"
+                    >
+                      Open classroom workspace →
+                    </a>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         )}
       </section>

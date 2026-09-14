@@ -187,48 +187,52 @@ export default function LibraryDashboard() {
         <section className="mt-6 grid gap-6 lg:grid-cols-2">
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Catalog</h2>
-            {books.map((item) => (
-              <div key={item.id} className="mt-3 border-t border-slate-800 pt-3">
-                <strong>{item.title}</strong>
-                <p className="text-slate-400">
-                  {item.author} · {item.copies.length} copies
-                </p>
-                <button
-                  onClick={() => addCopy(item.id)}
-                  className="mt-2 rounded bg-slate-700 px-3 py-1"
-                >
-                  Add copy
-                </button>
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {books.map((item) => (
+                <div key={item.id} className="mt-3 border-t border-slate-800 pt-3">
+                  <strong>{item.title}</strong>
+                  <p className="text-slate-400">
+                    {item.author} · {item.copies.length} copies
+                  </p>
+                  <button
+                    onClick={() => addCopy(item.id)}
+                    className="mt-2 rounded bg-slate-700 px-3 py-1"
+                  >
+                    Add copy
+                  </button>
+                </div>
+              ))}
+            </div>
           </article>
           <article className="rounded-2xl border border-slate-800 bg-slate-900 p-5">
             <h2 className="text-xl">Loans</h2>
-            {loans.map((item) => (
-              <div
-                key={item.id}
-                className="mt-3 flex justify-between border-t border-slate-800 pt-3"
-              >
-                <span>
-                  {item.copy.book.title} · {item.status}
-                </span>
-                {item.status === 'BORROWED' && (
-                  <button
-                    onClick={() =>
-                      submit(
-                        { preventDefault() {} },
-                        `/libraries/${libraryId}/loans/${item.id}/return`,
-                        {},
-                        () => {}
-                      )
-                    }
-                    className="rounded bg-emerald-700 px-3"
-                  >
-                    Return
-                  </button>
-                )}
-              </div>
-            ))}
+            <div className="data-record-grid">
+              {loans.map((item) => (
+                <div
+                  key={item.id}
+                  className="mt-3 flex justify-between border-t border-slate-800 pt-3"
+                >
+                  <span>
+                    {item.copy.book.title} · {item.status}
+                  </span>
+                  {item.status === 'BORROWED' && (
+                    <button
+                      onClick={() =>
+                        submit(
+                          { preventDefault() {} },
+                          `/libraries/${libraryId}/loans/${item.id}/return`,
+                          {},
+                          () => {}
+                        )
+                      }
+                      className="rounded bg-emerald-700 px-3"
+                    >
+                      Return
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </article>
         </section>
       </div>

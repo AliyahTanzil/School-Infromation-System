@@ -21,7 +21,7 @@ const teacherQuery = z
   .strict();
 const teacherCreate = z
   .object({
-    employeeNumber: z.string().trim().min(1).max(60),
+    employeeNumber: z.string().trim().max(60).optional(),
     profile: z
       .object({
         firstName: z.string().trim().min(1).max(100),

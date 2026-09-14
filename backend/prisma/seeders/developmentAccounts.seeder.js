@@ -72,29 +72,24 @@ function configuredAccount(definition) {
 }
 
 async function upsertSchoolContext(tx) {
-  const tenant = await tx.tenant.upsert({
-    where: { code: 'SAIS-DEVELOPMENT' },
-    update: { name: 'SAIS Development School', status: 'ACTIVE', deletedAt: null },
-    create: {
-      code: 'SAIS-DEVELOPMENT',
-      name: 'SAIS Development School',
-      status: 'ACTIVE',
-      timezone: 'UTC',
-      currency: 'SLE',
-    },
+  const configuredId = process.env.SINGLE_SCHOOL_ID?.trim();
+  const schools = await tx.school.findMany({
+    where: configuredId ? { id: configuredId } : {},
+    select: { id: true, tenantId: true },
+    take: configuredId ? 1 : 2,
   });
-
-  const school = await tx.school.upsert({
-    where: { tenantId_code: { tenantId: tenant.id, code: 'MAIN' } },
-    update: { name: 'SAIS Development School' },
-    create: {
-      tenantId: tenant.id,
-      code: 'MAIN',
-      name: 'SAIS Development School',
-      country: 'Sierra Leone',
-    },
+  if (schools.length !== 1) {
+    throw new Error(
+      'Bootstrap the main school and configure SINGLE_SCHOOL_ID before seeding accounts'
+    );
+  }
+  const school = schools[0];
+  if (!school.tenantId) throw new Error('The main school must have an active tenant');
+  const tenant = await tx.tenant.findFirst({
+    where: { id: school.tenantId, status: 'ACTIVE', deletedAt: null },
+    select: { id: true },
   });
-
+  if (!tenant) throw new Error('The main school must have an active tenant');
   return { tenant, school };
 }
 

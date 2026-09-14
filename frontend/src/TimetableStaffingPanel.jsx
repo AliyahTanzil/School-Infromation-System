@@ -199,7 +199,7 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
             Add assignment
           </button>
         </form>
-        <ul className="mt-5 space-y-2">
+        <ul className="mt-5 space-y-2 data-record-grid">
           {assignments.map((item) => (
             <li
               key={item.id}
@@ -274,7 +274,7 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
         <p className="mt-4 text-sm font-medium">
           {selectedTeacher ? teacherName(selectedTeacher) : 'No teacher selected'}
         </p>
-        <ul className="mt-3 space-y-2">
+        <ul className="mt-3 space-y-2 data-record-grid">
           {rules.map((rule) => (
             <li
               key={rule.id}

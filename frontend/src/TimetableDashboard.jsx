@@ -381,33 +381,35 @@ export default function TimetableDashboard() {
             </button>
           </form>
           <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {rooms.map((room) => (
-              <article key={room.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold">{room.name}</h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {room.code} · {room.kind.toLowerCase()} · capacity {room.capacity}
-                    </p>
+            <div className="data-record-grid">
+              {rooms.map((room) => (
+                <article key={room.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="room-card-header">
+                    <div className="room-card-details">
+                      <h3 className="font-semibold">{room.name}</h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {room.code} · {room.kind.toLowerCase()} · capacity {room.capacity}
+                      </p>
+                    </div>
+                    <span
+                      className={`room-card-status rounded-full px-2 py-1 text-[11px] font-bold ${room.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                    >
+                      {room.isActive ? 'ACTIVE' : 'INACTIVE'}
+                    </span>
                   </div>
-                  <span
-                    className={`rounded-full px-2 py-1 text-[11px] font-bold ${room.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}
+                  {room.resources?.length > 0 && (
+                    <p className="mt-3 text-xs text-slate-500">{room.resources.join(', ')}</p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleRoom(room)}
+                    className="mt-3 text-xs font-semibold text-indigo-700"
                   >
-                    {room.isActive ? 'ACTIVE' : 'INACTIVE'}
-                  </span>
-                </div>
-                {room.resources?.length > 0 && (
-                  <p className="mt-3 text-xs text-slate-500">{room.resources.join(', ')}</p>
-                )}
-                <button
-                  type="button"
-                  onClick={() => toggleRoom(room)}
-                  className="mt-3 text-xs font-semibold text-indigo-700"
-                >
-                  {room.isActive ? 'Deactivate' : 'Activate'}
-                </button>
-              </article>
-            ))}
+                    {room.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+                </article>
+              ))}
+            </div>
             {!rooms.length && (
               <p className="text-sm text-slate-500">
                 No timetable rooms configured for this school.
@@ -438,29 +440,32 @@ export default function TimetableDashboard() {
             <p className="mt-1 text-sm text-slate-500">Validated schedule assignments</p>
           </div>
         </section>
-        <section className="mt-8 grid gap-6 lg:grid-cols-[0.8fr_1.5fr]">
+        <section className="timetable-workspace mt-8 grid gap-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-5">
             <h2 className="font-semibold">Schedule versions</h2>
             <div className="mt-4 space-y-2">
-              {timetables.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setSelected(item)}
-                  className={`w-full rounded-xl border p-4 text-left ${selected?.id === item.id ? 'border-indigo-400 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200'}`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="font-semibold">{item.name}</span>
-                    <span
-                      className={`rounded-full px-2 py-1 text-[11px] font-bold ${statusTone[item.status]}`}
-                    >
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {item.academicYear} · v{item.version}
-                  </p>
-                </button>
-              ))}
+              <div className="data-record-grid">
+                {timetables.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => setSelected(item)}
+                    aria-pressed={selected?.id === item.id}
+                    className={`w-full rounded-xl border p-4 text-left ${selected?.id === item.id ? 'border-indigo-400 bg-indigo-50' : 'border-slate-100 hover:border-indigo-200'}`}
+                  >
+                    <div className="timetable-version-heading">
+                      <span className="font-semibold">{item.name}</span>
+                      <span
+                        className={`timetable-version-status rounded-full px-2 py-1 text-[11px] font-bold ${statusTone[item.status]}`}
+                      >
+                        {item.status}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {item.academicYear} · v{item.version}
+                    </p>
+                  </button>
+                ))}
+              </div>
               {!timetables.length && (
                 <p className="text-sm text-slate-500">No timetables have been created yet.</p>
               )}

@@ -74,6 +74,17 @@ export default function normalizeError(error) {
       return new NotFoundError('Requested record was not found');
     }
 
+    if (error.code === 'P2028') {
+      return new DatabaseError(
+        'The service is temporarily unavailable. Please try again shortly.',
+        {
+          statusCode: 503,
+          code: 'DB_P2028',
+          details: null,
+        }
+      );
+    }
+
     return new DatabaseError('The request could not be completed. Please try again.', {
       statusCode: 500,
       code: `DB_${error.code}`,

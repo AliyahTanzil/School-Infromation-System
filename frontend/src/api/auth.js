@@ -88,7 +88,9 @@ export async function forgotPassword(email) {
   return api.post('/auth/forgot-password', { email });
 }
 export async function resetPassword(values) {
-  return api.post('/auth/reset-password', values);
+  const response = await api.post('/auth/reset-password', values);
+  setAccessToken(null);
+  return response;
 }
 export async function verifyEmail(token) {
   return api.post('/auth/verify-email', { token });

@@ -9,6 +9,7 @@ import './learning-analytics.css';
 import './academic-integrity.css';
 import './security-admin.css';
 import './global-ui.css';
+import './data-grids.css';
 import App from './App.jsx';
 
 createRoot(document.getElementById('root')).render(

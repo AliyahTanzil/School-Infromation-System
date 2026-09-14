@@ -113,17 +113,19 @@ export default function IoTDashboard() {
               <span /> Live
             </span>
           </div>
-          {gateways.map(([name, status, count, seen]) => (
-            <div className="gateway-row" key={name}>
-              <span className={`status-dot ${status.toLowerCase()}`} />
-              <div>
-                <strong>{name}</strong>
-                <small>{count}</small>
+          <div className="data-record-grid">
+            {gateways.map(([name, status, count, seen]) => (
+              <div className="gateway-row" key={name}>
+                <span className={`status-dot ${status.toLowerCase()}`} />
+                <div>
+                  <strong>{name}</strong>
+                  <small>{count}</small>
+                </div>
+                <span className="gateway-status">{status}</span>
+                <small>{seen}</small>
               </div>
-              <span className="gateway-status">{status}</span>
-              <small>{seen}</small>
-            </div>
-          ))}
+            ))}
+          </div>
         </article>
         <article className="iot-panel">
           <div className="panel-heading">
@@ -132,16 +134,18 @@ export default function IoTDashboard() {
               <h2>Campus telemetry</h2>
             </div>
           </div>
-          {telemetry.map(([label, value, trend, Icon]) => (
-            <div className="telemetry-row" key={label}>
-              <Icon size={18} />
-              <div>
-                <small>{label}</small>
-                <strong>{value}</strong>
+          <div className="data-record-grid">
+            {telemetry.map(([label, value, trend, Icon]) => (
+              <div className="telemetry-row" key={label}>
+                <Icon size={18} />
+                <div>
+                  <small>{label}</small>
+                  <strong>{value}</strong>
+                </div>
+                <span>{trend}</span>
               </div>
-              <span>{trend}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </article>
       </section>
       <section className="iot-grid">
@@ -179,13 +183,15 @@ export default function IoTDashboard() {
             </div>
             <AlertTriangle size={18} />
           </div>
-          {alerts.map(([title, severity, detail]) => (
-            <div className="alert-row" key={title}>
-              <span className={`severity ${severity.toLowerCase()}`}>{severity}</span>
-              <strong>{title}</strong>
-              <small>{detail}</small>
-            </div>
-          ))}
+          <div className="data-record-grid">
+            {alerts.map(([title, severity, detail]) => (
+              <div className="alert-row" key={title}>
+                <span className={`severity ${severity.toLowerCase()}`}>{severity}</span>
+                <strong>{title}</strong>
+                <small>{detail}</small>
+              </div>
+            ))}
+          </div>
         </article>
       </section>
       <footer className="module-footnote">

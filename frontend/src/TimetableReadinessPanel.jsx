@@ -1,4 +1,5 @@
 /* eslint-disable react/prop-types */
+import './timetable-layout.css';
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function TimetableReadinessPanel({ timetable, report, onCheck, checking = false }) {
@@ -19,57 +20,69 @@ export default function TimetableReadinessPanel({ timetable, report, onCheck, ch
     (conflict) => conflict.severity === 'HARD' && !conflict.resolvedAt
   );
   const serverIssues = report?.issues || [];
-  const nextAction = !lessons.length
+  const missingTeachingAssignments = serverIssues.filter(
+    (issue) => issue.code === 'MISSING_TEACHING_ASSIGNMENT'
+  );
+  const nextAction = missingTeachingAssignments.length
     ? {
-        label: 'Add teaching lessons',
-        target: '#timetable-lessons',
-        description: 'Prepare staffing and rooms, then add lessons in the editor below.',
+        label: 'Assign teachers to subjects',
+        target: '#timetable-staffing',
+        description: `${missingTeachingAssignments.length} subject assignment(s) need a teacher. Save the teacher, subject, class, and term in staffing, then assign teachers and rooms to the lessons.`,
       }
-    : missing.length
+    : !lessons.length
       ? {
-          label: 'Complete lesson assignments',
+          label: 'Add teaching lessons',
           target: '#timetable-lessons',
-          description: 'Give every teaching lesson a class, teacher, and room.',
+          description: 'Prepare staffing and rooms, then add lessons in the editor below.',
         }
-      : hardConflicts.length
+      : missing.length
         ? {
-            label: 'Resolve scheduling conflicts',
+            label: 'Complete lesson assignments',
             target: '#timetable-lessons',
-            description: 'Review conflicting lessons and adjust their times, teachers, or rooms.',
+            description: 'Give every teaching lesson a class, teacher, and room.',
           }
-        : !report
+        : hardConflicts.length
           ? {
-              label: 'Check server readiness',
-              description: 'Run the server checks before moving to review or publication.',
+              label: 'Resolve scheduling conflicts',
+              target: '#timetable-lessons',
+              description: 'Review conflicting lessons and adjust their times, teachers, or rooms.',
             }
-          : !report.ready
+          : !report
             ? {
-                label: 'Resolve server readiness issues',
-                target: '#timetable-server-issues',
-                description:
-                  'Open the issue list below. Update staffing, availability, rooms, or lessons as indicated, then check readiness again.',
+                label: 'Check server readiness',
+                description: 'Run the server checks before moving to review or publication.',
               }
-            : timetable.status === 'DRAFT'
+            : !report.ready
               ? {
-                  label: 'Send the timetable to review',
-                  target: '#timetable-workflow',
+                  label: 'Resolve server readiness issues',
+                  target: '#timetable-server-issues',
                   description:
-                    'Use Send to review so the schedule can be reviewed before publication.',
+                    'Open the issue list below. Update staffing, availability, rooms, or lessons as indicated, then check readiness again.',
                 }
-              : timetable.status === 'REVIEW'
+              : timetable.status === 'DRAFT'
                 ? {
-                    label: 'Review and publish the timetable',
+                    label: 'Send the timetable to review',
                     target: '#timetable-workflow',
                     description:
-                      'Review the weekly schedule, then use Publish when it is approved.',
+                      'Use Send to review so the schedule can be reviewed before publication.',
                   }
-                : {
-                    label: 'Review the released schedule',
-                    target: '#operational-timetable-print',
-                    description:
-                      'The timetable has been released. Review or print the schedule for daily use.',
-                  };
+                : timetable.status === 'REVIEW'
+                  ? {
+                      label: 'Review and publish the timetable',
+                      target: '#timetable-workflow',
+                      description:
+                        'Review the weekly schedule, then use Publish when it is approved.',
+                    }
+                  : {
+                      label: 'Review the released schedule',
+                      target: '#operational-timetable-print',
+                      description:
+                        'The timetable has been released. Review or print the schedule for daily use.',
+                    };
   const counts = [
+    ...(report
+      ? [['Subjects needing a teaching assignment', missingTeachingAssignments.length]]
+      : []),
     ['Lessons needing a class', lessons.filter((entry) => !entry.classId).length],
     ['Lessons needing a teacher', lessons.filter((entry) => !entry.teacherId).length],
     [
@@ -80,7 +93,7 @@ export default function TimetableReadinessPanel({ timetable, report, onCheck, ch
   ];
   return (
     <section
-      className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4"
+      className="timetable-readiness mt-5 rounded-xl border p-4"
       aria-label="Timetable readiness"
     >
       <h3 className="text-lg font-semibold">Timetable readiness</h3>

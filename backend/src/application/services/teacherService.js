@@ -1,6 +1,7 @@
 import * as repository from '../../infrastructure/repositories/teacherRepository.js';
 import { assertTransition } from '../../domain/teacherLifecycle.js';
 import NotFoundError from '../../shared/errors/NotFoundError.js';
+import { generateEmployeeNumber } from '../../domain/employeeNumber.js';
 
 export async function list(context, filters) {
   return repository.listTeachers({ ...context, ...filters });
@@ -17,7 +18,7 @@ export async function create(input, context) {
   return repository.createTeacher({
     tenantId: context.tenantId,
     schoolId: context.schoolId,
-    employeeNumber: input.employeeNumber,
+    employeeNumber: input.employeeNumber || generateEmployeeNumber(input.profile),
     status: 'APPLICANT',
     profile: { create: input.profile },
     employment: input.employment ? { create: input.employment } : undefined,

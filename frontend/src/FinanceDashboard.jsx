@@ -254,45 +254,51 @@ export default function FinanceDashboard() {
             </select>
           </div>
           <div className="finance-table-wrap">
-            <table className="finance-table">
-              <thead>
-                <tr>
-                  <th>Invoice</th>
-                  <th>Learner</th>
-                  <th>Due date</th>
-                  <th>Total</th>
-                  <th>Balance</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id}>
-                    <td>
+            <div className="data-record-grid">
+              {filteredInvoices.map((invoice) => (
+                <article className="data-record-card" key={invoice.id}>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Invoice</span>
+                    <div>
                       <strong>{invoice.invoiceNumber}</strong>
                       <small>
                         {invoice.issuedAt ? new Date(invoice.issuedAt).toLocaleDateString() : '—'}
                       </small>
-                    </td>
-                    <td>
+                    </div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Learner</span>
+                    <div>
                       {invoice.student
                         ? `${invoice.student.firstName} ${invoice.student.lastName}`
                         : 'Unassigned'}
-                    </td>
-                    <td>{invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : '—'}</td>
-                    <td>{formatMajorMoney(invoice.total)}</td>
-                    <td>{formatMajorMoney(invoice.balance)}</td>
-                    <td>
+                    </div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Due date</span>
+                    <div>{invoice.dueAt ? new Date(invoice.dueAt).toLocaleDateString() : '—'}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Total</span>
+                    <div>{formatMajorMoney(invoice.total)}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Balance</span>
+                    <div>{formatMajorMoney(invoice.balance)}</div>
+                  </div>
+                  <div className="data-record-field">
+                    <span className="data-record-label">Status</span>
+                    <div>
                       <span
                         className={`finance-status ${statusClass[invoice.status] ?? 'status-neutral'}`}
                       >
                         {invoice.status.replaceAll('_', ' ')}
                       </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
             {filteredInvoices.length === 0 && (
               <div className="finance-empty">
                 <strong>No invoices match this view.</strong>
