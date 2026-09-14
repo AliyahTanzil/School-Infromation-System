@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 student-home aggregation checkpoint (2026-09-14), Codex: assignments and calendar events now include every classroom returned by the accessible-classroom API, with a shared 30-day calendar interval and chronological event order. Reads run one classroom at a time (two requests concurrently); failures clear the aggregate and offer retry. Nine focused tests, targeted ESLint, formatting and frontend production build pass. The existing classroom API's 100-record limit and remaining SEC-001 acceptance remain open; no live data changes.
+
+SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Aggregate student-home assignments and calendar records across returned accessible classrooms, retaining scoped reads, bounded concurrency and retryable failures. Verify and publish.
+
 SEC-001 student-home checkpoint (2026-09-14), Codex: student home now waits for authenticated school context, ignores cached school identity and omits school request headers. Failures in classroom, notification, assignment or calendar reads show a retryable error and clear stale results. Seven focused dashboard/context tests, targeted ESLint, formatting and frontend production build pass. Assignment/calendar coverage still uses the first accessible classroom; broader aggregation and remaining SEC-001 acceptance remain open. No live data changes.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Migrate student home to authenticated school context and show retryable data failures; verify the scoped request flow and publish the checkpoint.

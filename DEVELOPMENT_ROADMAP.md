@@ -2,6 +2,8 @@
 
 Updated: 2026-09-14
 
+Student-home aggregation checkpoint (2026-09-14): removed the first-classroom-only restriction for work and calendar events. The dashboard aggregates every classroom returned by the scoped API, orders calendar events chronologically, and rejects partial results on failure. Nine focused tests, targeted ESLint, formatting and frontend production build pass. The API's existing 100-classroom cap and remaining SEC-001 acceptance stay open.
+
 Student-home checkpoint (2026-09-14): migrated student home to authenticated school context and removed cached school headers. Data failures now offer retry rather than silently showing empty learning data. Seven focused tests, targeted ESLint, formatting and frontend production build pass. Multi-classroom assignment/calendar aggregation and remaining SEC-001 acceptance stay open.
 
 Live-learning checkpoint (2026-09-14): migrated live learning to authenticated school context and removed cached school headers. Failed session/recording reads now offer retry, and selecting a session no longer causes a reload. Five focused tests, targeted ESLint, formatting and frontend production build pass. Remaining single-school migrations and live acceptance remain open under SEC-001.

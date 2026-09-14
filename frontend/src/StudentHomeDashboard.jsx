@@ -85,35 +85,37 @@ export default function StudentHomeDashboard() {
           setCalendarEvents([]);
 
           if (rooms.length > 0) {
-            const primaryRoomId = rooms[0].id;
             const calendarStart = new Date();
             const calendarEnd = new Date();
             calendarEnd.setDate(calendarEnd.getDate() + 30);
 
-            const [assignmentRes, calendarRes] = await Promise.allSettled([
-              api.get('/lms/assignments', {
-                signal,
-                params: { classroomId: primaryRoomId, status: 'PUBLISHED' },
-              }),
-              api.get('/lms/calendar', {
-                signal,
-                params: {
-                  classroomId: primaryRoomId,
-                  start: calendarStart.toISOString(),
-                  end: calendarEnd.toISOString(),
-                },
-              }),
-            ]);
-            if (signal?.aborted) return;
-            if (assignmentRes.status === 'rejected') throw assignmentRes.reason;
-            if (calendarRes.status === 'rejected') throw calendarRes.reason;
-
-            if (assignmentRes.status === 'fulfilled') {
-              setAssignments(assignmentRes.value.data.data || []);
+            const allAssignments = [];
+            const allEvents = [];
+            // Limit in-flight requests to two, even for large classroom lists.
+            for (const room of rooms) {
+              if (signal?.aborted) return;
+              const [assignmentRes, calendarRes] = await Promise.all([
+                api.get('/lms/assignments', {
+                  signal,
+                  params: { classroomId: room.id, status: 'PUBLISHED' },
+                }),
+                api.get('/lms/calendar', {
+                  signal,
+                  params: {
+                    classroomId: room.id,
+                    start: calendarStart.toISOString(),
+                    end: calendarEnd.toISOString(),
+                  },
+                }),
+              ]);
+              if (signal?.aborted) return;
+              allAssignments.push(...(assignmentRes.data.data || []));
+              allEvents.push(...(calendarRes.data.data || []));
             }
-            if (calendarRes.status === 'fulfilled') {
-              setCalendarEvents(calendarRes.value.data.data || []);
-            }
+            setAssignments(allAssignments);
+            setCalendarEvents(
+              allEvents.sort((a, b) => new Date(a.startsAt) - new Date(b.startsAt))
+            );
           }
         }
       } catch (requestError) {
