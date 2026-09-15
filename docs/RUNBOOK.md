@@ -378,3 +378,9 @@ ports. Production and other environments require the configured origin allowlist
 LAN addresses also require an explicit CORS_ORIGIN entry. Restart the backend
 after updating its code or environment. A 403 CORS_ORIGIN_DENIED / "Origin not
 allowed" occurs before credential validation; changing the password will not fix it.
+
+### Class detail student data
+
+Class detail reads student firstName and lastName directly from the Student model.
+The roster status comes from ClassEnrollment, not Student. The class query retains
+its tenant/school scope and active-enrollment filter. No migration is required.

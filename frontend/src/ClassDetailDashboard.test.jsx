@@ -173,3 +173,40 @@ describe('Class detail dashboard', () => {
     );
   });
 });
+
+it('shows enrolled student names and enrollment status from the class response', async () => {
+  const originalGet = api.get.getMockImplementation();
+  api.get.mockImplementation((url, options) =>
+    url === '/classes/class-1'
+      ? Promise.resolve({
+          data: {
+            data: {
+              ...klass,
+              enrollments: [
+                {
+                  studentId: 'enrolled-1',
+                  status: 'ACTIVE',
+                  student: {
+                    id: 'enrolled-1',
+                    firstName: 'Mina',
+                    lastName: 'Jones',
+                    admissionNumber: 'S009',
+                  },
+                },
+              ],
+            },
+          },
+        })
+      : originalGet(url, options)
+  );
+  render(
+    <MemoryRouter initialEntries={['/classes/class-1']}>
+      <Routes>
+        <Route path="/classes/:classId" element={<ClassDetailDashboard />} />
+      </Routes>
+    </MemoryRouter>
+  );
+  expect(await screen.findByText('Mina Jones')).toBeInTheDocument();
+  expect(screen.getByText('S009')).toBeInTheDocument();
+  expect(screen.getByText('Mina Jones').closest('article')).toHaveTextContent('ACTIVE');
+});

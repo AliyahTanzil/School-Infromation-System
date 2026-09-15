@@ -271,15 +271,15 @@ export default function ClassDetailDashboard() {
           </div>
         </form>
         <div className="result-list">
-          {klass?.enrollments?.map(({ student }) => (
+          {klass?.enrollments?.map(({ student, status }) => (
             <article className="result-row" key={student.id}>
               <span className="result-row__meta">
                 <strong>
-                  {student.profile?.firstName} {student.profile?.lastName}
+                  {student.firstName} {student.lastName}
                 </strong>
                 <small>{student.admissionNumber}</small>
               </span>
-              <span className="status-pill">{student.status}</span>
+              <span className="status-pill">{status}</span>
             </article>
           ))}
         </div>

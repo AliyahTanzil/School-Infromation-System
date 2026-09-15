@@ -41,8 +41,8 @@ export function getClassDashboard(id, context) {
             select: {
               id: true,
               admissionNumber: true,
-              status: true,
-              profile: { select: { firstName: true, lastName: true } },
+              firstName: true,
+              lastName: true,
             },
           },
         },
