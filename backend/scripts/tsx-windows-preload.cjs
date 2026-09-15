@@ -11,6 +11,7 @@ if (
 ) {
   const { spawn, spawnSync } = require('node:child_process');
   const distribution = process.env.SAIS_WSL_DATABASE;
+  console.log(`[SAIS] Checking PostgreSQL in WSL distribution ${distribution}...`);
   const keeper = spawn('wsl.exe', ['-d', distribution, '--', 'cat'], {
     stdio: ['pipe', 'ignore', 'inherit'],
     windowsHide: true,
@@ -24,12 +25,18 @@ if (
   process.once('exit', () => keeper.stdin.destroy());
   const check = spawnSync('wsl.exe', ['-d', distribution, '--', 'pg_isready'], {
     stdio: 'ignore',
-    timeout: 60000,
+    timeout: 30000,
     windowsHide: true,
   });
   if (check.status !== 0) {
-    throw new Error('Local WSL PostgreSQL is not ready. Start its postgresql service and retry.');
+    keeper.stdin.destroy();
+    throw new Error(
+      'Local WSL PostgreSQL is not ready' +
+        (check.error?.code === 'ETIMEDOUT' ? ' (WSL check timed out after 30 seconds)' : '') +
+        '. Start PostgreSQL in the configured WSL distribution and retry. See docs/RUNBOOK.md, step 5.'
+    );
   }
+  console.log('[SAIS] WSL PostgreSQL is ready.');
 }
 
 try {

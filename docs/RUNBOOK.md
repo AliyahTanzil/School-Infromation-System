@@ -208,6 +208,13 @@ startup; for slower cold starts set `$env:BACKEND_START_TIMEOUT = "120000"` (mil
 For PostgreSQL inside Ubuntu WSL, set `SAIS_WSL_DATABASE=Ubuntu` in `backend/.env`. Start the
 service if needed with `wsl -d Ubuntu -u root -- service postgresql start`.
 
+If startup stops at the WSL PostgreSQL check, run that service-start command in
+PowerShell, then retry `npm run dev:frontend`. The check reports readiness and
+times out after 30 seconds with a database-specific error. The overall launcher
+timeout also includes Prisma generation and application loading. The message
+`/vercel/share/.env.project not found. Continuing without it.` is informational
+on Windows; local configuration comes from `backend/.env`.
+
 ## 6. Verify
 
 ```powershell
