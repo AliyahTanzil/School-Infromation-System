@@ -85,3 +85,13 @@ changed` before installing its token or returning a user to the auth provider.
 Uninterrupted responses retain the existing successful-login behavior. These
 checks protect client state; they do not cancel server-side account creation or
 session issuance. Browser cookie ordering remains outside this mocked coverage.
+
+## Startup user restoration ordering (2026-09-15)
+
+The React authentication provider treats startup refresh and identity lookup as
+one restoration attempt. Starting login, registration, logout or password reset
+invalidates that attempt. Its delayed success or failure cannot overwrite user
+state, and identity lookup is skipped when refresh finishes after invalidation.
+Provider cleanup also invalidates restoration. Uninterrupted startup still
+restores the user and finishes loading. Mocked provider tests cover these
+boundaries; they do not certify browser cookie ordering or server revocation.
