@@ -92,3 +92,37 @@ it('does not request identity after provider unmount', async () => {
   });
   expect(api.me).not.toHaveBeenCalled();
 });
+
+it.each([false, true])('preserves a new login after delayed logout (failure: %s)', async (fail) => {
+  const pending = deferred();
+  api.refresh.mockResolvedValue({});
+  api.me.mockResolvedValue({ id: 'old-user' });
+  api.logout.mockReturnValue(pending.promise);
+  api.login.mockResolvedValue({ user: { id: 'new-user' } });
+  const { result } = show();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  let settled;
+  act(() => {
+    settled = result.current.logout().catch((error) => error);
+  });
+  await act(async () => {
+    await result.current.login({});
+  });
+  await act(async () => {
+    if (fail) pending.reject(new Error('Logout failed'));
+    else pending.resolve({});
+    await settled;
+  });
+  expect(result.current.user).toEqual({ id: 'new-user' });
+});
+it('clears the current user even if server logout fails', async () => {
+  api.refresh.mockResolvedValue({});
+  api.me.mockResolvedValue({ id: 'old-user' });
+  api.logout.mockRejectedValue(new Error('Logout failed'));
+  const { result } = show();
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  await act(async () => {
+    await expect(result.current.logout()).rejects.toThrow('Logout failed');
+  });
+  expect(result.current.user).toBeNull();
+});

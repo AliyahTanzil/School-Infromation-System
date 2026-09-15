@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 logout completion checkpoint (2026-09-15), Codex: delayed logout success/failure preserves a newer token and React user through revision guards. Five new regressions; all 26 authentication-client/provider tests, targeted ESLint and frontend production build pass. Local cleanup on failed logout remains covered. SEC-001 stays IN_PROGRESS; browser cookie and server revocation ordering remain unverified.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Prevent delayed logout success/failure from clearing a newer client token or React user, while retaining failed-request local logout.
+
 SEC-001 startup restoration checkpoint (2026-09-15), Codex: the React authentication provider ignores startup identity success/failure after an explicit authentication action and skips identity reads after invalidation or unmount. Eight new provider regressions and thirteen authentication-client tests pass, along with targeted ESLint, formatting and frontend production build. Authentication contract updated. SEC-001 remains IN_PROGRESS; live browser/server ordering remains unverified.
 
 SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Prevent startup session restoration from replacing React user state after an explicit authentication action or provider unmount.

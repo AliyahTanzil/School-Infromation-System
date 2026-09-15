@@ -244,3 +244,31 @@ it.each([
   await api.get('/subjects');
   expect(latestRequest.headers.get('Authorization')).toBe('Bearer accepted-token');
 });
+
+it.each([false, true])(
+  'preserves a newer token after delayed logout (failure: %s)',
+  async (fail) => {
+    setAccessToken('old-session');
+    let complete;
+    let latestRequest;
+    api.defaults.adapter = async (config) => {
+      latestRequest = config;
+      const response = { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+      if (config.url === '/auth/logout')
+        return new Promise((resolve, reject) => {
+          complete = () => (fail ? reject(new Error('Logout failed')) : resolve(response));
+        });
+      return response;
+    };
+    const pending = logout();
+    const settled = pending.catch((error) => error);
+    await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+    setAccessToken('new-session');
+    complete();
+    const outcome = await settled;
+    if (fail) expect(outcome.message).toBe('Logout failed');
+    else expect(outcome).toBeUndefined();
+    await api.get('/subjects');
+    expect(latestRequest.headers.get('Authorization')).toBe('Bearer new-session');
+  }
+);

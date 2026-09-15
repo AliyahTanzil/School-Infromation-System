@@ -56,11 +56,12 @@ export function AuthProvider({ children }) {
       },
       async logout() {
         authAction.current += 1;
+        const revision = authAction.current;
         try {
           await authApi.logout();
         } finally {
           // Clear local auth state even if the server session already expired.
-          setUser(null);
+          if (revision === authAction.current) setUser(null);
         }
       },
       async forgotPassword(email) {

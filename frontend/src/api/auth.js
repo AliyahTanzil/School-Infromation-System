@@ -78,10 +78,11 @@ export function refresh() {
 export async function logout() {
   // Invalidate pending refresh responses before requesting server revocation.
   authRevision += 1;
+  const revision = authRevision;
   try {
     await api.post('/auth/logout');
   } finally {
-    setAccessToken(null);
+    if (revision === authRevision) setAccessToken(null);
   }
 }
 export async function me() {

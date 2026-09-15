@@ -95,3 +95,12 @@ state, and identity lookup is skipped when refresh finishes after invalidation.
 Provider cleanup also invalidates restoration. Uninterrupted startup still
 restores the user and finishes loading. Mocked provider tests cover these
 boundaries; they do not certify browser cookie ordering or server revocation.
+
+## Delayed logout completion (2026-09-15)
+
+Logout captures the client token revision and provider action revision. On
+success or failure, it clears credentials and displayed user only while the
+respective revision is unchanged. A login completed while logout was pending
+therefore retains its token and user. Logout failures still clear the original
+local session and propagate the error. These are client-state guarantees; server
+revocation and browser response-cookie ordering require live verification.
