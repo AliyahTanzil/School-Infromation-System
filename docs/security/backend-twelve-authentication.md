@@ -104,3 +104,13 @@ respective revision is unchanged. A login completed while logout was pending
 therefore retains its token and user. Logout failures still clear the original
 local session and propagate the error. These are client-state guarantees; server
 revocation and browser response-cookie ordering require live verification.
+
+## Delayed password-reset completion (2026-09-15)
+
+A successful password-reset response clears the in-memory token and displayed user
+only if their respective authentication revisions are unchanged. A login completed
+while reset is pending retains its client state. Reset failure preserves credentials
+and propagates the error. This does not change server-side password replacement or
+session revocation; retained credentials remain subject to server authorization.
+Mocked regressions cover delayed success and failure; live browser cookie and
+server revocation ordering remain unverified.

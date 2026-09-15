@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 password-reset completion checkpoint (2026-09-15), Codex: delayed password-reset success preserves a newer client token and displayed user through revision guards; failures still propagate without clearing credentials. Four new regressions; all 30 authentication-client/provider tests, targeted ESLint and frontend production build pass. Authentication contract updated. SEC-001 remains IN_PROGRESS; live browser cookie and server revocation ordering remain unverified.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Guard delayed password-reset completion against clearing a newer client token or displayed user; verify and publish the checkpoint.
+
 SEC-001 logout completion checkpoint (2026-09-15), Codex: delayed logout success/failure preserves a newer token and React user through revision guards. Five new regressions; all 26 authentication-client/provider tests, targeted ESLint and frontend production build pass. Local cleanup on failed logout remains covered. SEC-001 stays IN_PROGRESS; browser cookie and server revocation ordering remain unverified.
 
 SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Prevent delayed logout success/failure from clearing a newer client token or React user, while retaining failed-request local logout.

@@ -272,3 +272,33 @@ it.each([false, true])(
     expect(latestRequest.headers.get('Authorization')).toBe('Bearer new-session');
   }
 );
+
+it.each([false, true])(
+  'preserves a newer login after delayed password reset (failure: %s)',
+  async (fail) => {
+    setAccessToken('old-session');
+    let complete;
+    let latestRequest;
+    api.defaults.adapter = async (config) => {
+      latestRequest = config;
+      const response = { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+      if (config.url === '/auth/reset-password')
+        return new Promise((resolve, reject) => {
+          complete = () => (fail ? reject(new Error('Reset failed')) : resolve(response));
+        });
+      if (config.url === '/auth/login')
+        return { ...response, data: { data: { accessToken: 'new-session' } } };
+      return response;
+    };
+    const pending = resetPassword({ token: 'reset-token', password: 'StrongPassword!42' });
+    const settled = pending.catch((error) => error);
+    await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+    await login({});
+    complete();
+    const outcome = await settled;
+    if (fail) expect(outcome.message).toBe('Reset failed');
+    else expect(outcome.status).toBe(200);
+    await api.get('/subjects');
+    expect(latestRequest.headers.get('Authorization')).toBe('Bearer new-session');
+  }
+);

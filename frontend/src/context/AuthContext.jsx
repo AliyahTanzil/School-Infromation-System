@@ -69,8 +69,9 @@ export function AuthProvider({ children }) {
       },
       async resetPassword(values) {
         authAction.current += 1;
+        const revision = authAction.current;
         const result = await authApi.resetPassword(values);
-        setUser(null);
+        if (revision === authAction.current) setUser(null);
         return result;
       },
     }),

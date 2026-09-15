@@ -126,3 +126,29 @@ it('clears the current user even if server logout fails', async () => {
   });
   expect(result.current.user).toBeNull();
 });
+
+it.each([false, true])(
+  'preserves a newer user after delayed password reset (failure: %s)',
+  async (fail) => {
+    api.refresh.mockResolvedValue({});
+    api.me.mockResolvedValue({ id: 'old-user' });
+    api.login.mockResolvedValue({ user: { id: 'new-user' } });
+    const reset = deferred();
+    api.resetPassword.mockReturnValue(reset.promise);
+    const { result } = show();
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    let pending;
+    await act(async () => {
+      pending = result.current.resetPassword({}).catch((error) => error);
+    });
+    await act(async () => {
+      await result.current.login({});
+    });
+    await act(async () => {
+      if (fail) reset.reject(new Error('Reset failed'));
+      else reset.resolve({ status: 200 });
+      await pending;
+    });
+    expect(result.current.user).toEqual({ id: 'new-user' });
+  }
+);
