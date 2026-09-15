@@ -38,7 +38,6 @@ export default function NotificationCenter() {
   const [filter, setFilter] = useState('all');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const headers = useMemo(() => ({ 'x-school-id': schoolId }), [schoolId]);
 
   const load = useCallback(async () => {
     if (!schoolId) return;
@@ -46,8 +45,8 @@ export default function NotificationCenter() {
     setMessage('');
     try {
       const [inboxResponse, preferenceResponse] = await Promise.all([
-        api.get('/communication/inbox', { headers }),
-        api.get('/communication/notification-preferences', { headers }),
+        api.get('/communication/inbox'),
+        api.get('/communication/notification-preferences'),
       ]);
       const inbox = inboxResponse.data.data ?? [];
       setDeliveries(inbox);
@@ -65,7 +64,7 @@ export default function NotificationCenter() {
     } finally {
       setLoading(false);
     }
-  }, [headers, schoolId]);
+  }, [schoolId]);
 
   useEffect(() => void load(), [load]);
   const unread = deliveries.filter((delivery) => delivery.status !== 'READ').length;
@@ -90,7 +89,7 @@ export default function NotificationCenter() {
   const markRead = async (delivery) => {
     if (!delivery || delivery.status === 'READ') return;
     try {
-      await api.post(`/communication/notifications/${delivery.eventId}/read`, {}, { headers });
+      await api.post(`/communication/notifications/${delivery.eventId}/read`, {});
       setDeliveries((items) =>
         items.map((item) =>
           item.eventId === delivery.eventId ? { ...item, status: 'READ' } : item
@@ -105,7 +104,7 @@ export default function NotificationCenter() {
   const savePreference = async (channel) => {
     const enabled = !preferences[channel];
     try {
-      await api.put('/communication/notification-preferences', { channel, enabled }, { headers });
+      await api.put('/communication/notification-preferences', { channel, enabled });
       setPreferences((current) => ({ ...current, [channel]: enabled }));
       setMessage(`${channelLabels[channel]} preference updated.`);
     } catch (error) {

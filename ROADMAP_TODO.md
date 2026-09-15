@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 communication/payment checkpoint (2026-09-15), Codex: removed obsolete school headers from communications, notification inbox/preferences and payment reads/mutations. Nineteen focused context tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open; no live notifications or payments were initiated.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Remove obsolete school headers from communications, notification inbox/preferences and payment requests; preserve authenticated school readiness and verify the checkpoint.
+
 SEC-001 boarding/transport/inventory checkpoint (2026-09-14), Codex: removed obsolete school headers from reads and mutations in all three workspaces. Authenticated school readiness and server ownership remain authoritative. Fifteen focused operational/boarding/context tests, targeted ESLint, formatting and frontend production build pass. Remote editor-status update fast-forwarded without conflicts. Remaining module migrations and SEC-001 acceptance stay open; no live data changes.
 
 SEC-001 continuation (2026-09-14), Codex: IN_PROGRESS. Remove boarding, transport and inventory school header overrides, extend operational context coverage and publish the verified checkpoint.

@@ -16,20 +16,19 @@ export default function PaymentGatewayDashboard() {
   const [health, setHealth] = useState(null);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({ invoiceId: '', amount: '', channel: 'MOBILE_MONEY' });
-  const headers = useCallback(() => ({ 'x-school-id': schoolId }), [schoolId]);
   const load = useCallback(async () => {
     if (!schoolId) return;
     try {
       const [intentResponse, healthResponse] = await Promise.all([
-        api.get('/payment-gateway/intents', { headers: headers() }),
-        api.get('/payment-gateway/health', { headers: headers() }),
+        api.get('/payment-gateway/intents'),
+        api.get('/payment-gateway/health'),
       ]);
       setIntents(intentResponse.data.data ?? []);
       setHealth(healthResponse.data.data ?? null);
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to load Monime payments.'));
     }
-  }, [headers, schoolId]);
+  }, [schoolId]);
   useEffect(() => {
     load();
   }, [load]);
@@ -38,22 +37,17 @@ export default function PaymentGatewayDashboard() {
     setMessage('');
     try {
       const idempotencyKey = crypto.randomUUID();
-      const created = await api.post(
-        '/payment-gateway/intents',
-        {
-          invoiceId: form.invoiceId,
-          amountMinor: Math.round(Number(form.amount) * 100),
-          currency: 'SLE',
-          channel: form.channel,
-          idempotencyKey,
-          description: 'SAIS school invoice',
-        },
-        { headers: headers() }
-      );
+      const created = await api.post('/payment-gateway/intents', {
+        invoiceId: form.invoiceId,
+        amountMinor: Math.round(Number(form.amount) * 100),
+        currency: 'SLE',
+        channel: form.channel,
+        idempotencyKey,
+        description: 'SAIS school invoice',
+      });
       const initialized = await api.post(
         `/payment-gateway/intents/${created.data.data.id}/initialize`,
-        {},
-        { headers: headers() }
+        {}
       );
       const checkoutUrl = initialized.data.data.checkoutUrl;
       if (!checkoutUrl) throw new Error('Monime did not return a checkout URL');

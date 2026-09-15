@@ -16,20 +16,19 @@ export default function CommunicationDashboard() {
   const [health, setHealth] = useState(null);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState({ title: '', body: '', recipients: '', channels: ['IN_APP'] });
-  const headers = useCallback(() => ({ 'x-school-id': schoolId }), [schoolId]);
   const load = useCallback(async () => {
     if (!schoolId) return;
     try {
       const [events, delivery] = await Promise.all([
-        api.get('/communication/notifications', { headers: headers() }),
-        api.get('/communication/notification-delivery-health', { headers: headers() }),
+        api.get('/communication/notifications'),
+        api.get('/communication/notification-delivery-health'),
       ]);
       setNotifications(events.data.data ?? []);
       setHealth(delivery.data.data ?? null);
     } catch (error) {
       setMessage(getApiErrorMessage(error, 'Unable to load notifications.'));
     }
-  }, [headers, schoolId]);
+  }, [schoolId]);
   useEffect(() => {
     load();
   }, [load]);
@@ -41,16 +40,12 @@ export default function CommunicationDashboard() {
         .split(',')
         .map((value) => value.trim())
         .filter(Boolean);
-      await api.post(
-        '/communication/notifications',
-        {
-          eventType: 'SCHOOL_ANNOUNCEMENT',
-          payload: { title: form.title, body: form.body, priority: 'NORMAL' },
-          userIds,
-          channels: form.channels,
-        },
-        { headers: headers() }
-      );
+      await api.post('/communication/notifications', {
+        eventType: 'SCHOOL_ANNOUNCEMENT',
+        payload: { title: form.title, body: form.body, priority: 'NORMAL' },
+        userIds,
+        channels: form.channels,
+      });
       setMessage('Notification queued for delivery.');
       setForm({ ...form, title: '', body: '', recipients: '' });
       await load();

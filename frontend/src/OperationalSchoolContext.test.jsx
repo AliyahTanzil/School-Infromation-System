@@ -7,6 +7,9 @@ import LibraryDashboard from './LibraryDashboard.jsx';
 import BoardingDashboard from './BoardingDashboard.jsx';
 import TransportDashboard from './TransportDashboard.jsx';
 import AssetInventoryDashboard from './AssetInventoryDashboard.jsx';
+import CommunicationDashboard from './CommunicationDashboard.jsx';
+import NotificationCenter from './NotificationCenter.jsx';
+import PaymentGatewayDashboard from './PaymentGatewayDashboard.jsx';
 import api from './api/auth.js';
 
 vi.mock('./api/auth.js', () => ({ default: { get: vi.fn(), post: vi.fn() } }));
@@ -35,6 +38,9 @@ const respond = (path) => ({
 });
 
 it.each([
+  ['Communication', CommunicationDashboard],
+  ['Notifications', NotificationCenter],
+  ['Payments', PaymentGatewayDashboard],
   ['Finance', FinanceDashboard],
   ['HR', HRDashboard],
   ['Library', LibraryDashboard],
@@ -50,6 +56,9 @@ it.each([
 });
 
 it.each([
+  ['Communication', CommunicationDashboard, '/communication/notifications'],
+  ['Notifications', NotificationCenter, '/communication/inbox'],
+  ['Payments', PaymentGatewayDashboard, '/payment-gateway/intents'],
   ['Finance', FinanceDashboard, '/finance/invoices'],
   ['HR', HRDashboard, '/hr/employees'],
   ['Boarding', BoardingDashboard, '/boarding/dormitories'],
