@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 timetable context checkpoint (2026-09-15), Codex: timetable/staffing reads and mutations no longer send school headers; timetable loading no longer writes legacy school storage. Fifteen focused timetable tests, targeted ESLint and frontend production build pass. Frontend source scan finds no remaining x-school-id headers. Server authenticated ownership and school readiness remain authoritative. SEC-001 acceptance remains open; no live staffing or timetable changes.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Remove timetable and staffing request school overrides and legacy school storage writes. Verify mocked reads and mutations; live staffing remains paused.
+
 SEC-001 communication/payment checkpoint (2026-09-15), Codex: removed obsolete school headers from communications, notification inbox/preferences and payment reads/mutations. Nineteen focused context tests, targeted ESLint, formatting and frontend production build pass. Remaining module migrations and SEC-001 acceptance stay open; no live notifications or payments were initiated.
 
 SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Remove obsolete school headers from communications, notification inbox/preferences and payment requests; preserve authenticated school readiness and verify the checkpoint.

@@ -2,9 +2,6 @@
 import api from './api/auth.js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-const headers = (schoolId) => ({
-  'x-school-id': schoolId,
-});
 const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const teacherName = (teacher) =>
   [teacher.profile?.firstName, teacher.profile?.lastName].filter(Boolean).join(' ') ||
@@ -38,16 +35,12 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
 
   const loadAssignments = useCallback(async () => {
     if (!schoolId) return setAssignments([]);
-    const { data } = await api.get('/timetables/teaching-assignments', {
-      headers: headers(schoolId),
-    });
+    const { data } = await api.get('/timetables/teaching-assignments');
     setAssignments(data.data);
   }, [schoolId]);
   const loadRules = useCallback(async () => {
     if (!schoolId || !assignment.teacherId) return setRules([]);
-    const { data } = await api.get(`/timetables/teachers/${assignment.teacherId}/availability`, {
-      headers: headers(schoolId),
-    });
+    const { data } = await api.get(`/timetables/teachers/${assignment.teacherId}/availability`);
     setRules(data.data);
   }, [assignment.teacherId, schoolId]);
   useEffect(() => {
@@ -61,16 +54,12 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
     event.preventDefault();
     if (!yearForTerm) return onMessage('Select a valid academic term.');
     try {
-      await api.post(
-        '/timetables/teaching-assignments',
-        {
-          ...assignment,
-          academicYearId: yearForTerm.id,
-          periodsPerWeek: Number(assignment.periodsPerWeek),
-          status: 'ACTIVE',
-        },
-        { headers: headers(schoolId) }
-      );
+      await api.post('/timetables/teaching-assignments', {
+        ...assignment,
+        academicYearId: yearForTerm.id,
+        periodsPerWeek: Number(assignment.periodsPerWeek),
+        status: 'ACTIVE',
+      });
       onMessage('Teaching assignment created.');
       await loadAssignments();
     } catch (error) {
@@ -79,7 +68,7 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
   }
   async function removeAssignment(id) {
     try {
-      await api.delete(`/timetables/teaching-assignments/${id}`, { headers: headers(schoolId) });
+      await api.delete(`/timetables/teaching-assignments/${id}`);
       onMessage('Teaching assignment removed.');
       await loadAssignments();
     } catch (error) {
@@ -89,16 +78,12 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
   async function addAvailability(event) {
     event.preventDefault();
     try {
-      await api.post(
-        `/timetables/teachers/${assignment.teacherId}/availability`,
-        {
-          ...availability,
-          dayOfWeek: Number(availability.dayOfWeek),
-          priority: Number(availability.priority),
-          isRecurring: true,
-        },
-        { headers: headers(schoolId) }
-      );
+      await api.post(`/timetables/teachers/${assignment.teacherId}/availability`, {
+        ...availability,
+        dayOfWeek: Number(availability.dayOfWeek),
+        priority: Number(availability.priority),
+        isRecurring: true,
+      });
       onMessage('Teacher availability saved.');
       await loadRules();
     } catch (error) {
@@ -107,9 +92,7 @@ export default function TimetableStaffingPanel({ schoolId, options, onMessage })
   }
   async function removeAvailability(id) {
     try {
-      await api.delete(`/timetables/teachers/${assignment.teacherId}/availability/${id}`, {
-        headers: headers(schoolId),
-      });
+      await api.delete(`/timetables/teachers/${assignment.teacherId}/availability/${id}`);
       onMessage('Availability rule removed.');
       await loadRules();
     } catch (error) {

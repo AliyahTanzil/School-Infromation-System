@@ -17,9 +17,6 @@ const statusTone = {
   PUBLISHED: 'bg-emerald-100 text-emerald-700',
   LOCKED: 'bg-indigo-100 text-indigo-700',
 };
-const requestHeaders = (schoolId) => ({
-  'x-school-id': schoolId,
-});
 
 export default function TimetableDashboard() {
   const {
@@ -50,16 +47,15 @@ export default function TimetableDashboard() {
   });
   const load = useCallback(async () => {
     if (!schoolId) return;
-    const { data } = await api.get('/timetables', { headers: requestHeaders(schoolId) });
+    const { data } = await api.get('/timetables');
     setTimetables(data.data);
     setSelected(
       (current) => data.data.find((item) => item.id === current?.id) || data.data[0] || null
     );
-    sessionStorage.setItem('schoolId', schoolId);
   }, [schoolId]);
   const loadRooms = useCallback(async () => {
     if (!schoolId) return setRooms([]);
-    const { data } = await api.get('/timetables/rooms', { headers: requestHeaders(schoolId) });
+    const { data } = await api.get('/timetables/rooms');
     setRooms(data.data);
   }, [schoolId]);
   useEffect(() => {
@@ -75,7 +71,7 @@ export default function TimetableDashboard() {
     if (!schoolId || !selected?.id) return;
     setCheckingReadiness(true);
     api
-      .get(`/timetables/${selected.id}/readiness`, { headers: requestHeaders(schoolId) })
+      .get(`/timetables/${selected.id}/readiness`)
       .then(({ data }) => {
         if (active) setReadiness(data.data);
       })
@@ -93,7 +89,7 @@ export default function TimetableDashboard() {
   useEffect(() => {
     if (!schoolId) return;
     api
-      .get('/timetables/options', { headers: requestHeaders(schoolId) })
+      .get('/timetables/options')
       .then(({ data }) => {
         setOptions(data.data);
       })
@@ -104,19 +100,13 @@ export default function TimetableDashboard() {
   const create = async (event) => {
     event.preventDefault();
     try {
-      const generated = await api.get('/timetables/generated-slots', {
-        headers: requestHeaders(schoolId),
+      const generated = await api.get('/timetables/generated-slots');
+      await api.post('/timetables', {
+        academicPeriodId: form.academicPeriodId,
+        name: form.name,
+        academicYear: form.academicYear,
+        slots: generated.data.data,
       });
-      await api.post(
-        '/timetables',
-        {
-          academicPeriodId: form.academicPeriodId,
-          name: form.name,
-          academicYear: form.academicYear,
-          slots: generated.data.data,
-        },
-        { headers: requestHeaders(schoolId) }
-      );
       setMessage('Draft timetable created.');
       await load();
     } catch (error) {
@@ -126,11 +116,7 @@ export default function TimetableDashboard() {
   const transition = async (status) => {
     if (!selected) return;
     try {
-      await api.patch(
-        `/timetables/${selected.id}/status`,
-        { status },
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.patch(`/timetables/${selected.id}/status`, { status });
       setMessage(`Timetable moved to ${status.toLowerCase()}.`);
       await load();
     } catch (error) {
@@ -140,11 +126,7 @@ export default function TimetableDashboard() {
   const generateSlots = async () => {
     if (!selected) return;
     try {
-      await api.post(
-        `/timetables/${selected.id}/generate-slots`,
-        {},
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.post(`/timetables/${selected.id}/generate-slots`, {});
       setMessage('Slots generated from school settings.');
       await load();
     } catch (error) {
@@ -154,11 +136,7 @@ export default function TimetableDashboard() {
   const generateSchedule = async () => {
     if (!selected) return;
     try {
-      await api.post(
-        `/timetables/${selected.id}/generate-schedule`,
-        {},
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.post(`/timetables/${selected.id}/generate-schedule`, {});
       setMessage(
         'Complete timetable generated from requirements, staffing, availability, and rooms.'
       );
@@ -173,21 +151,17 @@ export default function TimetableDashboard() {
   const createRoom = async (event) => {
     event.preventDefault();
     try {
-      await api.post(
-        '/timetables/rooms',
-        {
-          name: roomForm.name.trim(),
-          code: roomForm.code.trim().toUpperCase(),
-          kind: roomForm.kind,
-          capacity: Number(roomForm.capacity),
-          isActive: true,
-          resources: roomForm.resources
-            .split(',')
-            .map((item) => item.trim())
-            .filter(Boolean),
-        },
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.post('/timetables/rooms', {
+        name: roomForm.name.trim(),
+        code: roomForm.code.trim().toUpperCase(),
+        kind: roomForm.kind,
+        capacity: Number(roomForm.capacity),
+        isActive: true,
+        resources: roomForm.resources
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+      });
       setRoomForm({ name: '', code: '', kind: 'CLASSROOM', capacity: 40, resources: '' });
       setMessage('Timetable room created.');
       await loadRooms();
@@ -197,11 +171,7 @@ export default function TimetableDashboard() {
   };
   const toggleRoom = async (room) => {
     try {
-      await api.patch(
-        `/timetables/rooms/${room.id}`,
-        { isActive: !room.isActive },
-        { headers: requestHeaders(schoolId) }
-      );
+      await api.patch(`/timetables/rooms/${room.id}`, { isActive: !room.isActive });
       setMessage(`${room.name} ${room.isActive ? 'deactivated' : 'activated'}.`);
       await loadRooms();
     } catch (error) {
