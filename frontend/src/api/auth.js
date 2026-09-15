@@ -46,12 +46,16 @@ api.interceptors.response.use(notifySetupChanges, async (error) => {
 });
 
 export async function login(credentials) {
+  const revision = authRevision;
   const { data } = await api.post('/auth/login', credentials);
+  if (revision !== authRevision) throw new Error('Authentication session changed');
   setAccessToken(data.data.accessToken);
   return data.data;
 }
 export async function register(values) {
+  const revision = authRevision;
   const { data } = await api.post('/auth/register', values);
+  if (revision !== authRevision) throw new Error('Authentication session changed');
   setAccessToken(data.data.accessToken);
   return data.data;
 }

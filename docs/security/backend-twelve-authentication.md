@@ -75,3 +75,13 @@ verification remains outstanding because no browser is connected. The local app
 started successfully with database connectivity, but login attempts for the four
 configured development role accounts returned HTTP 401. No accounts were reseeded
 or passwords changed during this verification.
+
+## Delayed login and registration responses (2026-09-15)
+
+Login and registration capture the client authentication revision before sending
+the request. If logout, token replacement, or another authentication completion
+changes that revision, the delayed response rejects with `Authentication session
+changed` before installing its token or returning a user to the auth provider.
+Uninterrupted responses retain the existing successful-login behavior. These
+checks protect client state; they do not cancel server-side account creation or
+session issuance. Browser cookie ordering remains outside this mocked coverage.

@@ -1,5 +1,13 @@
 import { afterEach, expect, it, vi } from 'vitest';
-import api, { logout, me, refresh, resetPassword, setAccessToken } from './auth.js';
+import api, {
+  login,
+  register,
+  logout,
+  me,
+  refresh,
+  resetPassword,
+  setAccessToken,
+} from './auth.js';
 import { subscribeSetupChanges } from '../setupProgressEvents.js';
 
 const originalAdapter = api.defaults.adapter;
@@ -163,4 +171,76 @@ it('unwraps the current user from the auth response envelope', async () => {
   }));
 
   await expect(me()).resolves.toEqual(user);
+});
+
+it.each([
+  ['login', login],
+  ['register', register],
+])(
+  'does not restore credentials when delayed %s completes after logout',
+  async (route, authenticate) => {
+    let complete;
+    let latestRequest;
+    api.defaults.adapter = async (config) => {
+      latestRequest = config;
+      const response = { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+      if (config.url === `/auth/${route}`)
+        return new Promise((resolve) => {
+          complete = () =>
+            resolve({
+              ...response,
+              data: { data: { accessToken: 'late-token', user: { id: 'old-user' } } },
+            });
+        });
+      return response;
+    };
+    const pending = authenticate({});
+    const rejected = expect(pending).rejects.toThrow('Authentication session changed');
+    await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+    await logout();
+    complete();
+    await rejected;
+    await api.get('/subjects');
+    expect(latestRequest.headers.get('Authorization')).toBeUndefined();
+  }
+);
+
+it.each([
+  ['login', login],
+  ['register', register],
+])('preserves newer credentials when delayed %s completes', async (route, authenticate) => {
+  let complete;
+  let latestRequest;
+  api.defaults.adapter = async (config) => {
+    latestRequest = config;
+    const response = { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    if (config.url === `/auth/${route}`)
+      return new Promise((resolve) => {
+        complete = () => resolve({ ...response, data: { data: { accessToken: 'late-token' } } });
+      });
+    return response;
+  };
+  const pending = authenticate({});
+  const rejected = expect(pending).rejects.toThrow('Authentication session changed');
+  await vi.waitFor(() => expect(complete).toBeTypeOf('function'));
+  setAccessToken('new-session');
+  complete();
+  await rejected;
+  await api.get('/subjects');
+  expect(latestRequest.headers.get('Authorization')).toBe('Bearer new-session');
+});
+
+it.each([
+  ['login', login],
+  ['register', register],
+])('accepts an uninterrupted %s response', async (_route, authenticate) => {
+  const result = { accessToken: 'accepted-token', user: { id: 'user-1' } };
+  let latestRequest;
+  api.defaults.adapter = async (config) => {
+    latestRequest = config;
+    return { data: { data: result }, status: 200, statusText: 'OK', headers: {}, config };
+  };
+  await expect(authenticate({})).resolves.toEqual(result);
+  await api.get('/subjects');
+  expect(latestRequest.headers.get('Authorization')).toBe('Bearer accepted-token');
 });

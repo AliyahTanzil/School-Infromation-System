@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 delayed authentication checkpoint (2026-09-15), Codex: login/registration responses reject before installing credentials when the authentication revision changes during the request. Six regressions cover logout, replacement sessions and uninterrupted success; all thirteen authentication-client tests, targeted ESLint and frontend production build pass. Updated the authentication contract. SEC-001 remains IN_PROGRESS; live browser cookie ordering is not certified.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Guard delayed login/registration responses against logout or replacement sessions and verify normal authentication still succeeds.
+
 SEC-001 timetable context checkpoint (2026-09-15), Codex: timetable/staffing reads and mutations no longer send school headers; timetable loading no longer writes legacy school storage. Fifteen focused timetable tests, targeted ESLint and frontend production build pass. Frontend source scan finds no remaining x-school-id headers. Server authenticated ownership and school readiness remain authoritative. SEC-001 acceptance remains open; no live staffing or timetable changes.
 
 SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Remove timetable and staffing request school overrides and legacy school storage writes. Verify mocked reads and mutations; live staffing remains paused.
