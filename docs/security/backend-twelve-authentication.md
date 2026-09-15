@@ -114,3 +114,15 @@ and propagates the error. This does not change server-side password replacement 
 session revocation; retained credentials remain subject to server authorization.
 Mocked regressions cover delayed success and failure; live browser cookie and
 server revocation ordering remain unverified.
+
+## Stale unauthorized responses (2026-09-15)
+
+Each API request records the client authentication revision at dispatch. A 401
+response can initiate automatic refresh only while that revision is current.
+Delayed failures from an older revision reject without refreshing or replaying
+reads or mutations under newer credentials. This also conservatively rejects
+old-revision failures arriving after another request has rotated the token;
+the caller can issue a fresh request. Current-revision failures retain one refresh
+and at most one retry. Mocked client tests cover replacement-session reads and
+mutations, successful recovery, and rejection of a second 401. Server session
+revocation and browser cookie ordering still require live verification.

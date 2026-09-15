@@ -17,6 +17,10 @@ This is the authoritative implementation queue derived from `docs/audit/roadmap-
 
 ## Status values
 
+SEC-001 stale unauthorized response checkpoint (2026-09-15), Codex: API requests capture their authentication revision; old-revision 401 responses reject before automatic refresh or replay. Four new regressions cover stale reads/mutations and current-session single-retry recovery. All 34 authentication-client/provider tests, targeted ESLint, formatting and frontend production build pass. Contract documents conservative rejection after token rotation. SEC-001 remains IN_PROGRESS; live browser and server ordering remain unverified.
+
+SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Reject stale unauthorized responses before they refresh or replay requests under a newer authentication revision. Verify normal refresh/retry behavior and publish.
+
 SEC-001 password-reset completion checkpoint (2026-09-15), Codex: delayed password-reset success preserves a newer client token and displayed user through revision guards; failures still propagate without clearing credentials. Four new regressions; all 30 authentication-client/provider tests, targeted ESLint and frontend production build pass. Authentication contract updated. SEC-001 remains IN_PROGRESS; live browser cookie and server revocation ordering remain unverified.
 
 SEC-001 continuation (2026-09-15), Codex: IN_PROGRESS. Guard delayed password-reset completion against clearing a newer client token or displayed user; verify and publish the checkpoint.

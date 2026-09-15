@@ -302,3 +302,58 @@ it.each([false, true])(
     expect(latestRequest.headers.get('Authorization')).toBe('Bearer new-session');
   }
 );
+
+it.each(['get', 'post'])(
+  'does not refresh or replay a stale %s after session replacement',
+  async (method) => {
+    setAccessToken('old-session');
+    let rejectOld;
+    const requests = [];
+    api.defaults.adapter = async (config) => {
+      requests.push(config);
+      if (config.url === '/protected')
+        return new Promise((_resolve, reject) => {
+          rejectOld = () =>
+            reject(
+              Object.assign(new Error('Old session expired'), { config, response: { status: 401 } })
+            );
+        });
+      return { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+    };
+    const pending = api[method]('/protected');
+    const rejected = expect(pending).rejects.toThrow('Old session expired');
+    await vi.waitFor(() => expect(rejectOld).toBeTypeOf('function'));
+    setAccessToken('new-session');
+    rejectOld();
+    await rejected;
+    expect(requests.map((request) => request.url)).toEqual(['/protected']);
+    await api.get('/subjects');
+    expect(requests.at(-1).headers.get('Authorization')).toBe('Bearer new-session');
+  }
+);
+
+it.each([false, true])(
+  'refreshes a current unauthorized request and retries only once (retry fails: %s)',
+  async (failRetry) => {
+    setAccessToken('expired-session');
+    const requests = [];
+    api.defaults.adapter = async (config) => {
+      requests.push(config);
+      const response = { data: {}, status: 200, statusText: 'OK', headers: {}, config };
+      if (config.url === '/auth/refresh')
+        return { ...response, data: { data: { accessToken: 'rotated-session' } } };
+      if (!config._authRetry || failRetry)
+        throw Object.assign(new Error('Expired'), { config, response: { status: 401 } });
+      return response;
+    };
+    const pending = api.get('/protected');
+    if (failRetry) await expect(pending).rejects.toThrow('Expired');
+    else await expect(pending).resolves.toMatchObject({ status: 200 });
+    expect(requests.map((request) => request.url)).toEqual([
+      '/protected',
+      '/auth/refresh',
+      '/protected',
+    ]);
+    expect(requests.at(-1).headers.get('Authorization')).toBe('Bearer rotated-session');
+  }
+);

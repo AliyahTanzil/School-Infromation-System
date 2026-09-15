@@ -20,6 +20,7 @@ export const setAccessToken = (token) => {
 };
 
 api.interceptors.request.use((config) => {
+  config._authRevision = authRevision;
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
@@ -29,6 +30,7 @@ api.interceptors.response.use(notifySetupChanges, async (error) => {
   if (
     !accessToken ||
     error.response?.status !== 401 ||
+    originalRequest?._authRevision !== authRevision ||
     originalRequest?._authRetry ||
     originalRequest?.url?.includes('/auth/')
   ) {
