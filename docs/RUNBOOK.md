@@ -369,3 +369,12 @@ Health troubleshooting order:
   step 5.
 - Port already in use. The launchers auto-allocate the next free frontend port; for the backend use
   `npm run dev:backend -w backend` and check `PORT`.
+
+### Login rejected on a fallback local port
+
+The launcher can select port 3001 or higher when 3000 is occupied. Development
+CORS accepts HTTP(S) origins on localhost, 127.0.0.1 and IPv6 loopback on those
+ports. Production and other environments require the configured origin allowlist.
+LAN addresses also require an explicit CORS_ORIGIN entry. Restart the backend
+after updating its code or environment. A 403 CORS_ORIGIN_DENIED / "Origin not
+allowed" occurs before credential validation; changing the password will not fix it.

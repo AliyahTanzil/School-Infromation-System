@@ -95,6 +95,15 @@ export function isCorsOriginAllowed(origin?: string): boolean {
   try {
     const url = new URL(normalizedOrigin);
     const hostname = url.hostname.toLowerCase();
+    // The local launcher selects another port when the preferred one is occupied.
+    if (
+      config.env === 'development' &&
+      ['http:', 'https:'].includes(url.protocol) &&
+      ['localhost', '127.0.0.1', '[::1]'].includes(hostname) &&
+      url.origin === normalizedOrigin
+    ) {
+      return true;
+    }
     const projects = new Set([
       'school-administration-information-system-frontend',
       ...String(config.corsVercelPreviewProject ?? '').split(','),

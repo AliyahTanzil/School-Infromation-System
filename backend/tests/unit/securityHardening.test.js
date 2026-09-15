@@ -54,3 +54,31 @@ test('allows only this frontend project Vercel deployment origins', () => {
   );
   assert.equal(isCorsOriginAllowed('https://unrelated-project.vercel.app'), false);
 });
+
+test('allows fallback loopback ports only in development', async () => {
+  const { config } = await import('../../src/foundation/config.ts');
+  const previous = config.env;
+  try {
+    config.env = 'development';
+    for (const origin of ['http://localhost:3001', 'http://127.0.0.1:3002', 'http://[::1]:3003']) {
+      assert.equal(isCorsOriginAllowed(origin), true, origin);
+    }
+    for (const origin of [
+      'http://localhost.attacker.test:3001',
+      'http://192.168.0.6:3001',
+      'http://localhost:3001/path',
+      'http://user@localhost:3001',
+      'ftp://localhost:3001',
+      'null',
+    ]) {
+      assert.equal(isCorsOriginAllowed(origin), false, origin);
+    }
+    for (const environment of ['production', 'test']) {
+      config.env = environment;
+      assert.equal(isCorsOriginAllowed('http://localhost:3001'), false);
+      assert.equal(isCorsOriginAllowed('http://127.0.0.1:3002'), false);
+    }
+  } finally {
+    config.env = previous;
+  }
+});
