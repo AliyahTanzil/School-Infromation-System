@@ -22,7 +22,7 @@ export default function ClassDetailDashboard() {
     try {
       const [classResponse, studentResponse, subjectResponse] = await Promise.all([
         api.get(`/classes/${classId}`),
-        api.get('/students', { params: { status: 'ACTIVE', pageSize: 100 } }),
+        api.get('/students', { params: { pageSize: 100 } }),
         api.get('/subjects', { params: { status: 'ACTIVE' } }),
       ]);
       setClass(classResponse.data.data);
@@ -239,7 +239,7 @@ export default function ClassDetailDashboard() {
         <div className="section-heading">
           <div>
             <h2>Students</h2>
-            <p>Add active students from this school to the class.</p>
+            <p>Add students from this school to the class.</p>
           </div>
         </div>
         <form className="form-grid" onSubmit={enroll}>
@@ -255,7 +255,7 @@ export default function ClassDetailDashboard() {
                 .filter((item) => !enrolledIds.has(item.id))
                 .map((item) => (
                   <option key={item.id} value={item.id}>
-                    {item.profile?.firstName} {item.profile?.lastName} · {item.admissionNumber}
+                    {item.firstName} {item.lastName} · {item.admissionNumber}
                   </option>
                 ))}
             </select>

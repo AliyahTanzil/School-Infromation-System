@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 import api from './api/auth.js';
 import ClassDetailDashboard from './ClassDetailDashboard.jsx';
+import { studentDomainQuerySchema } from '../../backend/src/application/validators/studentDomainValidators.js';
 
 vi.mock('./api/auth.js', () => ({ default: { get: vi.fn(), post: vi.fn(), patch: vi.fn() } }));
 
@@ -37,7 +38,8 @@ beforeEach(() => {
               {
                 id: 'student-1',
                 admissionNumber: 'S001',
-                profile: { firstName: 'Ada', lastName: 'Cole' },
+                firstName: 'Ada',
+                lastName: 'Cole',
               },
             ],
           },
@@ -83,7 +85,7 @@ describe('Class detail dashboard', () => {
             enrollments: [
               {
                 studentId: 'student-1',
-                student: { id: 'student-1', profile: { firstName: 'Ada' } },
+                student: { id: 'student-1', firstName: 'Ada', lastName: 'Cole' },
               },
             ],
           }
@@ -209,4 +211,18 @@ it('shows enrolled student names and enrollment status from the class response',
   expect(await screen.findByText('Mina Jones')).toBeInTheDocument();
   expect(screen.getByText('S009')).toBeInTheDocument();
   expect(screen.getByText('Mina Jones').closest('article')).toHaveTextContent('ACTIVE');
+});
+
+it('requests students using the current API contract and displays their names', async () => {
+  render(
+    <MemoryRouter initialEntries={['/classes/class-1']}>
+      <Routes>
+        <Route path="/classes/:classId" element={<ClassDetailDashboard />} />
+      </Routes>
+    </MemoryRouter>
+  );
+  expect(await screen.findByRole('option', { name: /Ada Cole/ })).toBeInTheDocument();
+  const [, options] = api.get.mock.calls.find(([url]) => url === '/students');
+  expect(studentDomainQuerySchema.safeParse({ query: options.params }).success).toBe(true);
+  expect(options.params).toEqual({ pageSize: 100 });
 });

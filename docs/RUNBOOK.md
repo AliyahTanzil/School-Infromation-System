@@ -384,3 +384,8 @@ allowed" occurs before credential validation; changing the password will not fix
 Class detail reads student firstName and lastName directly from the Student model.
 The roster status comes from ClassEnrollment, not Student. The class query retains
 its tenant/school scope and active-enrollment filter. No migration is required.
+
+The class student selector uses GET /api/students?pageSize=100. This endpoint
+accepts search, page and pageSize; status is not a supported filter. Student names
+are top-level firstName/lastName fields. The selector currently shows the first
+100 returned students and excludes those already enrolled in the class.
